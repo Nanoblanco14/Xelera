@@ -5,6 +5,91 @@ import type {
     ChatCompletionTool,
 } from "openai/resources/chat/completions";
 import { isAppointmentCriticalIndustry } from "@/lib/industry-templates";
+import { z } from "zod/v4";
+
+// ═══════════════════════════════════════════════════════════════
+//  🛡️ ZOD SCHEMA — Validación de argumentos de gestionar_lead_crm
+// ═══════════════════════════════════════════════════════════════
+const CRMToolArgsSchema = z.object({
+    nombre_cliente: z.string().min(2, "Nombre demasiado corto").refine(
+        (val) => !/^(cliente|lead|n\/a|usuario|desconocido|lead whatsapp)$/i.test(val.trim()),
+        "Nombre genérico no permitido — debe ser el nombre real del cliente"
+    ),
+    estado_filtro: z.enum(["Interesado", "Calificado", "Descartado", "Derivado a Humano"]),
+    fecha_hora_cita: z.string().optional(),
+    resumen_conversacion: z.string().min(5, "Resumen demasiado corto"),
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  🔄 STAGE TRANSITION VALIDATOR
+// ═══════════════════════════════════════════════════════════════
+async function validateAndRecordTransition(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    db: any,
+    orgId: string,
+    leadId: string,
+    fromStageId: string | null,
+    toStageId: string,
+    changedBy: "ai" | "human" | "system",
+    reason: string,
+    metadata: Record<string, unknown> = {}
+): Promise<{ valid: boolean; message: string }> {
+    // If no change, skip
+    if (fromStageId === toStageId) {
+        return { valid: true, message: "Sin cambio de etapa" };
+    }
+
+    // Check if org has rules configured
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const dbAny = db as any;
+    const { data: rulesExist } = await dbAny
+        .from("pipeline_stage_rules")
+        .select("id")
+        .eq("organization_id", orgId)
+        .limit(1);
+
+    if (rulesExist && rulesExist.length > 0 && fromStageId) {
+        // Validate transition against rules
+        const { data: ruleData } = await dbAny
+            .from("pipeline_stage_rules")
+            .select("id, is_ai_allowed")
+            .eq("organization_id", orgId)
+            .eq("from_stage_id", fromStageId)
+            .eq("to_stage_id", toStageId)
+            .limit(1);
+
+        const rule = ruleData as { id: string; is_ai_allowed: boolean }[] | null;
+
+        if (!rule || rule.length === 0) {
+            console.warn(`⚠️ Transición no permitida: ${fromStageId} → ${toStageId}`);
+            return { valid: false, message: "Transición no permitida por las reglas del pipeline" };
+        }
+
+        if (changedBy === "ai" && !rule[0].is_ai_allowed) {
+            console.warn(`⚠️ IA no puede hacer esta transición: ${fromStageId} → ${toStageId}`);
+            return { valid: false, message: "La IA no tiene permiso para esta transición" };
+        }
+    }
+
+    // Record in history (always, even if no rules exist)
+    try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (db as any).from("lead_stage_history").insert({
+            lead_id: leadId,
+            organization_id: orgId,
+            from_stage_id: fromStageId,
+            to_stage_id: toStageId,
+            changed_by: changedBy,
+            reason,
+            metadata,
+        });
+    } catch (historyErr) {
+        // Non-blocking — don't fail the transition if history insert fails
+        console.error("⚠️ Error guardando historial (no bloqueante):", historyErr);
+    }
+
+    return { valid: true, message: "Transición válida" };
+}
 
 // ── Supabase Admin (bypasses RLS for webhook) ───────────────
 const supabaseAdmin = createClient(
@@ -27,9 +112,10 @@ const tools: ChatCompletionTool[] = [
                 "Si dices (o implicas) que agendaste una cita, DEBES llamar a esta función con estado_filtro=\"Calificado\" de forma inmediata, en el mismo turno. " +
                 "Si NO llamas a la herramienta, el CRM quedará desactualizado y el lead se perderá. " +
                 "Llama a esta función en los siguientes casos exactos: " +
-                "(1) El cliente confirma explícitamente un día Y hora para una cita/visita → usa estado_filtro=\"Calificado\". " +
-                "(2) El cliente rechaza de forma definitiva, insulta, o dice explícitamente que ya NO le interesa → usa estado_filtro=\"Descartado\". " +
-                "(3) La regla de escalación se cumple → usa estado_filtro=\"Derivado a Humano\".",
+                "(1) El cliente muestra interés activo (pregunta precios, pide información, compara opciones) → usa estado_filtro=\"Interesado\". " +
+                "(2) El cliente confirma explícitamente un día Y hora para una cita/visita → usa estado_filtro=\"Calificado\". " +
+                "(3) El cliente rechaza de forma definitiva, insulta, o dice explícitamente que ya NO le interesa → usa estado_filtro=\"Descartado\". " +
+                "(4) La regla de escalación se cumple → usa estado_filtro=\"Derivado a Humano\".",
             parameters: {
                 type: "object",
                 properties: {
@@ -43,8 +129,9 @@ const tools: ChatCompletionTool[] = [
                     },
                     estado_filtro: {
                         type: "string",
-                        enum: ["Calificado", "Descartado", "Derivado a Humano"],
+                        enum: ["Interesado", "Calificado", "Descartado", "Derivado a Humano"],
                         description:
+                            "Interesado = el cliente muestra interés activo (pregunta precios, solicita info, compara opciones) pero aún no confirma cita. Muévelo a la etapa 'Interesado' del pipeline. " +
                             "Calificado = el prospecto confirmó explícitamente un día Y hora para la cita/visita. Debes moverlo a la etapa de visita/reunión del pipeline. " +
                             "Descartado = el cliente dijo EXPLÍCITAMENTE que NO le interesa, o terminó la conversación de forma negativa o con insultos. " +
                             "NUNCA uses 'Descartado' porque el cliente está pensando, porque no respondió, o porque está agendando una cita — eso es lo OPUESTO de Descartado. " +
@@ -78,6 +165,8 @@ const tools: ChatCompletionTool[] = [
 // ═══════════════════════════════════════════════════════════════
 //  🧠 SYSTEM PROMPT — Builds the dynamic prompt per tenant
 // ═══════════════════════════════════════════════════════════════
+interface FaqEntry { question: string; answer: string; }
+
 function buildSystemPrompt(
     tenantSystemPrompt: string,
     conversationTone?: string | null,
@@ -85,7 +174,8 @@ function buildSystemPrompt(
     pipelineStages?: string[],
     catalogText?: string | null,
     scrapedContext?: string | null,
-    industry?: string | null
+    industry?: string | null,
+    faqEntries?: FaqEntry[] | null
 ): string {
     const now = new Date();
     const chileDate = now.toLocaleDateString("es-CL", {
@@ -141,8 +231,16 @@ ${scrapedContext}
 Usa este conocimiento para responder preguntas generales sobre la empresa, sus servicios, ubicación o cualquier otra información mencionada arriba.`
         : "";
 
+    // ── FAQ block ─────────────────────────────────────────────
+    const faqBlock = faqEntries && faqEntries.length > 0
+        ? `\n\n═══ PREGUNTAS FRECUENTES (FAQ) ═══
+El dueño del negocio ha definido estas respuestas oficiales. Cuando un cliente pregunte algo similar, USA ESTAS RESPUESTAS como base (puedes adaptarlas al tono de la conversación pero mantén la información exacta):
+${faqEntries.map((f, i) => `${i + 1}. P: ${f.question}\n   R: ${f.answer}`).join("\n\n")}
+IMPORTANTE: Estas respuestas son la fuente de verdad del negocio. No inventes información distinta a lo indicado aquí.`
+        : "";
+
     // The tenant's custom prompt is the core; we inject everything around it
-    return `${tenantSystemPrompt}${toneBlock}${escalationBlock}${stagesBlock}${catalogBlock}${knowledgeBlock}
+    return `${tenantSystemPrompt}${toneBlock}${escalationBlock}${stagesBlock}${catalogBlock}${knowledgeBlock}${faqBlock}
 
 ═══ FECHA Y HORA ACTUAL ═══
 📅 Hoy es: ${chileDate}
@@ -163,9 +261,20 @@ USA ESTA FECHA COMO REFERENCIA ABSOLUTA para cualquier cálculo de fechas.
 ⚠️ Tus respuestas deben ser EXCLUSIVAMENTE texto conversacional en español, como si hablaras por WhatsApp con un cliente.
 
 ═══ OBLIGACIÓN DE USO DE HERRAMIENTA ═══
-🚨 OBLIGATORIO: Ya sea para agendar (Calificado), descartar (Descartado) o derivar a humano (Derivado a Humano), NUNCA te despidas sin usar la herramienta gestionar_lead_crm.
+🚨 OBLIGATORIO: Ya sea para marcar interés (Interesado), agendar (Calificado), descartar (Descartado) o derivar a humano (Derivado a Humano), NUNCA te despidas sin usar la herramienta gestionar_lead_crm.
 Si omites la herramienta, el sistema fallará y el cliente se perderá del CRM.
 SIEMPRE llama a la función ANTES de tu mensaje de despedida.
+
+═══ MÁQUINA DE ESTADOS — TRANSICIONES PERMITIDAS ═══
+El pipeline de ventas funciona como una máquina de estados. Respeta estas reglas de transición:
+📊 FLUJO NORMAL: Nuevo Lead → Interesado → Visita Agendada → Cierre/Venta
+🔄 TRANSICIONES VÁLIDAS PARA TI (IA):
+  - Nuevo Lead → Interesado (cuando el cliente muestra interés activo)
+  - Interesado → Calificado/Visita Agendada (cuando confirma día Y hora)
+  - Cualquier etapa → Descartado (SOLO con rechazo explícito)
+  - Cualquier etapa → Derivado a Humano (cuando se cumple la regla de escalación)
+⚠️ NUNCA saltes etapas sin razón. Si un lead nuevo agenda directamente, puedes ir de Nuevo → Calificado.
+⚠️ NUNCA retrocedas una etapa (de Visita Agendada a Interesado, por ejemplo) — solo los humanos pueden hacer eso.
 
 ═══ IMPORTANTE ═══
 - El resumen_conversacion debe incluir los datos clave extraídos: presupuesto mencionado, interés principal, motivo de derivación si aplica.
@@ -192,10 +301,11 @@ SILENCIO ABSOLUTO SOBRE HERRAMIENTAS Y ESTADOS:
 - PROHIBIDO usar frases como "He registrado tu solicitud como...", "Actualicé el sistema" o mencionar nombres de etapas internos.
 - Si debes derivar a un asesor, simplemente di: "Comprendo. Le pediré a uno de nuestros asesores que se contacte contigo a la brevedad para ayudarte personalmente." Ejecuta la herramienta de cambio de etapa en total silencio.
 
-ACTUALIZACIÓN DEL PIPELINE (CRM):
+ACTUALIZACIÓN DEL PIPELINE (CRM) — MÁQUINA DE ESTADOS:
 - Tienes la obligación de mantener actualizado el estado del cliente en el embudo de ventas.
-- Si el cliente muestra interés inicial, muévelo a la etapa correspondiente (ej. primer elemento de las etapas disponibles tras "Nuevo Lead").
-- Si el cliente agenda una reunión o acepta que lo contacte un asesor, DEBES usar la herramienta para moverlo a la etapa de visita/reunión según las etapas disponibles. NO lo dejes en la primera etapa.
+- Si el cliente muestra interés activo (pregunta precios, solicita info, compara opciones), llama a gestionar_lead_crm con estado_filtro="Interesado" para moverlo a la etapa de interesado.
+- Si el cliente agenda una reunión o acepta que lo contacte un asesor, DEBES usar la herramienta con estado_filtro="Calificado" para moverlo a la etapa de visita/reunión. NO lo dejes en la primera etapa.
+- REGLA DE PROGRESIÓN: Un lead debe avanzar siempre hacia adelante en el pipeline. Nunca retrocedas a un lead (de "Visita Agendada" a "Interesado", por ejemplo).
 - Usa los nombres EXACTOS de las etapas listadas en la sección ETAPAS DEL PIPELINE DE VENTAS de arriba.
 
 ═══ EJECUCIÓN DE HERRAMIENTAS — SINCRONÍA TEXTO-ACCIÓN (INQUEBRANTABLE) ═══
@@ -770,7 +880,9 @@ export async function POST(
 
         // ── 6. Build system prompt and call OpenAI ────────────
         const tenantOpenai = new OpenAI({ apiKey: t.openai_api_key });
-        const industryId: string | null = (tenant as any)?.settings?.industry_template ?? null;
+        const tenantSettings = (tenant as any)?.settings || {};
+        const industryId: string | null = tenantSettings.industry_template ?? null;
+        const faqEntries: FaqEntry[] | null = tenantSettings.faqs ?? null;
         const systemPrompt = buildSystemPrompt(
             fullPrompt,
             agent?.conversation_tone,
@@ -778,7 +890,8 @@ export async function POST(
             pipelineStageNames,
             catalogText,
             scrapedContext,
-            industryId
+            industryId,
+            faqEntries
         );
 
         // `currentTurnMessages` is the ephemeral working array for this
@@ -808,64 +921,130 @@ export async function POST(
             for (const toolCall of assistantMsg.tool_calls) {
                 if (toolCall.type !== "function") continue;
                 if (toolCall.function.name === "gestionar_lead_crm") {
-                    const args = JSON.parse(toolCall.function.arguments);
+                    const rawArgs = JSON.parse(toolCall.function.arguments);
+
+                    // ── 🛡️ ZOD VALIDATION ────────────────────────
+                    const validation = CRMToolArgsSchema.safeParse(rawArgs);
+                    if (!validation.success) {
+                        const errorMessages = validation.error.issues.map(i => i.message).join("; ");
+                        console.error(`🛡️ [${t.name}] Zod validation failed: ${errorMessages}`);
+                        console.error(`🛡️ Raw args:`, JSON.stringify(rawArgs));
+
+                        // Return error to AI so it can self-correct
+                        currentTurnMessages.push({
+                            role: "tool",
+                            tool_call_id: toolCall.id,
+                            content: JSON.stringify({
+                                success: false,
+                                error: `Validación fallida: ${errorMessages}. Corrige los datos e intenta de nuevo.`,
+                            }),
+                        });
+                        continue; // Skip to next tool call or follow-up
+                    }
+
                     const {
                         nombre_cliente,
                         estado_filtro,
                         fecha_hora_cita,
                         resumen_conversacion,
-                    } = args;
+                    } = validation.data;
 
                     console.log(`🔧 [${t.name}] Tool call: ${estado_filtro} — ${nombre_cliente}`);
 
-                    // Find target stage
-                    let targetStageName = "";
-                    if (estado_filtro === "Calificado") {
-                        targetStageName = "isita"; // matches "Visita Agendada"
-                    } else if (estado_filtro === "Descartado") {
-                        targetStageName = "escart"; // matches "Descartado/Perdido"
-                    }
-
-                    const { data: matchedStages } = await supabaseAdmin
+                    // ── Find target stage (State Machine Logic) ────
+                    // Load ALL stages for intelligent matching
+                    const { data: allStages } = await supabaseAdmin
                         .from("pipeline_stages")
-                        .select("id")
+                        .select("id, name, position")
                         .eq("organization_id", tenantId)
-                        .ilike("name", `%${targetStageName}%`)
-                        .limit(1);
+                        .order("position", { ascending: true });
 
-                    let targetStageId = matchedStages?.[0]?.id;
-                    if (!targetStageId) {
-                        const { data: fallbackStages } = await supabaseAdmin
-                            .from("pipeline_stages")
-                            .select("id")
-                            .eq("organization_id", tenantId)
-                            .order("position", { ascending: true })
-                            .limit(2);
-                        if (
-                            estado_filtro === "Derivado a Humano" &&
-                            fallbackStages &&
-                            fallbackStages.length >= 2
-                        ) {
-                            targetStageId = fallbackStages[1].id;
-                        } else {
-                            targetStageId = fallbackStages?.[0]?.id;
+                    let targetStageId: string | undefined;
+                    let targetStageLabel = "";
+
+                    if (allStages && allStages.length > 0) {
+                        // Smart stage matching based on estado_filtro
+                        const stageMap: Record<string, string[]> = {
+                            "Interesado": ["interes", "contacto", "consulta"],
+                            "Calificado": ["isita", "agend", "calific", "cita", "reuni"],
+                            "Descartado": ["escart", "perdid", "cancel", "cerrado"],
+                            "Derivado a Humano": ["deriv", "human", "escala"],
+                        };
+
+                        const searchTerms = stageMap[estado_filtro] || [];
+                        for (const term of searchTerms) {
+                            const match = allStages.find(s => s.name.toLowerCase().includes(term));
+                            if (match) {
+                                targetStageId = match.id;
+                                targetStageLabel = match.name;
+                                break;
+                            }
+                        }
+
+                        // Fallback by position if no name match
+                        if (!targetStageId) {
+                            if (estado_filtro === "Interesado" && allStages.length >= 2) {
+                                // 2nd stage (after "Nuevo Lead")
+                                targetStageId = allStages[1].id;
+                                targetStageLabel = allStages[1].name;
+                            } else if (estado_filtro === "Calificado" && allStages.length >= 3) {
+                                // 3rd stage (Visita Agendada position)
+                                targetStageId = allStages[2].id;
+                                targetStageLabel = allStages[2].name;
+                            } else if (estado_filtro === "Derivado a Humano" && allStages.length >= 2) {
+                                targetStageId = allStages[1].id;
+                                targetStageLabel = allStages[1].name;
+                            } else {
+                                // Ultimate fallback: first stage
+                                targetStageId = allStages[0].id;
+                                targetStageLabel = allStages[0].name;
+                            }
                         }
                     }
 
-                    // Upsert lead with CRM data
+                    // ── Upsert lead with CRM data ──────────────────
                     const { data: existingLeads } = await supabaseAdmin
                         .from("leads")
-                        .select("id")
+                        .select("id, stage_id")
                         .eq("organization_id", tenantId)
                         .eq("phone", phoneClean)
                         .limit(1);
 
+                    const currentLeadId = existingLeads?.[0]?.id || null;
+                    const currentStageId = existingLeads?.[0]?.stage_id || null;
+
+                    // ── 🔄 VALIDATE STAGE TRANSITION ──────────────
+                    if (targetStageId && currentLeadId && currentStageId) {
+                        const transitionResult = await validateAndRecordTransition(
+                            supabaseAdmin,
+                            tenantId,
+                            currentLeadId,
+                            currentStageId,
+                            targetStageId,
+                            "ai",
+                            `IA cambió estado a ${estado_filtro}: ${resumen_conversacion.slice(0, 100)}`,
+                            { estado_filtro, nombre_cliente, fecha_hora_cita }
+                        );
+
+                        if (!transitionResult.valid) {
+                            console.warn(`🚫 [${t.name}] Transición bloqueada: ${transitionResult.message}`);
+                            // Fallback: keep current stage, don't break the flow
+                            targetStageId = currentStageId;
+                            targetStageLabel = "(sin cambio - transición bloqueada)";
+                        }
+                    } else if (targetStageId && !currentLeadId) {
+                        // New lead — record initial placement
+                        // Will be recorded after insert when we have the lead ID
+                    }
+
                     const finalChatStatus =
-                        estado_filtro === "Calificado"
-                            ? fecha_hora_cita ? "Cita agendada" : "Negociando horario"
-                            : estado_filtro === "Derivado a Humano"
-                                ? "Derivado a humano"
-                                : "Descartado";
+                        estado_filtro === "Interesado"
+                            ? "Interesado activo"
+                            : estado_filtro === "Calificado"
+                                ? fecha_hora_cita ? "Cita agendada" : "Negociando horario"
+                                : estado_filtro === "Derivado a Humano"
+                                    ? "Derivado a humano"
+                                    : "Descartado";
 
                     const leadPayload: Record<string, string> = {
                         name: nombre_cliente || "Lead WhatsApp",
@@ -885,13 +1064,31 @@ export async function POST(
                             .from("leads")
                             .update(leadPayload)
                             .eq("id", existingLeads[0].id);
-                        console.log(`✅ [${t.name}] Lead actualizado: ${nombre_cliente} → ${estado_filtro}`);
+                        console.log(`✅ [${t.name}] Lead actualizado: ${nombre_cliente} → ${estado_filtro} [${targetStageLabel}]`);
                     } else {
-                        await supabaseAdmin.from("leads").insert({
+                        const { data: newLeadData } = await supabaseAdmin.from("leads").insert({
                             organization_id: tenantId,
                             ...leadPayload,
-                        });
-                        console.log(`✅ [${t.name}] Lead creado: ${nombre_cliente} → ${estado_filtro}`);
+                        }).select("id").single();
+
+                        // Record initial stage placement for new leads
+                        if (newLeadData?.id && targetStageId) {
+                            try {
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                await (supabaseAdmin as any).from("lead_stage_history").insert({
+                                    lead_id: newLeadData.id,
+                                    organization_id: tenantId,
+                                    from_stage_id: null,
+                                    to_stage_id: targetStageId,
+                                    changed_by: "ai",
+                                    reason: `Lead creado como ${estado_filtro}: ${resumen_conversacion.slice(0, 100)}`,
+                                    metadata: { estado_filtro, nombre_cliente, fecha_hora_cita },
+                                });
+                            } catch (histErr) {
+                                console.error("⚠️ Error guardando historial inicial:", histErr);
+                            }
+                        }
+                        console.log(`✅ [${t.name}] Lead creado: ${nombre_cliente} → ${estado_filtro} [${targetStageLabel}]`);
                     }
 
                     // ── In-app notification for human handoff ─────────
