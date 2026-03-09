@@ -315,12 +315,14 @@ export default function InboxPage() {
     // ── Toggle bot pause ──────────────────────────────────
     const toggleBotPause = async (leadId: string, currentPaused: boolean) => {
         try {
-            const { error } = await supabase
-                .from("leads")
-                .update({ is_bot_paused: !currentPaused })
-                .eq("id", leadId);
+            // Use API route for reliable update (bypasses RLS issues)
+            const res = await fetch(`/api/pipeline/leads/${leadId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ is_bot_paused: !currentPaused }),
+            });
 
-            if (!error) {
+            if (res.ok) {
                 setConversations((prev) =>
                     prev.map((c) =>
                         c.lead_id === leadId
@@ -328,6 +330,9 @@ export default function InboxPage() {
                             : c
                     )
                 );
+            } else {
+                const err = await res.json().catch(() => ({}));
+                console.error("Toggle bot pause failed:", err);
             }
         } catch (err) {
             console.error("Toggle bot pause failed:", err);
