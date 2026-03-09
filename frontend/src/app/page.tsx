@@ -4,7 +4,8 @@ import {
     Zap, MessageSquare, BarChart3, Bot, ArrowRight,
     CheckCircle, Sparkles, Clock, Shield, Users, Star,
     Building2, Scissors, ShoppingBag, ChevronRight,
-    Phone, Calendar, TrendingUp,
+    Phone, Calendar, TrendingUp, Check, Crown,
+    Mail, FileText, Globe,
 } from "lucide-react";
 
 // ── Feature data ──────────────────────────────────────────
@@ -92,6 +93,85 @@ const STATS = [
     { value: "<2min", label: "Tiempo de setup" },
 ];
 
+const PLANS = [
+    {
+        name: "Starter",
+        price: "$0",
+        period: "/mes",
+        desc: "Perfecto para probar la plataforma",
+        features: [
+            "1 agente IA",
+            "100 mensajes/mes",
+            "50 leads",
+            "Pipeline básico",
+            "Soporte por email",
+        ],
+        cta: "Empezar Gratis",
+        popular: false,
+    },
+    {
+        name: "Pro",
+        price: "$49",
+        period: "/mes",
+        desc: "Para negocios en crecimiento",
+        features: [
+            "3 agentes IA",
+            "2,000 mensajes/mes",
+            "500 leads",
+            "Pipeline completo + analítica",
+            "Templates WhatsApp",
+            "Notas internas",
+            "Soporte prioritario",
+        ],
+        cta: "Comenzar Ahora",
+        popular: true,
+    },
+    {
+        name: "Enterprise",
+        price: "$99",
+        period: "/mes",
+        desc: "Para equipos y franquicias",
+        features: [
+            "Agentes ilimitados",
+            "Mensajes ilimitados",
+            "Leads ilimitados",
+            "API personalizada",
+            "Multi-usuario / roles",
+            "Soporte dedicado 24/7",
+            "Onboarding personalizado",
+        ],
+        cta: "Contactar Ventas",
+        popular: false,
+    },
+];
+
+const TESTIMONIALS = [
+    {
+        name: "Carolina Méndez",
+        role: "Directora Comercial",
+        company: "Inmobiliaria Andina",
+        industry: "Inmobiliaria",
+        quote: "En el primer mes automatizamos el 80% de las consultas iniciales. El agente filtra prospectos mejor que un junior y agenda visitas sin errores.",
+        rating: 5,
+    },
+    {
+        name: "Diego Fuentes",
+        role: "Fundador",
+        company: "BarberPro",
+        industry: "Peluquería",
+        quote: "Mis clientes agendan citas por WhatsApp a cualquier hora. Ya no pierdo reservas por no contestar a tiempo. Ha sido un cambio total.",
+        rating: 5,
+    },
+    {
+        name: "Valentina Rojas",
+        role: "Gerente de Ventas",
+        company: "TechStore CL",
+        industry: "E-commerce",
+        quote: "El bot responde preguntas sobre stock y precios al instante. Las conversiones subieron un 40% desde que lo implementamos.",
+        rating: 5,
+    },
+];
+
 // ── Page Component ────────────────────────────────────────
 export default function LandingPage() {
     return (
@@ -145,6 +225,9 @@ export default function LandingPage() {
                         </a>
                         <a href="#industries" style={{ color: "var(--text-secondary)", textDecoration: "none", transition: "color 0.2s" }}>
                             Industrias
+                        </a>
+                        <a href="#pricing" style={{ color: "var(--text-secondary)", textDecoration: "none", transition: "color 0.2s" }}>
+                            Precios
                         </a>
                         <Link href="/login" style={{
                             color: "var(--text-secondary)", textDecoration: "none",
@@ -679,6 +762,242 @@ export default function LandingPage() {
             </section>
 
             {/* ═══════════════════════════════════════════
+                PRICING
+            ═══════════════════════════════════════════ */}
+            <section id="pricing" style={{
+                padding: "80px 24px",
+                maxWidth: "1100px", margin: "0 auto",
+            }}>
+                <div style={{ textAlign: "center", marginBottom: "60px" }}>
+                    <h2 style={{
+                        fontSize: "2.2rem", fontWeight: 800,
+                        letterSpacing: "-0.02em",
+                        color: "var(--text-primary)", marginBottom: "12px",
+                    }}>
+                        Planes simples y transparentes
+                    </h2>
+                    <p style={{
+                        fontSize: "1rem", color: "var(--text-secondary)",
+                        maxWidth: "500px", margin: "0 auto",
+                    }}>
+                        Empieza gratis, escala cuando lo necesites. Sin sorpresas ni costos ocultos.
+                    </p>
+                </div>
+
+                <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, 1fr)",
+                    gap: "20px",
+                    alignItems: "stretch",
+                }}>
+                    {PLANS.map((plan) => (
+                        <div key={plan.name} style={{
+                            position: "relative",
+                            padding: plan.popular ? "2px" : "0",
+                            borderRadius: "18px",
+                            background: plan.popular
+                                ? "linear-gradient(135deg, #3b82f6, #7c3aed, #3b82f6)"
+                                : "transparent",
+                        }}>
+                            <div className="glass-card" style={{
+                                padding: "32px 24px",
+                                height: "100%",
+                                display: "flex",
+                                flexDirection: "column",
+                                borderRadius: plan.popular ? "16px" : undefined,
+                                border: plan.popular ? "none" : undefined,
+                            }}>
+                                {/* Popular badge */}
+                                {plan.popular && (
+                                    <div style={{
+                                        position: "absolute",
+                                        top: "-12px", left: "50%",
+                                        transform: "translateX(-50%)",
+                                        display: "flex", alignItems: "center", gap: "4px",
+                                        padding: "4px 14px", borderRadius: "100px",
+                                        background: "var(--gradient-1)",
+                                        fontSize: "0.68rem", fontWeight: 700,
+                                        color: "white",
+                                        boxShadow: "0 4px 16px rgba(59,130,246,0.3)",
+                                    }}>
+                                        <Crown size={12} /> Popular
+                                    </div>
+                                )}
+
+                                {/* Plan name + price */}
+                                <div style={{ marginBottom: "20px" }}>
+                                    <h3 style={{
+                                        fontSize: "1.1rem", fontWeight: 700,
+                                        color: "var(--text-primary)",
+                                        marginBottom: "8px",
+                                    }}>
+                                        {plan.name}
+                                    </h3>
+                                    <div style={{
+                                        display: "flex", alignItems: "baseline", gap: "2px",
+                                    }}>
+                                        <span style={{
+                                            fontSize: "2.5rem", fontWeight: 800,
+                                            color: "var(--text-primary)",
+                                            letterSpacing: "-0.03em",
+                                        }}>
+                                            {plan.price}
+                                        </span>
+                                        <span style={{
+                                            fontSize: "0.85rem",
+                                            color: "var(--text-muted)",
+                                        }}>
+                                            {plan.period}
+                                        </span>
+                                    </div>
+                                    <p style={{
+                                        fontSize: "0.8rem",
+                                        color: "var(--text-secondary)",
+                                        marginTop: "4px",
+                                    }}>
+                                        {plan.desc}
+                                    </p>
+                                </div>
+
+                                {/* Features */}
+                                <div style={{
+                                    display: "flex", flexDirection: "column", gap: "10px",
+                                    flex: 1, marginBottom: "24px",
+                                }}>
+                                    {plan.features.map((feat) => (
+                                        <div key={feat} style={{
+                                            display: "flex", alignItems: "center", gap: "8px",
+                                        }}>
+                                            <Check size={15} style={{
+                                                color: plan.popular ? "#60a5fa" : "#22c55e",
+                                                flexShrink: 0,
+                                            }} />
+                                            <span style={{
+                                                fontSize: "0.82rem",
+                                                color: "var(--text-secondary)",
+                                                fontWeight: 500,
+                                            }}>
+                                                {feat}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* CTA */}
+                                <Link
+                                    href="/login"
+                                    className={plan.popular ? "btn-primary" : "btn-secondary"}
+                                    style={{
+                                        padding: "12px 24px",
+                                        fontSize: "0.88rem",
+                                        textAlign: "center",
+                                        justifyContent: "center",
+                                        width: "100%",
+                                    }}
+                                >
+                                    {plan.cta} <ArrowRight size={15} />
+                                </Link>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </section>
+
+            {/* ═══════════════════════════════════════════
+                TESTIMONIALS
+            ═══════════════════════════════════════════ */}
+            <section style={{
+                padding: "80px 24px",
+                background: "var(--bg-secondary)",
+                borderTop: "1px solid var(--border)",
+                borderBottom: "1px solid var(--border)",
+            }}>
+                <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
+                    <div style={{ textAlign: "center", marginBottom: "50px" }}>
+                        <h2 style={{
+                            fontSize: "2.2rem", fontWeight: 800,
+                            letterSpacing: "-0.02em",
+                            color: "var(--text-primary)", marginBottom: "12px",
+                        }}>
+                            Lo que dicen nuestros clientes
+                        </h2>
+                        <p style={{
+                            fontSize: "1rem", color: "var(--text-secondary)",
+                        }}>
+                            Negocios reales que ya venden en automático con MiAgente.
+                        </p>
+                    </div>
+
+                    <div style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(3, 1fr)",
+                        gap: "20px",
+                    }}>
+                        {TESTIMONIALS.map((t) => (
+                            <div key={t.name} className="glass-card" style={{
+                                padding: "28px 24px",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "16px",
+                            }}>
+                                {/* Stars */}
+                                <div style={{ display: "flex", gap: "2px" }}>
+                                    {Array.from({ length: t.rating }).map((_, i) => (
+                                        <Star key={i} size={14} fill="#f59e0b" color="#f59e0b" />
+                                    ))}
+                                </div>
+
+                                {/* Quote */}
+                                <p style={{
+                                    fontSize: "0.85rem",
+                                    color: "var(--text-secondary)",
+                                    lineHeight: 1.6,
+                                    flex: 1,
+                                    fontStyle: "italic",
+                                }}>
+                                    &ldquo;{t.quote}&rdquo;
+                                </p>
+
+                                {/* Author */}
+                                <div style={{
+                                    display: "flex", alignItems: "center", gap: "10px",
+                                    paddingTop: "12px",
+                                    borderTop: "1px solid rgba(255,255,255,0.06)",
+                                }}>
+                                    {/* Avatar */}
+                                    <div style={{
+                                        width: "36px", height: "36px", borderRadius: "10px",
+                                        background: "rgba(59,130,246,0.08)",
+                                        border: "1px solid rgba(59,130,246,0.15)",
+                                        display: "flex", alignItems: "center",
+                                        justifyContent: "center",
+                                        fontSize: "0.75rem", fontWeight: 700,
+                                        color: "#60a5fa",
+                                    }}>
+                                        {t.name.split(" ").map(n => n[0]).join("")}
+                                    </div>
+                                    <div>
+                                        <div style={{
+                                            fontSize: "0.8rem", fontWeight: 700,
+                                            color: "var(--text-primary)",
+                                        }}>
+                                            {t.name}
+                                        </div>
+                                        <div style={{
+                                            fontSize: "0.68rem",
+                                            color: "var(--text-muted)",
+                                        }}>
+                                            {t.role} · {t.company}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* ═══════════════════════════════════════════
                 FINAL CTA
             ═══════════════════════════════════════════ */}
             <section style={{
@@ -724,28 +1043,178 @@ export default function LandingPage() {
             ═══════════════════════════════════════════ */}
             <footer style={{
                 borderTop: "1px solid var(--border)",
-                padding: "40px 24px",
+                padding: "60px 24px 30px",
             }}>
                 <div style={{
                     maxWidth: "1100px", margin: "0 auto",
-                    display: "flex", alignItems: "center",
-                    justifyContent: "space-between",
                 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <Zap size={16} style={{ color: "var(--text-muted)" }} />
-                        <span style={{
-                            fontSize: "0.82rem", fontWeight: 600,
+                    {/* Footer grid */}
+                    <div style={{
+                        display: "grid",
+                        gridTemplateColumns: "2fr 1fr 1fr 1fr",
+                        gap: "40px",
+                        marginBottom: "40px",
+                    }}>
+                        {/* Brand column */}
+                        <div>
+                            <div style={{
+                                display: "flex", alignItems: "center", gap: "8px",
+                                marginBottom: "12px",
+                            }}>
+                                <div style={{
+                                    width: "30px", height: "30px", borderRadius: "8px",
+                                    background: "var(--gradient-1)",
+                                    display: "flex", alignItems: "center",
+                                    justifyContent: "center",
+                                }}>
+                                    <Zap size={15} color="white" />
+                                </div>
+                                <span style={{
+                                    fontSize: "1rem", fontWeight: 700,
+                                    color: "var(--text-primary)",
+                                }}>
+                                    MiAgente
+                                </span>
+                            </div>
+                            <p style={{
+                                fontSize: "0.8rem",
+                                color: "var(--text-secondary)",
+                                lineHeight: 1.6,
+                                maxWidth: "280px",
+                            }}>
+                                La plataforma de agentes de ventas con inteligencia artificial para WhatsApp. Automatiza, convierte y crece.
+                            </p>
+                        </div>
+
+                        {/* Product column */}
+                        <div>
+                            <h4 style={{
+                                fontSize: "0.75rem", fontWeight: 700,
+                                color: "var(--text-primary)",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.06em",
+                                marginBottom: "16px",
+                            }}>
+                                Producto
+                            </h4>
+                            <div style={{
+                                display: "flex", flexDirection: "column", gap: "10px",
+                            }}>
+                                {[
+                                    { label: "Funciones", href: "#features" },
+                                    { label: "Precios", href: "#pricing" },
+                                    { label: "Industrias", href: "#industries" },
+                                    { label: "Cómo funciona", href: "#how-it-works" },
+                                ].map(link => (
+                                    <a key={link.label} href={link.href} style={{
+                                        fontSize: "0.8rem",
+                                        color: "var(--text-secondary)",
+                                        textDecoration: "none",
+                                        transition: "color 0.2s",
+                                    }}>
+                                        {link.label}
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Company column */}
+                        <div>
+                            <h4 style={{
+                                fontSize: "0.75rem", fontWeight: 700,
+                                color: "var(--text-primary)",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.06em",
+                                marginBottom: "16px",
+                            }}>
+                                Empresa
+                            </h4>
+                            <div style={{
+                                display: "flex", flexDirection: "column", gap: "10px",
+                            }}>
+                                {[
+                                    { label: "Contacto", href: "mailto:soporte@miagente.com" },
+                                    { label: "Blog", href: "#" },
+                                    { label: "Soporte", href: "#" },
+                                ].map(link => (
+                                    <a key={link.label} href={link.href} style={{
+                                        fontSize: "0.8rem",
+                                        color: "var(--text-secondary)",
+                                        textDecoration: "none",
+                                        transition: "color 0.2s",
+                                    }}>
+                                        {link.label}
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Legal column */}
+                        <div>
+                            <h4 style={{
+                                fontSize: "0.75rem", fontWeight: 700,
+                                color: "var(--text-primary)",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.06em",
+                                marginBottom: "16px",
+                            }}>
+                                Legal
+                            </h4>
+                            <div style={{
+                                display: "flex", flexDirection: "column", gap: "10px",
+                            }}>
+                                {[
+                                    { label: "Términos de Servicio", href: "#" },
+                                    { label: "Política de Privacidad", href: "#" },
+                                    { label: "Cookies", href: "#" },
+                                ].map(link => (
+                                    <a key={link.label} href={link.href} style={{
+                                        fontSize: "0.8rem",
+                                        color: "var(--text-secondary)",
+                                        textDecoration: "none",
+                                        transition: "color 0.2s",
+                                    }}>
+                                        {link.label}
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Footer bottom */}
+                    <div style={{
+                        borderTop: "1px solid var(--border)",
+                        paddingTop: "20px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                    }}>
+                        <p style={{
+                            fontSize: "0.72rem",
                             color: "var(--text-muted)",
                         }}>
-                            MiAgente
-                        </span>
+                            &copy; 2026 MiAgente. Todos los derechos reservados.
+                        </p>
+                        <div style={{
+                            display: "flex", alignItems: "center", gap: "16px",
+                        }}>
+                            <a href="mailto:soporte@miagente.com" title="Email" style={{
+                                color: "var(--text-muted)", transition: "color 0.2s",
+                            }}>
+                                <Mail size={16} />
+                            </a>
+                            <a href="#" title="Docs" style={{
+                                color: "var(--text-muted)", transition: "color 0.2s",
+                            }}>
+                                <FileText size={16} />
+                            </a>
+                            <a href="#" title="Website" style={{
+                                color: "var(--text-muted)", transition: "color 0.2s",
+                            }}>
+                                <Globe size={16} />
+                            </a>
+                        </div>
                     </div>
-                    <p style={{
-                        fontSize: "0.72rem",
-                        color: "var(--text-muted)",
-                    }}>
-                        Plataforma de agentes de ventas con inteligencia artificial para WhatsApp.
-                    </p>
                 </div>
             </footer>
         </div>

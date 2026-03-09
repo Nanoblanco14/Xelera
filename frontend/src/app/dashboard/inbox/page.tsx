@@ -8,6 +8,7 @@ import {
     Phone, Clock, PauseCircle, PlayCircle, AlertTriangle,
     ChevronRight, Inbox as InboxIcon, Zap, Plus, X,
     StickyNote, Trash2, Hash, Timer, CheckCheck, Filter,
+    FileText, Eye,
 } from "lucide-react";
 
 interface LeadNote {
@@ -122,6 +123,17 @@ export default function InboxPage() {
     const [newTemplate, setNewTemplate] = useState("");
     const [addingTemplate, setAddingTemplate] = useState(false);
 
+    // ── WhatsApp templates (Meta) ───────────────────────────
+    const [showWaTemplates, setShowWaTemplates] = useState(false);
+    const [waTemplates, setWaTemplates] = useState<Array<{
+        id: string; name: string; status: string; category: string;
+        language: string; components: Array<Record<string, unknown>>;
+    }>>([]);
+    const [waTemplatesLoading, setWaTemplatesLoading] = useState(false);
+    const [waSelectedTemplate, setWaSelectedTemplate] = useState<string | null>(null);
+    const [waParams, setWaParams] = useState<string[]>([]);
+    const [waSending, setWaSending] = useState(false);
+
     // ── Internal notes ─────────────────────────────────
     const [showNotes, setShowNotes] = useState(false);
     const [leadNotes, setLeadNotes] = useState<LeadNote[]>([]);
@@ -152,6 +164,73 @@ export default function InboxPage() {
         setNewMessage(text);
         setShowTemplates(false);
         inputRef.current?.focus();
+    };
+
+    // ── WhatsApp template functions ──────────────────────
+    const fetchWaTemplates = useCallback(async () => {
+        setWaTemplatesLoading(true);
+        try {
+            const res = await fetch("/api/whatsapp/templates");
+            if (res.ok) {
+                const { templates: tpls } = await res.json();
+                setWaTemplates(tpls || []);
+            }
+        } catch { /* silent */ }
+        setWaTemplatesLoading(false);
+    }, []);
+
+    const openWaTemplateModal = () => {
+        setShowWaTemplates(true);
+        setWaSelectedTemplate(null);
+        setWaParams([]);
+        if (waTemplates.length === 0) fetchWaTemplates();
+    };
+
+    const getTemplateVarCount = (tpl: typeof waTemplates[0]): number => {
+        const bodyComp = tpl.components.find((c: Record<string, unknown>) => c.type === "BODY") as Record<string, unknown> | undefined;
+        if (!bodyComp?.text) return 0;
+        const matches = (bodyComp.text as string).match(/\{\{\d+\}\}/g);
+        return matches ? matches.length : 0;
+    };
+
+    const getTemplateBodyText = (tpl: typeof waTemplates[0]): string => {
+        const bodyComp = tpl.components.find((c: Record<string, unknown>) => c.type === "BODY") as Record<string, unknown> | undefined;
+        return (bodyComp?.text as string) || "";
+    };
+
+    const sendWaTemplate = async () => {
+        if (!selectedLeadId || !waSelectedTemplate) return;
+        setWaSending(true);
+        try {
+            const tpl = waTemplates.find(t => t.name === waSelectedTemplate);
+            const res = await fetch("/api/whatsapp/templates", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    lead_id: selectedLeadId,
+                    template_name: waSelectedTemplate,
+                    template_language: tpl?.language || "es",
+                    parameters: waParams.filter(p => p.trim()),
+                }),
+            });
+            if (res.ok) {
+                // Add local message for instant feedback
+                const localMsg: ChatMessage = {
+                    id: `temp-wa-${Date.now()}`,
+                    lead_id: selectedLeadId,
+                    role: "assistant",
+                    content: `[Template: ${waSelectedTemplate}]${waParams.length ? " — " + waParams.join(", ") : ""}`,
+                    created_at: new Date().toISOString(),
+                };
+                setMessages(prev => [...prev, localMsg]);
+                setShowWaTemplates(false);
+                setWaSelectedTemplate(null);
+                setWaParams([]);
+            }
+        } catch (err) {
+            console.error("Send WA template failed:", err);
+        }
+        setWaSending(false);
     };
 
     // ── Notes functions ───────────────────────────────────
@@ -1420,6 +1499,30 @@ export default function InboxPage() {
                                             <Zap size={15} />
                                         </button>
                                     )}
+                                    {/* WhatsApp template button — always visible */}
+                                    <button
+                                        onClick={openWaTemplateModal}
+                                        title="Enviar plantilla WhatsApp"
+                                        style={{
+                                            background: showWaTemplates
+                                                ? "rgba(34,197,94,0.1)"
+                                                : "rgba(255,255,255,0.05)",
+                                            border: showWaTemplates
+                                                ? "1px solid rgba(34,197,94,0.2)"
+                                                : "1px solid rgba(255,255,255,0.08)",
+                                            color: showWaTemplates ? "#22c55e" : "var(--text-muted)",
+                                            borderRadius: "8px",
+                                            padding: "8px",
+                                            cursor: "pointer",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            transition: "all 0.15s ease",
+                                            flexShrink: 0,
+                                        }}
+                                    >
+                                        <FileText size={15} />
+                                    </button>
                                     <input
                                         ref={inputRef}
                                         className="input"
@@ -1482,6 +1585,320 @@ export default function InboxPage() {
                     )}
                 </div>
             </div>
+
+            {/* ═══ WhatsApp Template Modal ═══ */}
+            <AnimatePresence>
+                {showWaTemplates && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setShowWaTemplates(false)}
+                        style={{
+                            position: "fixed", inset: 0, zIndex: 60,
+                            background: "rgba(0,0,0,0.6)",
+                            backdropFilter: "blur(4px)",
+                            display: "flex", alignItems: "center",
+                            justifyContent: "center", padding: "24px",
+                        }}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="glass-card"
+                            style={{
+                                width: "100%", maxWidth: "520px",
+                                maxHeight: "80vh", display: "flex",
+                                flexDirection: "column", overflow: "hidden",
+                            }}
+                        >
+                            {/* Header */}
+                            <div style={{
+                                padding: "16px 20px",
+                                borderBottom: "1px solid var(--border)",
+                                display: "flex", alignItems: "center",
+                                justifyContent: "space-between",
+                            }}>
+                                <div>
+                                    <h3 style={{
+                                        fontSize: "0.95rem", fontWeight: 700,
+                                        color: "var(--text-primary)",
+                                    }}>
+                                        Enviar Plantilla WhatsApp
+                                    </h3>
+                                    <p style={{
+                                        fontSize: "0.72rem",
+                                        color: "var(--text-muted)", marginTop: "2px",
+                                    }}>
+                                        Selecciona un template aprobado para enviar
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setShowWaTemplates(false)}
+                                    style={{
+                                        background: "none", border: "none",
+                                        color: "var(--text-muted)", cursor: "pointer",
+                                    }}
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+
+                            {/* Body */}
+                            <div style={{
+                                flex: 1, overflowY: "auto", padding: "16px 20px",
+                            }}>
+                                {waTemplatesLoading ? (
+                                    <div style={{
+                                        display: "flex", alignItems: "center",
+                                        justifyContent: "center", padding: "32px",
+                                    }}>
+                                        <Loader2 size={20} className="animate-spin" style={{ color: "var(--text-muted)" }} />
+                                    </div>
+                                ) : waTemplates.filter(t => t.status === "APPROVED").length === 0 ? (
+                                    <div style={{
+                                        textAlign: "center", padding: "32px",
+                                        color: "var(--text-muted)", fontSize: "0.82rem",
+                                    }}>
+                                        No hay templates aprobados disponibles
+                                    </div>
+                                ) : !waSelectedTemplate ? (
+                                    /* ── Template list ── */
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                                        {waTemplates
+                                            .filter(t => t.status === "APPROVED")
+                                            .map(tpl => (
+                                                <button
+                                                    key={tpl.id}
+                                                    onClick={() => {
+                                                        setWaSelectedTemplate(tpl.name);
+                                                        const count = getTemplateVarCount(tpl);
+                                                        setWaParams(Array(count).fill(""));
+                                                    }}
+                                                    style={{
+                                                        padding: "12px 14px",
+                                                        borderRadius: "10px",
+                                                        background: "rgba(255,255,255,0.03)",
+                                                        border: "1px solid rgba(255,255,255,0.06)",
+                                                        cursor: "pointer",
+                                                        textAlign: "left",
+                                                        transition: "all 0.15s ease",
+                                                        display: "flex",
+                                                        flexDirection: "column",
+                                                        gap: "6px",
+                                                    }}
+                                                    onMouseEnter={e => {
+                                                        e.currentTarget.style.background = "rgba(34,197,94,0.06)";
+                                                        e.currentTarget.style.borderColor = "rgba(34,197,94,0.15)";
+                                                    }}
+                                                    onMouseLeave={e => {
+                                                        e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+                                                        e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
+                                                    }}
+                                                >
+                                                    <div style={{
+                                                        display: "flex", alignItems: "center",
+                                                        justifyContent: "space-between",
+                                                    }}>
+                                                        <span style={{
+                                                            fontSize: "0.82rem", fontWeight: 600,
+                                                            color: "var(--text-primary)",
+                                                        }}>
+                                                            {tpl.name}
+                                                        </span>
+                                                        <div style={{
+                                                            display: "flex", alignItems: "center", gap: "6px",
+                                                        }}>
+                                                            <span style={{
+                                                                fontSize: "0.62rem", fontWeight: 600,
+                                                                padding: "2px 7px", borderRadius: "6px",
+                                                                background: tpl.category === "MARKETING"
+                                                                    ? "rgba(59,130,246,0.1)"
+                                                                    : "rgba(255,255,255,0.05)",
+                                                                color: tpl.category === "MARKETING"
+                                                                    ? "#60a5fa"
+                                                                    : "var(--text-muted)",
+                                                                border: tpl.category === "MARKETING"
+                                                                    ? "1px solid rgba(59,130,246,0.2)"
+                                                                    : "1px solid rgba(255,255,255,0.08)",
+                                                                textTransform: "uppercase",
+                                                            }}>
+                                                                {tpl.category}
+                                                            </span>
+                                                            <span style={{
+                                                                fontSize: "0.62rem",
+                                                                color: "var(--text-muted)",
+                                                            }}>
+                                                                {tpl.language}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <p style={{
+                                                        fontSize: "0.75rem",
+                                                        color: "var(--text-secondary)",
+                                                        lineHeight: 1.4,
+                                                        overflow: "hidden",
+                                                        textOverflow: "ellipsis",
+                                                        display: "-webkit-box",
+                                                        WebkitLineClamp: 2,
+                                                        WebkitBoxOrient: "vertical",
+                                                    }}>
+                                                        {getTemplateBodyText(tpl) || "Sin preview"}
+                                                    </p>
+                                                </button>
+                                            ))}
+                                    </div>
+                                ) : (
+                                    /* ── Selected template: preview + params ── */
+                                    (() => {
+                                        const tpl = waTemplates.find(t => t.name === waSelectedTemplate);
+                                        if (!tpl) return null;
+                                        const varCount = getTemplateVarCount(tpl);
+                                        let bodyPreview = getTemplateBodyText(tpl);
+                                        waParams.forEach((p, i) => {
+                                            if (p.trim()) bodyPreview = bodyPreview.replace(`{{${i + 1}}}`, p);
+                                        });
+                                        return (
+                                            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                                                {/* Back button */}
+                                                <button
+                                                    onClick={() => { setWaSelectedTemplate(null); setWaParams([]); }}
+                                                    style={{
+                                                        background: "none", border: "none",
+                                                        color: "var(--text-muted)", cursor: "pointer",
+                                                        fontSize: "0.75rem", fontWeight: 500,
+                                                        display: "flex", alignItems: "center", gap: "4px",
+                                                        padding: 0,
+                                                    }}
+                                                >
+                                                    ← Volver a la lista
+                                                </button>
+
+                                                {/* Template name */}
+                                                <div style={{
+                                                    display: "flex", alignItems: "center", gap: "8px",
+                                                }}>
+                                                    <span style={{
+                                                        fontSize: "0.88rem", fontWeight: 700,
+                                                        color: "var(--text-primary)",
+                                                    }}>
+                                                        {tpl.name}
+                                                    </span>
+                                                    <span style={{
+                                                        fontSize: "0.62rem", fontWeight: 600,
+                                                        padding: "2px 8px", borderRadius: "6px",
+                                                        background: "rgba(34,197,94,0.1)",
+                                                        color: "#22c55e",
+                                                        border: "1px solid rgba(34,197,94,0.2)",
+                                                    }}>
+                                                        APPROVED
+                                                    </span>
+                                                </div>
+
+                                                {/* Preview bubble */}
+                                                <div style={{
+                                                    padding: "14px 16px",
+                                                    borderRadius: "4px 14px 14px 14px",
+                                                    background: "rgba(34,197,94,0.06)",
+                                                    border: "1px solid rgba(34,197,94,0.12)",
+                                                }}>
+                                                    <div style={{
+                                                        display: "flex", alignItems: "center", gap: "4px",
+                                                        marginBottom: "6px",
+                                                    }}>
+                                                        <Eye size={11} style={{ color: "#22c55e" }} />
+                                                        <span style={{
+                                                            fontSize: "0.62rem", fontWeight: 600,
+                                                            color: "#22c55e",
+                                                            textTransform: "uppercase",
+                                                            letterSpacing: "0.05em",
+                                                        }}>
+                                                            Preview
+                                                        </span>
+                                                    </div>
+                                                    <p style={{
+                                                        fontSize: "0.82rem",
+                                                        color: "var(--text-primary)",
+                                                        lineHeight: 1.5,
+                                                        whiteSpace: "pre-wrap",
+                                                    }}>
+                                                        {bodyPreview}
+                                                    </p>
+                                                </div>
+
+                                                {/* Variable inputs */}
+                                                {varCount > 0 && (
+                                                    <div style={{
+                                                        display: "flex", flexDirection: "column", gap: "8px",
+                                                    }}>
+                                                        <label style={{
+                                                            fontSize: "0.72rem", fontWeight: 600,
+                                                            color: "var(--text-muted)",
+                                                            textTransform: "uppercase",
+                                                            letterSpacing: "0.05em",
+                                                        }}>
+                                                            Variables del template
+                                                        </label>
+                                                        {Array.from({ length: varCount }).map((_, i) => (
+                                                            <input
+                                                                key={i}
+                                                                className="input"
+                                                                placeholder={`Variable {{${i + 1}}}`}
+                                                                value={waParams[i] || ""}
+                                                                onChange={e => {
+                                                                    const updated = [...waParams];
+                                                                    updated[i] = e.target.value;
+                                                                    setWaParams(updated);
+                                                                }}
+                                                                style={{ fontSize: "0.82rem" }}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })()
+                                )}
+                            </div>
+
+                            {/* Footer — Send button */}
+                            {waSelectedTemplate && (
+                                <div style={{
+                                    padding: "12px 20px",
+                                    borderTop: "1px solid var(--border)",
+                                    display: "flex", justifyContent: "flex-end", gap: "8px",
+                                }}>
+                                    <button
+                                        onClick={() => setShowWaTemplates(false)}
+                                        className="btn-secondary"
+                                        style={{ padding: "8px 16px", fontSize: "0.82rem" }}
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        onClick={sendWaTemplate}
+                                        disabled={waSending}
+                                        className="btn-primary"
+                                        style={{
+                                            padding: "8px 20px", fontSize: "0.82rem",
+                                            gap: "6px",
+                                        }}
+                                    >
+                                        {waSending ? (
+                                            <Loader2 size={14} className="animate-spin" />
+                                        ) : (
+                                            <Send size={14} />
+                                        )}
+                                        Enviar Template
+                                    </button>
+                                </div>
+                            )}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
