@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
                 max_tokens: body.max_tokens ?? 1024,
                 welcome_message: body.welcome_message || "¡Hola! ¿En qué puedo ayudarte?",
                 whatsapp_config: body.whatsapp_config || {},
+                is_active: true,
             })
             .select()
             .single();
