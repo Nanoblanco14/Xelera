@@ -9,8 +9,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "AI Agent Platform — Dashboard",
-  description: "Manage your AI sales agents, products, and WhatsApp conversations",
+  title: "MiAgente — Agentes de Ventas IA para WhatsApp",
+  description: "Automatiza tu atención al cliente con un agente de inteligencia artificial en WhatsApp. Agenda citas, filtra prospectos y vende 24/7 sin intervención humana.",
 };
 
 export default function RootLayout({

@@ -1,18 +1,21 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { OrgProvider, type OrgContextType } from "@/lib/org-context";
 import type { Organization } from "@/lib/types";
 import {
-    Home, Bot, Kanban, BarChart3,
+    Home, Bot, Kanban, BarChart3, Package, MessageSquare,
     LogOut, Loader2, ChevronRight, Settings, Zap, AlertCircle,
 } from "lucide-react";
 import NotificationBell from "./NotificationBell";
+import ToastProvider from "./Toast";
 
 const NAV_ITEMS = [
-    { href: "/dashboard/products", label: "Inventario", icon: Home },
+    { href: "/dashboard", label: "Inicio", icon: Home },
+    { href: "/dashboard/inbox", label: "Inbox", icon: MessageSquare },
+    { href: "/dashboard/products", label: "Inventario", icon: Package },
     { href: "/dashboard/pipeline", label: "Pipeline", icon: Kanban },
     { href: "/dashboard/analytics", label: "Analítica", icon: BarChart3 },
     { href: "/dashboard/agents", label: "Mi Asistente", icon: Bot },
@@ -27,6 +30,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const [ready, setReady] = useState(false);
     const [error, setError] = useState("");
     const [collapsed, setCollapsed] = useState(true);
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    // ── Fetch unread (pending) inbox count ──
+    const fetchUnread = useCallback(async (orgId: string) => {
+        try {
+            const res = await fetch(`/api/inbox/unread?org_id=${orgId}`);
+            const { count } = await res.json();
+            setUnreadCount(count || 0);
+        } catch {
+            /* silent */
+        }
+    }, []);
 
     useEffect(() => {
         (async () => {
@@ -60,11 +75,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 }
 
                 const m = members[0] as any;
+                const org = m.organizations as Organization;
                 setOrgCtx({
-                    organization: m.organizations as Organization,
+                    organization: org,
                     role: m.role,
                     userId: user.id,
+                    userEmail: user.email || "",
                 });
+
+                // Redirect new users to onboarding
+                const settings = (org.settings || {}) as Record<string, unknown>;
+                if (!settings.onboarding_completed && !window.location.pathname.startsWith("/dashboard/onboarding")) {
+                    router.replace("/dashboard/onboarding");
+                }
+
                 setReady(true);
             } catch (err: any) {
                 console.error("Layout init error:", err);
@@ -73,6 +97,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             }
         })();
     }, [router]);
+
+    // ── Poll unread count every 20s ──
+    useEffect(() => {
+        if (!orgCtx?.organization.id) return;
+        fetchUnread(orgCtx.organization.id);
+        const interval = setInterval(() => fetchUnread(orgCtx.organization.id), 20_000);
+        return () => clearInterval(interval);
+    }, [orgCtx?.organization.id, fetchUnread]);
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
@@ -111,6 +143,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     const orgName = orgCtx?.organization.name || "Plataforma";
     const sidebarW = collapsed ? "64px" : "240px";
+    const isOnboarding = pathname.startsWith("/dashboard/onboarding");
+
+    // During onboarding, render full-screen without sidebar/topbar
+    if (isOnboarding) {
+        return (
+            <OrgProvider value={orgCtx!}>
+                {children}
+            </OrgProvider>
+        );
+    }
 
     return (
         <OrgProvider value={orgCtx!}>
@@ -207,6 +249,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                     href={item.href}
                                     title={collapsed ? item.label : undefined}
                                     style={{
+                                        position: "relative" as const,
                                         display: "flex",
                                         alignItems: "center",
                                         gap: "12px",
@@ -220,7 +263,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                         textDecoration: "none",
                                         transition: "all 0.2s ease",
                                         justifyContent: collapsed ? "center" : "flex-start",
-                                        overflow: "hidden",
+                                        overflow: collapsed ? "visible" : "hidden",
                                         whiteSpace: "nowrap",
                                     }}
                                     onMouseEnter={e => {
@@ -248,6 +291,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                     >
                                         {item.label}
                                     </span>
+                                    {/* Unread badge for Inbox */}
+                                    {item.label === "Inbox" && unreadCount > 0 && (
+                                        <span
+                                            style={{
+                                                flexShrink: 0,
+                                                minWidth: collapsed ? "16px" : "20px",
+                                                height: collapsed ? "16px" : "20px",
+                                                borderRadius: "100px",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                fontSize: collapsed ? "0.55rem" : "0.65rem",
+                                                fontWeight: 700,
+                                                background: "#ef4444",
+                                                color: "#fff",
+                                                padding: "0 4px",
+                                                position: collapsed ? "absolute" as const : "relative" as const,
+                                                top: collapsed ? "4px" : "auto",
+                                                right: collapsed ? "4px" : "auto",
+                                                boxShadow: "0 0 8px rgba(239,68,68,0.4)",
+                                                animation: "badge-pulse 2s ease-in-out infinite",
+                                            }}
+                                        >
+                                            {unreadCount > 9 ? "9+" : unreadCount}
+                                        </span>
+                                    )}
                                     {isActive && !collapsed && (
                                         <ChevronRight size={14} style={{ opacity: 0.5, flexShrink: 0 }} />
                                     )}
@@ -368,6 +437,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 >
                     {children}
                 </main>
+
+                {/* ── Toast Notifications ──────────────── */}
+                {orgCtx?.organization.id && (
+                    <ToastProvider orgId={orgCtx.organization.id} />
+                )}
+
+                {/* Badge pulse animation */}
+                <style>{`
+                    @keyframes badge-pulse {
+                        0%, 100% { box-shadow: 0 0 4px rgba(239,68,68,0.3); }
+                        50% { box-shadow: 0 0 12px rgba(239,68,68,0.6); }
+                    }
+                `}</style>
             </div>
         </OrgProvider>
     );

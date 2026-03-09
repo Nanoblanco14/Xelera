@@ -6,6 +6,7 @@ export interface OrgContextType {
     organization: Organization;
     role: OrgRole;
     userId: string;
+    userEmail?: string;
 }
 
 const OrgCtx = createContext<OrgContextType | null>(null);
