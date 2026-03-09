@@ -43,6 +43,33 @@ export async function PUT(
             return apiError("No fields to update", 400, "EMPTY_UPDATE");
         }
 
+        // ── 🔄 Record stage change in history (if stage changed) ──
+        if (body.stage_id && body.stage_id !== existing.organization_id) {
+            // Get current stage_id for comparison
+            const { data: currentLead } = await db
+                .from("leads")
+                .select("stage_id")
+                .eq("id", id)
+                .single();
+
+            if (currentLead && currentLead.stage_id !== body.stage_id) {
+                try {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    await (db as any).from("lead_stage_history").insert({
+                        lead_id: id,
+                        organization_id: auth.orgId,
+                        from_stage_id: currentLead.stage_id,
+                        to_stage_id: body.stage_id,
+                        changed_by: "human",
+                        reason: body.stage_change_reason || "Cambio manual desde dashboard",
+                        metadata: {},
+                    });
+                } catch (histErr) {
+                    console.error("⚠️ Error guardando historial (no bloqueante):", histErr);
+                }
+            }
+        }
+
         const { data, error } = await db
             .from("leads")
             .update(updatePayload)

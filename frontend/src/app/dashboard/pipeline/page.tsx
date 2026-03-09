@@ -10,12 +10,32 @@ import { useOrg } from "@/lib/org-context";
 import { createClient } from "@supabase/supabase-js";
 import type { PipelineStage, Lead, LeadMessage } from "@/lib/types";
 import {
-    Loader2, Plus, X, User, Phone,
+    Loader2, Plus, X, User, Phone, Search,
     GripVertical, Users, Edit3, CalendarDays, Save,
     DollarSign, MessageSquare, Tag, Settings, Trash2,
     ChevronUp, ChevronDown, Palette, Activity,
-    Bot, MessageCircle,
+    Bot, MessageCircle, TrendingUp, CalendarCheck, Download,
+    StickyNote, Send, History, ArrowRight,
 } from "lucide-react";
+
+/* ── Note type ────────────────────────────── */
+interface LeadNote {
+    id: string;
+    content: string;
+    author_email: string;
+    created_at: string;
+}
+
+/* ── Stage History type ──────────────────── */
+interface StageHistoryEntry {
+    id: string;
+    from_stage_id: string | null;
+    to_stage_id: string;
+    changed_by: "ai" | "human" | "system";
+    reason: string;
+    metadata: Record<string, unknown>;
+    created_at: string;
+}
 
 /* ── Color palette for stage configuration ─── */
 const COLOR_PALETTE = [
@@ -25,7 +45,7 @@ const COLOR_PALETTE = [
 ];
 
 export default function PipelinePage() {
-    const { organization } = useOrg();
+    const { organization, userEmail } = useOrg();
     const [stages, setStages] = useState<PipelineStage[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -52,13 +72,23 @@ export default function PipelinePage() {
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
 
-    /* ── Modal: tabs (Detalles | Chat) ───────────── */
-    const [activeTab, setActiveTab] = useState<"details" | "chat">("details");
+    /* ── Modal: tabs (Detalles | Chat | Notas | Historial) ── */
+    const [activeTab, setActiveTab] = useState<"details" | "chat" | "notes" | "history">("details");
     const [chatMessages, setChatMessages] = useState<LeadMessage[]>([]);
     const [chatLoading, setChatLoading] = useState(false);
     const [botPaused, setBotPaused] = useState(false);
     const [pauseLoading, setPauseLoading] = useState(false);
     const chatEndRef = useRef<HTMLDivElement>(null);
+
+    /* ── Notes state ──────────────────────────────── */
+    const [leadNotes, setLeadNotes] = useState<LeadNote[]>([]);
+    const [notesLoading, setNotesLoading] = useState(false);
+    const [newNoteText, setNewNoteText] = useState("");
+    const [savingNote, setSavingNote] = useState(false);
+
+    /* ── Stage History state ────────────────────── */
+    const [stageHistory, setStageHistory] = useState<StageHistoryEntry[]>([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
 
     /* ── Modal: config stages ────────────────────── */
     const [showConfig, setShowConfig] = useState(false);
@@ -66,6 +96,10 @@ export default function PipelinePage() {
     const [editableStages, setEditableStages] = useState<EditableStage[]>([]);
     const [savingConfig, setSavingConfig] = useState(false);
     const [newStageName, setNewStageName] = useState("");
+
+    /* ── Search / Filter ───────────────────────────── */
+    const [searchQuery, setSearchQuery] = useState("");
+    const [filterSource, setFilterSource] = useState<"all" | "whatsapp" | "manual">("all");
 
     /* ── Fetch pipeline ───────────────────────────── */
     const loadPipeline = useCallback(async () => {
@@ -268,6 +302,8 @@ export default function PipelinePage() {
         setActiveTab("details");
         setChatMessages([]);
         setBotPaused(lead.is_bot_paused ?? false);
+        setLeadNotes([]);
+        setNewNoteText("");
     };
 
     /* ── Fetch chat messages ───────────────────────── */
@@ -294,6 +330,88 @@ export default function PipelinePage() {
     const handleChatTabClick = () => {
         setActiveTab("chat");
         if (editLead) fetchChatMessages(editLead.id);
+    };
+
+    /* ── Notes: fetch ──────────────────────────────── */
+    const fetchLeadNotes = useCallback(async (leadId: string) => {
+        setNotesLoading(true);
+        try {
+            const res = await fetch(`/api/leads/${leadId}/notes?org_id=${organization.id}`);
+            const { data } = await res.json();
+            setLeadNotes(data || []);
+        } catch (err) {
+            console.error("Failed to load notes:", err);
+        }
+        setNotesLoading(false);
+    }, [organization.id]);
+
+    /* ── Notes tab click → fetch notes ─────────────── */
+    const handleNotesTabClick = () => {
+        setActiveTab("notes");
+        if (editLead) fetchLeadNotes(editLead.id);
+    };
+
+    /* ── Stage History: fetch ────────────────────── */
+    const fetchStageHistory = useCallback(async (leadId: string) => {
+        setHistoryLoading(true);
+        try {
+            const res = await fetch(`/api/pipeline/leads/${leadId}/history`);
+            const { data } = await res.json();
+            setStageHistory(data || []);
+        } catch (err) {
+            console.error("Failed to load stage history:", err);
+        }
+        setHistoryLoading(false);
+    }, []);
+
+    /* ── History tab click → fetch history ────────── */
+    const handleHistoryTabClick = () => {
+        setActiveTab("history");
+        if (editLead) fetchStageHistory(editLead.id);
+    };
+
+    /* ── Helper: get stage name by ID ─────────────── */
+    const getStageName = useCallback((stageId: string | null): string => {
+        if (!stageId) return "Nuevo";
+        const stage = stages.find(s => s.id === stageId);
+        return stage?.name || "Desconocido";
+    }, [stages]);
+
+    /* ── Notes: add new note ───────────────────────── */
+    const handleAddNote = async () => {
+        if (!editLead || !newNoteText.trim() || savingNote) return;
+        setSavingNote(true);
+        try {
+            const res = await fetch(`/api/leads/${editLead.id}/notes`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    org_id: organization.id,
+                    content: newNoteText.trim(),
+                    author_email: userEmail || "",
+                }),
+            });
+            const { data } = await res.json();
+            if (data) {
+                setLeadNotes((prev) => [data, ...prev]);
+                setNewNoteText("");
+            }
+        } catch (err) {
+            console.error("Failed to add note:", err);
+        }
+        setSavingNote(false);
+    };
+
+    /* ── Notes: delete note ────────────────────────── */
+    const handleDeleteNote = async (noteId: string) => {
+        try {
+            await fetch(`/api/leads/${editLead?.id}/notes?note_id=${noteId}`, {
+                method: "DELETE",
+            });
+            setLeadNotes((prev) => prev.filter((n) => n.id !== noteId));
+        } catch (err) {
+            console.error("Failed to delete note:", err);
+        }
     };
 
     /* ── Toggle bot pause ─────────────────────────── */
@@ -566,6 +684,70 @@ export default function PipelinePage() {
         setSavingConfig(false);
     };
 
+    /* ── Computed: metrics + filtered stages ──────── */
+    const allLeads = stages.flatMap((s) => s.leads || []);
+    const totalLeads = allLeads.length;
+    const qualifiedLeads = allLeads.filter((l) => !!l.appointment_date).length;
+    const whatsappLeads = allLeads.filter((l) => l.source === "whatsapp" || l.name?.toLowerCase().includes("whatsapp")).length;
+    const conversionRate = totalLeads > 0 ? Math.round((qualifiedLeads / totalLeads) * 100) : 0;
+
+    const searchLower = searchQuery.toLowerCase().trim();
+    const filteredStages = stages.map((stage) => ({
+        ...stage,
+        leads: (stage.leads || []).filter((lead) => {
+            const matchesSearch = !searchLower ||
+                lead.name?.toLowerCase().includes(searchLower) ||
+                lead.phone?.toLowerCase().includes(searchLower) ||
+                lead.notes?.toLowerCase().includes(searchLower) ||
+                lead.budget?.toLowerCase().includes(searchLower);
+            const matchesSource = filterSource === "all" ||
+                (filterSource === "whatsapp" && (lead.source === "whatsapp" || lead.name?.toLowerCase().includes("whatsapp"))) ||
+                (filterSource === "manual" && lead.source !== "whatsapp" && !lead.name?.toLowerCase().includes("whatsapp"));
+            return matchesSearch && matchesSource;
+        }),
+    }));
+    const isFiltering = !!searchLower || filterSource !== "all";
+
+    /* ── Exportar CSV ──────────────────────────── */
+    const exportCSV = () => {
+        const stageMap = new Map(stages.map((s) => [s.id, s.name]));
+        const headers = ["Nombre", "Telefono", "Email", "Etapa", "Origen", "Presupuesto", "Notas", "Cita", "Fecha de creacion"];
+        const rows = allLeads.map((lead) => [
+            lead.name || "",
+            lead.phone || "",
+            lead.email || "",
+            stageMap.get(lead.stage_id) || "",
+            lead.source || "manual",
+            lead.budget || "",
+            (lead.notes || "").replace(/[\r\n]+/g, " "),
+            lead.appointment_date || "",
+            lead.created_at ? new Date(lead.created_at).toLocaleString("es-CL") : "",
+        ]);
+
+        const escape = (v: string) => {
+            if (v.includes(",") || v.includes('"') || v.includes("\n")) {
+                return `"${v.replace(/"/g, '""')}"`;
+            }
+            return v;
+        };
+
+        const csv = [
+            headers.join(","),
+            ...rows.map((r) => r.map(escape).join(",")),
+        ].join("\n");
+
+        const BOM = "\uFEFF";
+        const blob = new Blob([BOM + csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `leads_${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center py-32">
@@ -577,26 +759,127 @@ export default function PipelinePage() {
     return (
         <div className="animate-in" style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 64px)" }}>
             {/* ── Header ──────────────────────────────── */}
-            <div className="page-header" style={{ flexShrink: 0 }}>
-                <div>
-                    <h1 className="page-title">Flujo de Ventas</h1>
-                    <p className="page-subtitle">
-                        Gestiona tus leads a través del embudo de ventas
-                    </p>
-                </div>
-                <div style={{ display: "flex", gap: "10px" }}>
-                    <button
-                        className="btn-secondary"
-                        onClick={openConfigModal}
-                    >
-                        <Settings size={16} /> Configurar Etapas
-                    </button>
-                    <button
-                        className="btn-primary"
-                        onClick={() => setShowModal(true)}
+            <div style={{ flexShrink: 0, marginBottom: "16px" }}>
+                <div className="page-header" style={{ marginBottom: "16px" }}>
+                    <div>
+                        <h1 className="page-title">Flujo de Ventas</h1>
+                        <p className="page-subtitle">
+                            Gestiona tus leads a través del embudo de ventas
+                        </p>
+                    </div>
+                    <div style={{ display: "flex", gap: "10px" }}>
+                        {allLeads.length > 0 && (
+                            <button
+                                className="btn-secondary"
+                                onClick={exportCSV}
+                                title="Exportar leads a CSV"
+                            >
+                                <Download size={16} /> Exportar CSV
+                            </button>
+                        )}
+                        <button
+                            className="btn-secondary"
+                            onClick={openConfigModal}
+                        >
+                            <Settings size={16} /> Configurar Etapas
+                        </button>
+                        <button
+                            className="btn-primary"
+                            onClick={() => setShowModal(true)}
                     >
                         <Plus size={18} /> Nuevo Cliente
                     </button>
+                </div>
+                </div>
+
+                {/* ── Metrics bar ──────────────────────── */}
+                <div style={{ display: "flex", gap: "12px", marginBottom: "14px", flexWrap: "wrap" }}>
+                    {[
+                        { label: "Total Leads", value: totalLeads, icon: <Users size={13} />, color: "#a1a1aa" },
+                        { label: "Calificados", value: qualifiedLeads, icon: <CalendarCheck size={13} />, color: "#22c55e" },
+                        { label: "Conversión", value: `${conversionRate}%`, icon: <TrendingUp size={13} />, color: "#3b82f6" },
+                        { label: "Vía WhatsApp", value: whatsappLeads, icon: <MessageCircle size={13} />, color: "#25d366" },
+                    ].map((metric) => (
+                        <div
+                            key={metric.label}
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "8px",
+                                padding: "8px 14px",
+                                borderRadius: "10px",
+                                background: "var(--bg-card)",
+                                border: "1px solid var(--border)",
+                            }}
+                        >
+                            <span style={{ color: metric.color, display: "flex" }}>{metric.icon}</span>
+                            <span style={{ fontSize: "0.92rem", fontWeight: 700, color: metric.color }}>{metric.value}</span>
+                            <span style={{ fontSize: "0.7rem", fontWeight: 500, color: "var(--text-muted)" }}>{metric.label}</span>
+                        </div>
+                    ))}
+                </div>
+
+                {/* ── Search & Filter bar ──────────────── */}
+                <div style={{ display: "flex", gap: "10px", marginBottom: "4px" }}>
+                    <div style={{ position: "relative", flex: 1, maxWidth: "360px" }}>
+                        <Search size={15} style={{
+                            position: "absolute", left: "12px", top: "50%",
+                            transform: "translateY(-50%)", color: "var(--text-muted)",
+                            pointerEvents: "none",
+                        }} />
+                        <input
+                            className="input"
+                            style={{ paddingLeft: "36px", height: "38px" }}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Buscar por nombre, teléfono o notas..."
+                        />
+                    </div>
+                    <div style={{ display: "flex", gap: "4px", padding: "3px", background: "var(--bg-card)", borderRadius: "10px", border: "1px solid var(--border)" }}>
+                        {([
+                            { value: "all" as const, label: "Todos" },
+                            { value: "whatsapp" as const, label: "WhatsApp" },
+                            { value: "manual" as const, label: "Manual" },
+                        ]).map((opt) => (
+                            <button
+                                key={opt.value}
+                                onClick={() => setFilterSource(opt.value)}
+                                style={{
+                                    padding: "5px 14px",
+                                    borderRadius: "7px",
+                                    border: "none",
+                                    cursor: "pointer",
+                                    fontSize: "0.78rem",
+                                    fontWeight: 600,
+                                    transition: "all 0.15s ease",
+                                    background: filterSource === opt.value ? "rgba(255,255,255,0.1)" : "transparent",
+                                    color: filterSource === opt.value ? "var(--text-primary)" : "var(--text-muted)",
+                                }}
+                            >
+                                {opt.label}
+                            </button>
+                        ))}
+                    </div>
+                    {isFiltering && (
+                        <button
+                            onClick={() => { setSearchQuery(""); setFilterSource("all"); }}
+                            style={{
+                                padding: "5px 12px",
+                                borderRadius: "8px",
+                                border: "1px solid rgba(239,68,68,0.2)",
+                                background: "rgba(239,68,68,0.06)",
+                                color: "#f87171",
+                                cursor: "pointer",
+                                fontSize: "0.75rem",
+                                fontWeight: 600,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "5px",
+                            }}
+                        >
+                            <X size={13} /> Limpiar
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -612,7 +895,7 @@ export default function PipelinePage() {
                         paddingBottom: "16px",
                     }}
                 >
-                    {stages.map((stage, idx) => {
+                    {(isFiltering ? filteredStages : stages).map((stage, idx) => {
                         const color = getStageColor(stage, idx);
                         const leadCount = stage.leads?.length || 0;
 
@@ -1070,6 +1353,62 @@ export default function PipelinePage() {
                                         </span>
                                     )}
                                 </button>
+                                <button
+                                    onClick={handleNotesTabClick}
+                                    style={{
+                                        flex: 1,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        gap: "6px",
+                                        padding: "7px 12px",
+                                        borderRadius: "7px",
+                                        border: "none",
+                                        cursor: "pointer",
+                                        fontSize: "0.8rem",
+                                        fontWeight: 600,
+                                        transition: "all 0.2s ease",
+                                        background: activeTab === "notes" ? "rgba(255,255,255,0.1)" : "transparent",
+                                        color: activeTab === "notes" ? "var(--text-primary)" : "var(--text-muted)",
+                                    }}
+                                >
+                                    <StickyNote size={13} />
+                                    Notas
+                                    {leadNotes.length > 0 && (
+                                        <span style={{
+                                            fontSize: "0.6rem",
+                                            fontWeight: 700,
+                                            background: "rgba(245,158,11,0.25)",
+                                            color: "#f59e0b",
+                                            padding: "1px 6px",
+                                            borderRadius: "100px",
+                                        }}>
+                                            {leadNotes.length}
+                                        </span>
+                                    )}
+                                </button>
+                                <button
+                                    onClick={handleHistoryTabClick}
+                                    style={{
+                                        flex: 1,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        gap: "6px",
+                                        padding: "7px 12px",
+                                        borderRadius: "7px",
+                                        border: "none",
+                                        cursor: "pointer",
+                                        fontSize: "0.8rem",
+                                        fontWeight: 600,
+                                        transition: "all 0.2s ease",
+                                        background: activeTab === "history" ? "rgba(255,255,255,0.1)" : "transparent",
+                                        color: activeTab === "history" ? "var(--text-primary)" : "var(--text-muted)",
+                                    }}
+                                >
+                                    <History size={13} />
+                                    Historial
+                                </button>
                             </div>
                         </div>
 
@@ -1424,6 +1763,322 @@ export default function PipelinePage() {
                                     )}
                                     {/* Auto-scroll anchor */}
                                     <div ref={chatEndRef} />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ════════════════════════════════════════ */}
+                        {/* ── TAB: NOTAS INTERNAS ──────────────── */}
+                        {/* ════════════════════════════════════════ */}
+                        {activeTab === "notes" && (
+                            <div className="modal-body" style={{ padding: "0" }}>
+                                {/* Add note input */}
+                                <div style={{
+                                    padding: "12px 20px",
+                                    borderBottom: "1px solid var(--border)",
+                                    display: "flex",
+                                    gap: "8px",
+                                    alignItems: "flex-end",
+                                }}>
+                                    <textarea
+                                        className="input"
+                                        rows={2}
+                                        value={newNoteText}
+                                        onChange={(e) => setNewNoteText(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter" && !e.shiftKey) {
+                                                e.preventDefault();
+                                                handleAddNote();
+                                            }
+                                        }}
+                                        placeholder="Escribe una nota interna..."
+                                        style={{
+                                            flex: 1,
+                                            fontSize: "0.8rem",
+                                            resize: "none",
+                                            minHeight: "44px",
+                                        }}
+                                    />
+                                    <button
+                                        onClick={handleAddNote}
+                                        disabled={!newNoteText.trim() || savingNote}
+                                        className="btn-primary"
+                                        style={{
+                                            padding: "10px 14px",
+                                            minWidth: "auto",
+                                            opacity: !newNoteText.trim() ? 0.4 : 1,
+                                            flexShrink: 0,
+                                        }}
+                                    >
+                                        {savingNote ? (
+                                            <Loader2 size={14} className="animate-spin" />
+                                        ) : (
+                                            <Send size={14} />
+                                        )}
+                                    </button>
+                                </div>
+
+                                {/* Notes list */}
+                                <div style={{
+                                    height: "380px",
+                                    overflowY: "auto",
+                                    padding: "12px 20px",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: "8px",
+                                }}>
+                                    {notesLoading ? (
+                                        <div style={{
+                                            display: "flex", justifyContent: "center",
+                                            alignItems: "center", flex: 1,
+                                        }}>
+                                            <Loader2 size={20} className="animate-spin" style={{ color: "var(--text-muted)" }} />
+                                        </div>
+                                    ) : leadNotes.length === 0 ? (
+                                        <div style={{
+                                            display: "flex", flexDirection: "column",
+                                            alignItems: "center", justifyContent: "center",
+                                            flex: 1, gap: "8px", color: "var(--text-muted)",
+                                        }}>
+                                            <StickyNote size={32} style={{ opacity: 0.3 }} />
+                                            <span style={{ fontSize: "0.8rem" }}>Sin notas aún</span>
+                                            <span style={{ fontSize: "0.7rem", opacity: 0.6 }}>
+                                                Agrega notas internas para tu equipo
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        leadNotes.map((note) => {
+                                            const date = new Date(note.created_at);
+                                            const timeStr = date.toLocaleString("es-CL", {
+                                                day: "numeric",
+                                                month: "short",
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                            });
+                                            return (
+                                                <div
+                                                    key={note.id}
+                                                    style={{
+                                                        padding: "10px 14px",
+                                                        borderRadius: "10px",
+                                                        background: "rgba(245,158,11,0.04)",
+                                                        border: "1px solid rgba(245,158,11,0.1)",
+                                                        position: "relative",
+                                                    }}
+                                                    className="group"
+                                                >
+                                                    <div style={{
+                                                        fontSize: "0.8rem",
+                                                        lineHeight: 1.5,
+                                                        color: "var(--text-primary)",
+                                                        whiteSpace: "pre-wrap",
+                                                        wordBreak: "break-word",
+                                                    }}>
+                                                        {note.content}
+                                                    </div>
+                                                    <div style={{
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent: "space-between",
+                                                        marginTop: "6px",
+                                                    }}>
+                                                        <span style={{
+                                                            fontSize: "0.65rem",
+                                                            color: "var(--text-muted)",
+                                                        }}>
+                                                            {note.author_email ? `${note.author_email} · ` : ""}{timeStr}
+                                                        </span>
+                                                        <button
+                                                            onClick={() => handleDeleteNote(note.id)}
+                                                            title="Eliminar nota"
+                                                            style={{
+                                                                background: "none",
+                                                                border: "none",
+                                                                color: "var(--text-muted)",
+                                                                cursor: "pointer",
+                                                                padding: "2px",
+                                                                opacity: 0,
+                                                                transition: "opacity 0.15s",
+                                                            }}
+                                                            className="group-hover:!opacity-100"
+                                                            onMouseEnter={(e) => {
+                                                                e.currentTarget.style.opacity = "1";
+                                                                e.currentTarget.style.color = "#f87171";
+                                                            }}
+                                                            onMouseLeave={(e) => {
+                                                                e.currentTarget.style.opacity = "0";
+                                                                e.currentTarget.style.color = "var(--text-muted)";
+                                                            }}
+                                                        >
+                                                            <Trash2 size={12} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                        {/* ════════════════════════════════════════ */}
+                        {/* ── TAB: HISTORIAL ────────────────────── */}
+                        {/* ════════════════════════════════════════ */}
+                        {activeTab === "history" && (
+                            <div className="modal-body" style={{ padding: "0" }}>
+                                <div style={{
+                                    height: "440px",
+                                    overflowY: "auto",
+                                    padding: "16px 20px",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: "0",
+                                }}>
+                                    {historyLoading ? (
+                                        <div style={{
+                                            display: "flex", justifyContent: "center",
+                                            alignItems: "center", flex: 1,
+                                        }}>
+                                            <Loader2 size={20} className="animate-spin" style={{ color: "var(--text-muted)" }} />
+                                        </div>
+                                    ) : stageHistory.length === 0 ? (
+                                        <div style={{
+                                            display: "flex", flexDirection: "column",
+                                            alignItems: "center", justifyContent: "center",
+                                            flex: 1, gap: "8px", color: "var(--text-muted)",
+                                        }}>
+                                            <History size={32} style={{ opacity: 0.3 }} />
+                                            <span style={{ fontSize: "0.8rem" }}>Sin historial de cambios</span>
+                                            <span style={{ fontSize: "0.7rem", opacity: 0.6 }}>
+                                                Los movimientos de etapa se registrarán aquí
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        stageHistory.map((entry, idx) => {
+                                            const date = new Date(entry.created_at);
+                                            const timeStr = date.toLocaleString("es-CL", {
+                                                day: "numeric",
+                                                month: "short",
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                            });
+                                            const isAI = entry.changed_by === "ai";
+                                            const isLast = idx === stageHistory.length - 1;
+
+                                            return (
+                                                <div key={entry.id} style={{
+                                                    display: "flex",
+                                                    gap: "12px",
+                                                    position: "relative",
+                                                }}>
+                                                    {/* Timeline line + dot */}
+                                                    <div style={{
+                                                        display: "flex",
+                                                        flexDirection: "column",
+                                                        alignItems: "center",
+                                                        width: "20px",
+                                                        flexShrink: 0,
+                                                    }}>
+                                                        <div style={{
+                                                            width: "10px",
+                                                            height: "10px",
+                                                            borderRadius: "50%",
+                                                            background: isAI ? "#3b82f6" : "#10b981",
+                                                            border: `2px solid ${isAI ? "rgba(59,130,246,0.3)" : "rgba(16,185,129,0.3)"}`,
+                                                            flexShrink: 0,
+                                                            marginTop: "4px",
+                                                        }} />
+                                                        {!isLast && (
+                                                            <div style={{
+                                                                width: "2px",
+                                                                flex: 1,
+                                                                background: "var(--border)",
+                                                                minHeight: "20px",
+                                                            }} />
+                                                        )}
+                                                    </div>
+
+                                                    {/* Content */}
+                                                    <div style={{
+                                                        flex: 1,
+                                                        paddingBottom: isLast ? "0" : "16px",
+                                                    }}>
+                                                        <div style={{
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            gap: "6px",
+                                                            flexWrap: "wrap",
+                                                        }}>
+                                                            {entry.from_stage_id ? (
+                                                                <>
+                                                                    <span style={{
+                                                                        fontSize: "0.75rem",
+                                                                        fontWeight: 600,
+                                                                        color: "var(--text-muted)",
+                                                                        background: "rgba(255,255,255,0.05)",
+                                                                        padding: "2px 8px",
+                                                                        borderRadius: "4px",
+                                                                    }}>
+                                                                        {getStageName(entry.from_stage_id)}
+                                                                    </span>
+                                                                    <ArrowRight size={12} style={{ color: "var(--text-muted)" }} />
+                                                                </>
+                                                            ) : null}
+                                                            <span style={{
+                                                                fontSize: "0.75rem",
+                                                                fontWeight: 600,
+                                                                color: "var(--text-primary)",
+                                                                background: isAI ? "rgba(59,130,246,0.1)" : "rgba(16,185,129,0.1)",
+                                                                border: `1px solid ${isAI ? "rgba(59,130,246,0.2)" : "rgba(16,185,129,0.2)"}`,
+                                                                padding: "2px 8px",
+                                                                borderRadius: "4px",
+                                                            }}>
+                                                                {getStageName(entry.to_stage_id)}
+                                                            </span>
+                                                        </div>
+                                                        {entry.reason && (
+                                                            <p style={{
+                                                                fontSize: "0.7rem",
+                                                                color: "var(--text-muted)",
+                                                                marginTop: "4px",
+                                                                lineHeight: 1.4,
+                                                                maxWidth: "100%",
+                                                                overflow: "hidden",
+                                                                textOverflow: "ellipsis",
+                                                                display: "-webkit-box",
+                                                                WebkitLineClamp: 2,
+                                                                WebkitBoxOrient: "vertical",
+                                                            }}>
+                                                                {entry.reason}
+                                                            </p>
+                                                        )}
+                                                        <div style={{
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            gap: "8px",
+                                                            marginTop: "4px",
+                                                        }}>
+                                                            <span style={{
+                                                                fontSize: "0.6rem",
+                                                                color: isAI ? "#3b82f6" : "#10b981",
+                                                                fontWeight: 600,
+                                                                textTransform: "uppercase",
+                                                                letterSpacing: "0.5px",
+                                                            }}>
+                                                                {isAI ? "🤖 IA" : entry.changed_by === "system" ? "⚙️ Sistema" : "👤 Humano"}
+                                                            </span>
+                                                            <span style={{
+                                                                fontSize: "0.6rem",
+                                                                color: "var(--text-muted)",
+                                                                opacity: 0.7,
+                                                            }}>
+                                                                {timeStr}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    )}
                                 </div>
                             </div>
                         )}
