@@ -34,6 +34,7 @@ export async function PUT(
         if (body.name !== undefined) updateData.name = body.name;
         if (body.description !== undefined) updateData.description = body.description;
         if (body.attributes !== undefined) updateData.attributes = body.attributes;
+        if (body.status !== undefined) updateData.status = body.status;
 
         // Regenerate embedding if content changed
         if (body.name !== undefined || body.description !== undefined || body.attributes !== undefined) {

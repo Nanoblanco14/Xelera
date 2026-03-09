@@ -94,7 +94,9 @@ export interface ProductCreate {
     attributes: ProductAttributes;
 }
 
-export type ProductUpdate = Partial<Omit<ProductCreate, "organization_id">>;
+export type ProductUpdate = Partial<Omit<ProductCreate, "organization_id">> & {
+    status?: ProductStatus;
+};
 
 // ── Product Files ───────────────────────────────────────────
 
