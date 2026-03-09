@@ -12,6 +12,7 @@ import AgentStep from "./steps/AgentStep";
 import ProductStep from "./steps/ProductStep";
 import ApiKeyStep from "./steps/ApiKeyStep";
 import WhatsAppStep from "./steps/WhatsAppStep";
+import type { WhatsAppData } from "./steps/WhatsAppStep";
 import TestChatStep from "./steps/TestChatStep";
 import CompleteStep from "./steps/CompleteStep";
 
@@ -19,7 +20,6 @@ import {
     applyOnboardingTemplate,
     updateOnboardingAgent,
     saveOnboardingApiKey,
-    saveOnboardingWhatsApp,
     completeOnboarding,
 } from "./actions";
 
@@ -39,7 +39,7 @@ interface WizardData {
     agent: { name: string; welcomeMessage: string; tone: string };
     product: { name: string; description: string; price: string; attributes: Record<string, string> };
     apiKey: string;
-    whatsApp: { phoneNumberId: string; accessToken: string };
+    whatsApp: WhatsAppData;
 }
 
 const INITIAL_DATA: WizardData = {
@@ -48,7 +48,7 @@ const INITIAL_DATA: WizardData = {
     agent: { name: "", welcomeMessage: "", tone: "Amigable y Casual" },
     product: { name: "", description: "", price: "", attributes: {} },
     apiKey: "",
-    whatsApp: { phoneNumberId: "", accessToken: "" },
+    whatsApp: { phoneNumberId: "", accessToken: "", businessAccountId: "", connectionStatus: "idle" },
 };
 
 export default function OnboardingPage() {
@@ -92,10 +92,8 @@ export default function OnboardingPage() {
                     if (!result.success) { setError(result.error || "Error guardando API key"); setSaving(false); return; }
                 }
             } else if (step === 4) {
-                if (data.whatsApp.phoneNumberId && data.whatsApp.accessToken) {
-                    const result = await saveOnboardingWhatsApp(organization.id, { phone_number_id: data.whatsApp.phoneNumberId, access_token: data.whatsApp.accessToken });
-                    if (!result.success) { setError(result.error || "Error guardando WhatsApp"); setSaving(false); return; }
-                }
+                // WhatsApp step handles its own connection + save via /api/whatsapp/connect
+                // If connected, proceed. If not connected, allow skipping.
             }
             setStep((s) => Math.min(s + 1, totalSteps - 1));
         } catch (err: any) { setError(err.message || "Error inesperado"); } finally { setSaving(false); }
@@ -127,7 +125,7 @@ export default function OnboardingPage() {
         hasAgent: !!data.agentId,
         hasProduct: !!data.product.name.trim(),
         hasApiKey: !!data.apiKey.trim(),
-        hasWhatsApp: !!(data.whatsApp.phoneNumberId && data.whatsApp.accessToken),
+        hasWhatsApp: data.whatsApp.connectionStatus === "connected",
     };
 
     return (
@@ -299,7 +297,7 @@ export default function OnboardingPage() {
                         {step === 1 && <AgentStep data={data.agent} onChange={(agent) => setData((prev) => ({ ...prev, agent }))} />}
                         {step === 2 && <ProductStep industryId={data.industryId} data={data.product} onChange={(product) => setData((prev) => ({ ...prev, product }))} />}
                         {step === 3 && <ApiKeyStep apiKey={data.apiKey} onChange={(apiKey) => setData((prev) => ({ ...prev, apiKey }))} />}
-                        {step === 4 && <WhatsAppStep data={data.whatsApp} onChange={(whatsApp) => setData((prev) => ({ ...prev, whatsApp }))} webhookUrl={webhookUrl} />}
+                        {step === 4 && <WhatsAppStep data={data.whatsApp} onChange={(whatsApp) => setData((prev) => ({ ...prev, whatsApp }))} webhookUrl={webhookUrl} orgId={organization.id} />}
                         {step === 5 && <TestChatStep agentId={data.agentId} agentName={data.agent.name} welcomeMessage={data.agent.welcomeMessage} />}
                         {step === 6 && <CompleteStep status={setupStatus} onFinish={handleFinish} loading={saving} />}
                     </motion.div>

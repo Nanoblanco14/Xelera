@@ -10,6 +10,7 @@ import {
     AdvancedProviderSection,
     WebhookUrlSection,
 } from "@/components/settings";
+import type { ConnectionStatus } from "@/lib/hooks/useWhatsAppConnection";
 
 type WhatsAppProvider = "twilio" | "meta";
 
@@ -24,6 +25,8 @@ export default function SettingsPage() {
     const [credentials, setCredentials] = useState<Record<string, string>>({});
     const [metaToken, setMetaToken] = useState("");
     const [metaPhoneId, setMetaPhoneId] = useState("");
+    const [businessAccountId, setBusinessAccountId] = useState("");
+    const [waStatus, setWaStatus] = useState<ConnectionStatus | undefined>(undefined);
 
     // ── Load settings on mount ────────────────────────────────
     useEffect(() => {
@@ -37,10 +40,28 @@ export default function SettingsPage() {
                     setMetaToken(data.whatsapp_credentials.access_token);
                 if (data.whatsapp_credentials?.phone_number_id)
                     setMetaPhoneId(data.whatsapp_credentials.phone_number_id);
+                if (data.whatsapp_credentials?.business_account_id)
+                    setBusinessAccountId(data.whatsapp_credentials.business_account_id);
             }
             setLoading(false);
         })();
     }, [organization.id]);
+
+    // ── Fetch WhatsApp connection status ─────────────────────
+    useEffect(() => {
+        if (loading) return;
+        (async () => {
+            try {
+                const res = await fetch(`/api/whatsapp/connect?org_id=${organization.id}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setWaStatus(data);
+                }
+            } catch {
+                // Silent fail
+            }
+        })();
+    }, [organization.id, loading]);
 
     // ── Generic save handler ──────────────────────────────────
     const saveSection = useCallback(
@@ -83,8 +104,8 @@ export default function SettingsPage() {
         <div className="animate-in">
             <div className="page-header">
                 <div>
-                    <h1 className="page-title">Configuración</h1>
-                    <p className="page-subtitle">Conexiones técnicas — APIs y proveedores de mensajería</p>
+                    <h1 className="page-title">Configuracion</h1>
+                    <p className="page-subtitle">Conexiones tecnicas — APIs y proveedores de mensajeria</p>
                 </div>
             </div>
 
@@ -110,21 +131,12 @@ export default function SettingsPage() {
                 <WhatsAppSetupSection
                     metaToken={metaToken}
                     metaPhoneId={metaPhoneId}
+                    businessAccountId={businessAccountId}
                     onMetaTokenChange={setMetaToken}
                     onMetaPhoneIdChange={setMetaPhoneId}
-                    saving={saving}
-                    saved={saved}
-                    onSave={() =>
-                        saveSection("whatsapp-meta", {
-                            orgId: organization.id,
-                            whatsapp_provider: "meta",
-                            whatsapp_credentials: {
-                                ...credentials,
-                                access_token: metaToken,
-                                phone_number_id: metaPhoneId,
-                            },
-                        })
-                    }
+                    onBusinessAccountIdChange={setBusinessAccountId}
+                    orgId={organization.id}
+                    initialStatus={waStatus}
                 />
 
                 <AdvancedProviderSection
