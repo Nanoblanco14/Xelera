@@ -32,9 +32,10 @@ export async function GET(req: NextRequest) {
             .order("position", { ascending: true });
         if (stagesError) throw stagesError;
 
-        // Fetch AI-sent messages count from lead_messages
+        // Fetch AI-sent messages (with timestamps for peak hours)
         const leadIds = (leads || []).map((l) => l.id);
         let aiMessages = 0;
+        let allMessages: { role: string; created_at: string }[] = [];
         if (leadIds.length > 0) {
             const { count, error: msgError } = await db
                 .from("lead_messages")
@@ -42,6 +43,14 @@ export async function GET(req: NextRequest) {
                 .eq("role", "assistant")
                 .in("lead_id", leadIds);
             if (!msgError) aiMessages = count ?? 0;
+
+            // Fetch message timestamps for peak hours analysis
+            const { data: msgData } = await db
+                .from("lead_messages")
+                .select("role, created_at")
+                .in("lead_id", leadIds)
+                .order("created_at", { ascending: true });
+            allMessages = msgData || [];
         }
 
         const allLeads = leads || [];
@@ -106,6 +115,52 @@ export async function GET(req: NextRequest) {
             count,
         }));
 
+        // ── Leads trend (last 30 days) ───────────────────────────
+        const now = new Date();
+        const thirtyDaysAgo = new Date(now);
+        thirtyDaysAgo.setDate(now.getDate() - 29);
+        const leadsTrend: { date: string; leads: number; messages: number }[] = [];
+        for (let i = 0; i < 30; i++) {
+            const d = new Date(thirtyDaysAgo);
+            d.setDate(thirtyDaysAgo.getDate() + i);
+            const dateStr = d.toISOString().slice(0, 10);
+            const leadsCount = allLeads.filter(
+                (l) => l.created_at && l.created_at.slice(0, 10) === dateStr
+            ).length;
+            const msgsCount = allMessages.filter(
+                (m) => m.created_at && m.created_at.slice(0, 10) === dateStr
+            ).length;
+            leadsTrend.push({
+                date: dateStr,
+                leads: leadsCount,
+                messages: msgsCount,
+            });
+        }
+
+        // ── Peak hours (0-23) ────────────────────────────────────
+        const peakHours: { hour: number; count: number }[] = Array.from(
+            { length: 24 },
+            (_, h) => ({ hour: h, count: 0 })
+        );
+        allMessages
+            .filter((m) => m.role === "user")
+            .forEach((m) => {
+                const h = new Date(m.created_at).getHours();
+                peakHours[h].count += 1;
+            });
+
+        // ── Pipeline funnel ──────────────────────────────────────
+        const funnel = allStages.map((stage, idx) => {
+            const count = allLeads.filter((l) => l.stage_id === stage.id).length;
+            return {
+                stage_name: stage.name,
+                color: stage.color || null,
+                count,
+                percentage: totalLeads > 0 ? Math.round((count / totalLeads) * 100) : 0,
+                position: idx,
+            };
+        });
+
         return NextResponse.json({
             data: {
                 totalLeads,
@@ -119,6 +174,9 @@ export async function GET(req: NextRequest) {
                 timeSavedHours,
                 leadsByStage,
                 leadsBySource,
+                leadsTrend,
+                peakHours,
+                funnel,
             },
         });
     } catch (err) {

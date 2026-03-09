@@ -4,8 +4,9 @@ import { useOrg } from "@/lib/org-context";
 import {
     Loader2, Users, CalendarCheck, TrendingUp,
     MessageSquare, BarChart3, Zap, FileText, MessageCircle,
+    Activity, Clock, ArrowDownRight,
 } from "lucide-react";
-import { PipelineDonut, LeadsBarChart } from "./charts";
+import { PipelineDonut, LeadsBarChart, LeadsTrendChart, PeakHoursChart } from "./charts";
 
 /* ─── Types ──────────────────────────────────────────────────── */
 interface StageEntry {
@@ -20,6 +21,25 @@ interface SourceEntry {
     count: number;
 }
 
+interface TrendEntry {
+    date: string;
+    leads: number;
+    messages: number;
+}
+
+interface PeakHourEntry {
+    hour: number;
+    count: number;
+}
+
+interface FunnelEntry {
+    stage_name: string;
+    color: string | null;
+    count: number;
+    percentage: number;
+    position: number;
+}
+
 interface AnalyticsData {
     totalLeads: number;
     citasAgendadas: number;
@@ -32,7 +52,15 @@ interface AnalyticsData {
     timeSavedHours: number;
     leadsByStage: StageEntry[];
     leadsBySource: SourceEntry[];
+    leadsTrend: TrendEntry[];
+    peakHours: PeakHourEntry[];
+    funnel: FunnelEntry[];
 }
+
+const FUNNEL_COLORS = [
+    "#3b82f6", "#22c55e", "#f59e0b", "#8b5cf6",
+    "#ef4444", "#06b6d4", "#ec4899", "#14b8a6",
+];
 
 /* ─── KPI Card ───────────────────────────────────────────────── */
 function KpiCard({
@@ -208,6 +236,91 @@ export default function AnalyticsPage() {
                 </ChartCard>
 
             </div>
+
+            {/* ── Trends Row: Leads Trend + Peak Hours ────────── */}
+            <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "16px" }}>
+
+                {/* Tendencia de Leads (30 dias) */}
+                <ChartCard title="Tendencia (ultimos 30 dias)" icon={<Activity size={14} />}>
+                    <LeadsTrendChart data={data.leadsTrend} />
+                </ChartCard>
+
+                {/* Horarios Pico */}
+                <ChartCard title="Horarios Pico" icon={<Clock size={14} />}>
+                    <PeakHoursChart data={data.peakHours} />
+                </ChartCard>
+
+            </div>
+
+            {/* ── Funnel Visualization ────────────────────────────── */}
+            {data.funnel.length > 0 && (
+                <ChartCard title="Embudo de Conversion" icon={<ArrowDownRight size={14} />}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        {data.funnel.map((step, idx) => {
+                            const maxWidth = 100;
+                            const width = Math.max(step.percentage, 8);
+                            const stageColor = step.color || FUNNEL_COLORS[idx % FUNNEL_COLORS.length];
+                            return (
+                                <div
+                                    key={step.stage_name}
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "14px",
+                                        padding: "10px 14px",
+                                    }}
+                                >
+                                    <span style={{
+                                        fontSize: "0.78rem",
+                                        fontWeight: 600,
+                                        color: "var(--text-primary)",
+                                        minWidth: "120px",
+                                        flexShrink: 0,
+                                    }}>
+                                        {step.stage_name}
+                                    </span>
+                                    <div style={{
+                                        flex: 1,
+                                        display: "flex",
+                                        justifyContent: "center",
+                                    }}>
+                                        <div style={{
+                                            width: `${width}%`,
+                                            maxWidth: `${maxWidth}%`,
+                                            height: "32px",
+                                            borderRadius: "8px",
+                                            background: `linear-gradient(90deg, ${stageColor}30, ${stageColor}60)`,
+                                            border: `1px solid ${stageColor}40`,
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            transition: "width 0.6s ease",
+                                        }}>
+                                            <span style={{
+                                                fontSize: "0.75rem",
+                                                fontWeight: 700,
+                                                color: stageColor,
+                                            }}>
+                                                {step.count}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <span style={{
+                                        fontSize: "0.72rem",
+                                        fontWeight: 600,
+                                        color: "var(--text-muted)",
+                                        minWidth: "40px",
+                                        textAlign: "right",
+                                        flexShrink: 0,
+                                    }}>
+                                        {step.percentage}%
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </ChartCard>
+            )}
 
             {/* ── Source Breakdown + Insight Row ───────────────── */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
