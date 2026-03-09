@@ -474,3 +474,59 @@ body {
   margin: 0 auto 20px;
   opacity: 0.3;
 }
+
+/* ── Table ─────────────────────────────────────── */
+.table-header-cell {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: left;
+  padding: 12px 16px;
+}
+
+.table-row {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 0.15s ease;
+}
+
+.table-row:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.table-cell {
+  padding: 12px 16px;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+}
+
+/* ── Filter Pills ──────────────────────────────── */
+.filter-pill {
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.filter-pill:hover {
+  color: var(--text-secondary);
+}
+
+.filter-pill.active {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.25);
+  color: #60a5fa;
+}
+
+/* ── Typing Indicator ──────────────────────────── */
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}

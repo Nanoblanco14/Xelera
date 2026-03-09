@@ -2,11 +2,12 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useOrg } from "@/lib/org-context";
 import { supabase } from "@/lib/supabase";
+import { motion, AnimatePresence } from "framer-motion";
 import {
     MessageSquare, Search, Send, Loader2, Bot, User,
     Phone, Clock, PauseCircle, PlayCircle, AlertTriangle,
     ChevronRight, Inbox as InboxIcon, Zap, Plus, X,
-    StickyNote, Trash2,
+    StickyNote, Trash2, Hash, Timer, CheckCheck, Filter,
 } from "lucide-react";
 
 interface LeadNote {
@@ -127,6 +128,11 @@ export default function InboxPage() {
     const [notesLoading, setNotesLoading] = useState(false);
     const [newNoteText, setNewNoteText] = useState("");
     const [savingNote, setSavingNote] = useState(false);
+
+    // ── Filters & typing ─────────────────────────────
+    const [convoFilter, setConvoFilter] = useState<"all" | "bot_active" | "bot_paused" | "unread">("all");
+    const [isTyping, setIsTyping] = useState(false);
+    const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const saveTemplates = (updated: string[]) => {
         setTemplates(updated);
@@ -283,12 +289,19 @@ export default function InboxPage() {
                     // If it's for the selected conversation, add it
                     if (newMsg.lead_id === selectedLeadId) {
                         setMessages((prev) => {
-                            // Avoid duplicates
                             if (prev.some((m) => m.id === newMsg.id)) return prev;
                             return [...prev, newMsg];
                         });
+                        // Typing indicator logic
+                        if (newMsg.role === "user") {
+                            setIsTyping(true);
+                            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+                            typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 4000);
+                        } else if (newMsg.role === "assistant") {
+                            setIsTyping(false);
+                            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+                        }
                     }
-                    // Refresh conversation list for latest message preview
                     loadConversations();
                 }
             )
@@ -363,19 +376,19 @@ export default function InboxPage() {
 
     // ── Filter conversations ──────────────────────────────
     const isDeepSearch = searchQuery.trim().length >= 2 && searchResults !== null;
-    const filtered = isDeepSearch
-        ? conversations.filter((c) =>
-              searchResults.some((r) => r.lead_id === c.lead_id)
-          )
-        : conversations.filter((c) => {
-              if (!searchQuery) return true;
-              const q = searchQuery.toLowerCase();
-              return (
-                  c.name.toLowerCase().includes(q) ||
-                  c.phone.includes(q) ||
-                  c.last_message?.content.toLowerCase().includes(q)
-              );
-          });
+    const filtered = (() => {
+        let list = isDeepSearch
+            ? conversations.filter((c) => searchResults.some((r) => r.lead_id === c.lead_id))
+            : conversations.filter((c) => {
+                  if (!searchQuery) return true;
+                  const q = searchQuery.toLowerCase();
+                  return c.name.toLowerCase().includes(q) || c.phone.includes(q) || c.last_message?.content.toLowerCase().includes(q);
+              });
+        if (convoFilter === "bot_active") list = list.filter(c => !c.is_bot_paused);
+        if (convoFilter === "bot_paused") list = list.filter(c => c.is_bot_paused);
+        if (convoFilter === "unread") list = list.filter(c => c.last_message?.role === "user");
+        return list;
+    })();
 
     // Get search result for a specific lead (for snippets display)
     const getSearchResult = (leadId: string) =>
@@ -459,6 +472,33 @@ export default function InboxPage() {
                                 style={{ paddingLeft: "32px", fontSize: "0.8rem" }}
                             />
                         </div>
+                    </div>
+
+                    {/* Filter pills */}
+                    <div style={{
+                        padding: "6px 12px",
+                        borderBottom: "1px solid var(--border)",
+                        display: "flex", gap: "4px",
+                        overflowX: "auto",
+                    }}>
+                        {([
+                            { key: "all" as const, label: "Todas", count: conversations.length },
+                            { key: "bot_active" as const, label: "Bot", count: conversations.filter(c => !c.is_bot_paused).length },
+                            { key: "bot_paused" as const, label: "Humano", count: conversations.filter(c => c.is_bot_paused).length },
+                            { key: "unread" as const, label: "Sin leer", count: conversations.filter(c => c.last_message?.role === "user").length },
+                        ]).map(f => (
+                            <button key={f.key} onClick={() => setConvoFilter(f.key)}
+                                style={{
+                                    padding: "3px 10px", borderRadius: "100px",
+                                    fontSize: "0.65rem", fontWeight: 600,
+                                    background: convoFilter === f.key ? "rgba(59,130,246,0.1)" : "transparent",
+                                    border: convoFilter === f.key ? "1px solid rgba(59,130,246,0.25)" : "1px solid transparent",
+                                    color: convoFilter === f.key ? "#60a5fa" : "var(--text-muted)",
+                                    cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.15s ease",
+                                }}>
+                                {f.label} <span style={{ opacity: 0.5 }}>{f.count}</span>
+                            </button>
+                        ))}
                     </div>
 
                     {/* Search status */}
@@ -689,44 +729,70 @@ export default function InboxPage() {
                             flexDirection: "column", gap: "12px",
                             color: "var(--text-muted)",
                         }}>
-                            <MessageSquare size={36} style={{ opacity: 0.2 }} />
+                            <motion.div
+                                animate={{ scale: [1, 1.05, 1] }}
+                                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                                style={{
+                                    width: "56px", height: "56px", borderRadius: "16px",
+                                    background: "rgba(59,130,246,0.06)",
+                                    border: "1px solid rgba(59,130,246,0.1)",
+                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                }}
+                            >
+                                <MessageSquare size={26} style={{ opacity: 0.4, color: "#60a5fa" }} />
+                            </motion.div>
                             <p style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-                                Selecciona una conversación
+                                Selecciona una conversacion
                             </p>
-                            <p style={{ fontSize: "0.73rem" }}>
-                                Elige un contacto de la lista para ver sus mensajes
+                            <p style={{ fontSize: "0.73rem", maxWidth: "260px", textAlign: "center", lineHeight: 1.5 }}>
+                                Elige un contacto de la lista para ver sus mensajes y gestionar la conversacion
                             </p>
                         </div>
                     ) : (
                         <>
                             {/* ── Chat header ── */}
-                            <div style={{
+                            <div style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-secondary)" }}>
+                              {/* Row 1: Main info */}
+                              <div style={{
                                 padding: "12px 16px",
-                                borderBottom: "1px solid var(--border)",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                background: "var(--bg-secondary)",
-                            }}>
+                                display: "flex", alignItems: "center", justifyContent: "space-between",
+                              }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                                    <div style={{
-                                        width: "36px", height: "36px",
-                                        borderRadius: "10px",
-                                        background: "rgba(59,130,246,0.1)",
-                                        border: "1px solid rgba(59,130,246,0.2)",
-                                        display: "flex", alignItems: "center",
-                                        justifyContent: "center",
-                                        color: "#60a5fa",
-                                        fontSize: "0.78rem", fontWeight: 700,
-                                    }}>
-                                        {selectedConvo?.name[0]?.toUpperCase() || "?"}
+                                    {/* Avatar with status dot */}
+                                    <div style={{ position: "relative" }}>
+                                        <div style={{
+                                            width: "38px", height: "38px",
+                                            borderRadius: "10px",
+                                            background: "rgba(59,130,246,0.1)",
+                                            border: "1px solid rgba(59,130,246,0.2)",
+                                            display: "flex", alignItems: "center", justifyContent: "center",
+                                            color: "#60a5fa", fontSize: "0.78rem", fontWeight: 700,
+                                        }}>
+                                            {selectedConvo?.name[0]?.toUpperCase() || "?"}
+                                        </div>
+                                        {/* Online/status dot */}
+                                        <div style={{
+                                            position: "absolute", bottom: "-2px", right: "-2px",
+                                            width: "10px", height: "10px", borderRadius: "50%",
+                                            background: selectedConvo?.is_bot_paused ? "#f59e0b" : "#22c55e",
+                                            border: "2px solid var(--bg-secondary)",
+                                            boxShadow: selectedConvo?.is_bot_paused ? "none" : "0 0 6px rgba(34,197,94,0.4)",
+                                        }} />
                                     </div>
                                     <div>
-                                        <div style={{
-                                            fontSize: "0.85rem", fontWeight: 600,
-                                            color: "var(--text-primary)",
-                                        }}>
-                                            {selectedConvo?.name || "Contacto"}
+                                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                            <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                                                {selectedConvo?.name || "Contacto"}
+                                            </span>
+                                            <span style={{
+                                                padding: "1px 7px", borderRadius: "100px",
+                                                fontSize: "0.58rem", fontWeight: 600,
+                                                background: selectedConvo?.is_bot_paused ? "rgba(245,158,11,0.1)" : "rgba(34,197,94,0.1)",
+                                                color: selectedConvo?.is_bot_paused ? "#f59e0b" : "#22c55e",
+                                                border: `1px solid ${selectedConvo?.is_bot_paused ? "rgba(245,158,11,0.2)" : "rgba(34,197,94,0.2)"}`,
+                                            }}>
+                                                {selectedConvo?.is_bot_paused ? "Humano" : "Bot activo"}
+                                            </span>
                                         </div>
                                         <div style={{
                                             display: "flex", alignItems: "center", gap: "6px",
@@ -736,13 +802,9 @@ export default function InboxPage() {
                                             {selectedConvo?.phone}
                                             <span style={{ margin: "0 2px" }}>·</span>
                                             <span style={{
-                                                padding: "0px 5px",
-                                                borderRadius: "100px",
-                                                fontSize: "0.6rem",
-                                                fontWeight: 500,
-                                                background: selectedConvo?.stage_color
-                                                    ? `${selectedConvo.stage_color}14`
-                                                    : "rgba(255,255,255,0.04)",
+                                                padding: "0px 5px", borderRadius: "100px",
+                                                fontSize: "0.6rem", fontWeight: 500,
+                                                background: selectedConvo?.stage_color ? `${selectedConvo.stage_color}14` : "rgba(255,255,255,0.04)",
                                                 color: selectedConvo?.stage_color || "var(--text-muted)",
                                             }}>
                                                 {selectedConvo?.stage_name}
@@ -831,6 +893,25 @@ export default function InboxPage() {
                                         )}
                                     </button>
                                 </div>
+                              </div>
+                              {/* Row 2: Stats bar */}
+                              <div style={{
+                                  padding: "5px 16px",
+                                  background: "rgba(255,255,255,0.015)",
+                                  borderTop: "1px solid rgba(255,255,255,0.03)",
+                                  display: "flex", alignItems: "center", gap: "16px",
+                                  fontSize: "0.65rem", color: "var(--text-muted)",
+                              }}>
+                                  <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                      <Hash size={10} /> {messages.length} mensajes
+                                  </span>
+                                  <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                      <Clock size={10} /> Inicio: {selectedConvo ? formatDate(selectedConvo.created_at) : ""}
+                                  </span>
+                                  <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                      <Timer size={10} /> Ultimo: {selectedConvo ? timeAgo(selectedConvo.last_activity) : ""}
+                                  </span>
+                              </div>
                             </div>
 
                             {/* ── Bot paused banner ── */}
@@ -1067,62 +1148,24 @@ export default function InboxPage() {
                                                 </span>
                                             </div>
                                             {group.messages.map((msg) => (
-                                                <div
-                                                    key={msg.id}
-                                                    style={{
-                                                        display: "flex",
-                                                        justifyContent:
-                                                            msg.role === "user"
-                                                                ? "flex-start"
-                                                                : "flex-end",
-                                                        marginBottom: "4px",
-                                                    }}
-                                                >
+                                                <div key={msg.id} style={{
+                                                    display: "flex",
+                                                    justifyContent: msg.role === "user" ? "flex-start" : "flex-end",
+                                                    marginBottom: "3px",
+                                                }}>
                                                     <div style={{
                                                         maxWidth: "70%",
-                                                        padding: "9px 12px",
-                                                        borderRadius:
-                                                            msg.role === "user"
-                                                                ? "4px 12px 12px 12px"
-                                                                : "12px 4px 12px 12px",
-                                                        background:
-                                                            msg.role === "user"
-                                                                ? "rgba(255,255,255,0.06)"
-                                                                : "rgba(59,130,246,0.1)",
-                                                        border:
-                                                            msg.role === "user"
-                                                                ? "1px solid rgba(255,255,255,0.08)"
-                                                                : "1px solid rgba(59,130,246,0.15)",
+                                                        padding: "8px 11px 5px",
+                                                        borderRadius: msg.role === "user"
+                                                            ? "2px 12px 12px 12px"
+                                                            : "12px 2px 12px 12px",
+                                                        background: msg.role === "user"
+                                                            ? "rgba(255,255,255,0.06)"
+                                                            : "rgba(59,130,246,0.1)",
+                                                        border: msg.role === "user"
+                                                            ? "1px solid rgba(255,255,255,0.08)"
+                                                            : "1px solid rgba(59,130,246,0.15)",
                                                     }}>
-                                                        <div style={{
-                                                            display: "flex",
-                                                            alignItems: "center",
-                                                            gap: "5px",
-                                                            marginBottom: "3px",
-                                                        }}>
-                                                            {msg.role === "user" ? (
-                                                                <User size={10} style={{ color: "var(--text-muted)" }} />
-                                                            ) : (
-                                                                <Bot size={10} style={{ color: "#60a5fa" }} />
-                                                            )}
-                                                            <span style={{
-                                                                fontSize: "0.6rem",
-                                                                fontWeight: 600,
-                                                                color: msg.role === "user"
-                                                                    ? "var(--text-muted)"
-                                                                    : "#60a5fa",
-                                                            }}>
-                                                                {msg.role === "user"
-                                                                    ? selectedConvo?.name || "Cliente"
-                                                                    : "Asistente"}
-                                                            </span>
-                                                            <span style={{
-                                                                fontSize: "0.58rem",
-                                                                color: "var(--text-muted)",
-                                                            }}>
-                                                                {formatTime(msg.created_at)}
-                                                            </span>
-                                                        </div>
                                                         <div style={{
                                                             fontSize: "0.8rem",
                                                             lineHeight: 1.5,
@@ -1132,12 +1175,55 @@ export default function InboxPage() {
                                                         }}>
                                                             {msg.content}
                                                         </div>
+                                                        {/* Time + checkmarks footer */}
+                                                        <div style={{
+                                                            display: "flex", alignItems: "center",
+                                                            justifyContent: "flex-end", gap: "4px",
+                                                            marginTop: "2px",
+                                                        }}>
+                                                            <span style={{ fontSize: "0.56rem", color: "var(--text-muted)" }}>
+                                                                {formatTime(msg.created_at)}
+                                                            </span>
+                                                            {msg.role === "assistant" && (
+                                                                <CheckCheck size={12} style={{ color: "#60a5fa", opacity: 0.6 }} />
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))}
                                         </React.Fragment>
                                     ))
                                 )}
+                                {/* Typing indicator */}
+                                <AnimatePresence>
+                                    {isTyping && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 8 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: 8 }}
+                                            style={{ display: "flex", justifyContent: "flex-end", marginBottom: "4px" }}
+                                        >
+                                            <div style={{
+                                                padding: "10px 14px",
+                                                borderRadius: "12px 4px 12px 12px",
+                                                background: "rgba(59,130,246,0.08)",
+                                                border: "1px solid rgba(59,130,246,0.12)",
+                                                display: "flex", alignItems: "center", gap: "6px",
+                                            }}>
+                                                <Bot size={11} style={{ color: "#60a5fa" }} />
+                                                <div style={{ display: "flex", gap: "3px", alignItems: "center" }}>
+                                                    {[0, 1, 2].map(i => (
+                                                        <span key={i} style={{
+                                                            width: "5px", height: "5px", borderRadius: "50%",
+                                                            background: "#60a5fa",
+                                                            animation: `typingBounce 1.2s ease-in-out ${i * 0.15}s infinite`,
+                                                        }} />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                                 <div ref={chatEndRef} />
                             </div>
 
