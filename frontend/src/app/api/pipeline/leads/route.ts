@@ -3,6 +3,29 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { authenticateRequest, verifyOrgAccess, apiError, serverError } from "@/lib/api-auth";
 import type { LeadCreate } from "@/lib/types";
 
+// ── GET /api/pipeline/leads ───────────────────────────────
+// List all leads for the authenticated user's organization
+export async function GET() {
+    try {
+        const result = await authenticateRequest("leads:GET");
+        if ("error" in result) return result.error;
+        const { auth } = result;
+
+        const db = getSupabaseAdmin();
+        const { data: leads, error } = await db
+            .from("leads")
+            .select("id, name, phone, email, source, created_at")
+            .eq("organization_id", auth.orgId)
+            .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        return NextResponse.json({ data: leads || [] });
+    } catch (err) {
+        return serverError(err, "leads:GET");
+    }
+}
+
 // ── POST /api/pipeline/leads ──────────────────────────────
 // Create a new lead
 export async function POST(req: NextRequest) {
