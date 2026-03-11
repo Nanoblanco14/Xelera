@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS lead_stage_history (
     lead_id UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     from_stage_id UUID REFERENCES pipeline_stages(id) ON DELETE SET NULL,
-    to_stage_id UUID NOT NULL REFERENCES pipeline_stages(id) ON DELETE SET NULL,
+    to_stage_id UUID NOT NULL REFERENCES pipeline_stages(id) ON DELETE CASCADE,
     changed_by TEXT NOT NULL DEFAULT 'ai',  -- 'ai', 'human', 'system'
     reason TEXT DEFAULT '',                  -- Motivo del cambio
     metadata JSONB DEFAULT '{}',            -- Datos extra (estado_filtro, etc)
