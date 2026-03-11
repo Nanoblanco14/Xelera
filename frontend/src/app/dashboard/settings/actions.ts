@@ -162,7 +162,11 @@ export async function applyIndustryTemplate(
     if (agents && agents.length > 0) {
         const { error } = await admin
             .from("agents")
-            .update({ system_prompt: template.systemPrompt })
+            .update({
+                system_prompt: template.systemPrompt,
+                name: template.defaultName,
+                welcome_message: template.defaultWelcome,
+            })
             .eq("id", agents[0].id);
         if (error) return { success: false, stagesCreated: false, error: error.message };
     } else {
@@ -170,8 +174,9 @@ export async function applyIndustryTemplate(
             .from("agents")
             .insert({
                 organization_id: orgId,
-                name: "Asistente Virtual",
+                name: template.defaultName,
                 system_prompt: template.systemPrompt,
+                welcome_message: template.defaultWelcome,
                 is_active: true,
             });
         if (error) return { success: false, stagesCreated: false, error: error.message };

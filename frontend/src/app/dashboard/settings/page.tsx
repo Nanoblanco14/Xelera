@@ -7,13 +7,46 @@ import {
     OrgInfoSection,
     ApiKeySection,
     WhatsAppSetupSection,
-    AdvancedProviderSection,
-    WebhookUrlSection,
+    BusinessHoursSection,
+    AppointmentConfigSection,
+    BlockedDatesSection,
 } from "@/components/settings";
 import type { ConnectionStatus } from "@/lib/hooks/useWhatsAppConnection";
 
-type WhatsAppProvider = "twilio" | "meta";
+/* ── Group divider ─────────────────────────────────────────── */
+function GroupHeader({ label }: { label: string }) {
+    return (
+        <div
+            style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                marginTop: "8px",
+            }}
+        >
+            <span
+                style={{
+                    fontSize: "0.7rem",
+                    fontWeight: 600,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    color: "rgba(255,255,255,0.25)",
+                }}
+            >
+                {label}
+            </span>
+            <div
+                style={{
+                    flex: 1,
+                    height: "1px",
+                    background: "rgba(255,255,255,0.06)",
+                }}
+            />
+        </div>
+    );
+}
 
+/* ── Settings page ─────────────────────────────────────────── */
 export default function SettingsPage() {
     const { organization, role } = useOrg();
     const [loading, setLoading] = useState(true);
@@ -21,8 +54,6 @@ export default function SettingsPage() {
     const [saved, setSaved] = useState<string | null>(null);
     const [error, setError] = useState("");
     const [apiKey, setApiKey] = useState("");
-    const [provider, setProvider] = useState<WhatsAppProvider>("twilio");
-    const [credentials, setCredentials] = useState<Record<string, string>>({});
     const [metaToken, setMetaToken] = useState("");
     const [metaPhoneId, setMetaPhoneId] = useState("");
     const [businessAccountId, setBusinessAccountId] = useState("");
@@ -34,8 +65,6 @@ export default function SettingsPage() {
             const data = await loadTenantSettings(organization.id);
             if (data) {
                 setApiKey(data.openai_api_key);
-                setProvider(data.whatsapp_provider);
-                setCredentials(data.whatsapp_credentials);
                 if (data.whatsapp_credentials?.access_token)
                     setMetaToken(data.whatsapp_credentials.access_token);
                 if (data.whatsapp_credentials?.phone_number_id)
@@ -81,15 +110,6 @@ export default function SettingsPage() {
         []
     );
 
-    // ── Derived values ────────────────────────────────────────
-    const webhookUrl =
-        typeof window !== "undefined"
-            ? `${window.location.origin}/api/webhook/${organization.id}`
-            : `https://tu-dominio.com/api/webhook/${organization.id}`;
-
-    const setCredField = (key: string, value: string) =>
-        setCredentials((prev) => ({ ...prev, [key]: value }));
-
     // ── Loading state ─────────────────────────────────────────
     if (loading) {
         return (
@@ -105,29 +125,38 @@ export default function SettingsPage() {
             <div className="page-header">
                 <div>
                     <h1 className="page-title">Configuracion</h1>
-                    <p className="page-subtitle">Conexiones tecnicas — APIs y proveedores de mensajeria</p>
+                    <p className="page-subtitle">
+                        Gestiona tu cuenta, conexiones y horarios
+                    </p>
                 </div>
             </div>
 
             {error && (
                 <div className="flex items-center gap-2 p-4 rounded-xl mb-5 text-sm max-w-[720px] bg-red-500/[0.07] border border-red-500/[0.14] text-[var(--danger)]">
-                    <AlertCircle size={14} />{error}
+                    <AlertCircle size={14} />
+                    {error}
                 </div>
             )}
 
             <div className="grid gap-4 max-w-[720px]">
+                {/* ── General ─────────────────────────────────── */}
+                <GroupHeader label="General" />
                 <OrgInfoSection organization={organization} role={role} />
-
                 <ApiKeySection
                     apiKey={apiKey}
                     onApiKeyChange={setApiKey}
                     saving={saving}
                     saved={saved}
                     onSave={() =>
-                        saveSection("apikey", { orgId: organization.id, openai_api_key: apiKey })
+                        saveSection("apikey", {
+                            orgId: organization.id,
+                            openai_api_key: apiKey,
+                        })
                     }
                 />
 
+                {/* ── WhatsApp ────────────────────────────────── */}
+                <GroupHeader label="WhatsApp" />
                 <WhatsAppSetupSection
                     metaToken={metaToken}
                     metaPhoneId={metaPhoneId}
@@ -139,23 +168,16 @@ export default function SettingsPage() {
                     initialStatus={waStatus}
                 />
 
-                <AdvancedProviderSection
-                    provider={provider}
-                    credentials={credentials}
-                    onProviderChange={setProvider}
-                    onCredentialChange={setCredField}
-                    saving={saving}
-                    saved={saved}
-                    onSave={() =>
-                        saveSection("whatsapp", {
-                            orgId: organization.id,
-                            whatsapp_provider: provider,
-                            whatsapp_credentials: credentials,
-                        })
+                {/* ── Agenda ──────────────────────────────────── */}
+                <GroupHeader label="Agenda" />
+                <BusinessHoursSection orgId={organization.id} />
+                <AppointmentConfigSection
+                    orgId={organization.id}
+                    orgSettings={
+                        (organization.settings as Record<string, unknown>) || {}
                     }
                 />
-
-                <WebhookUrlSection webhookUrl={webhookUrl} provider={provider} />
+                <BlockedDatesSection orgId={organization.id} />
             </div>
         </div>
     );
