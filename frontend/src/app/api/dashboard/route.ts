@@ -45,9 +45,10 @@ export async function GET(req: NextRequest) {
                 .order("position", { ascending: true }),
 
             // Agent (maybeSingle avoids error when 0 rows; order by is_active DESC to prefer active ones)
+            // select("*") para no fallar si faltan columnas como model o conversation_tone
             db
                 .from("agents")
-                .select("id, name, is_active, model, welcome_message, conversation_tone")
+                .select("*")
                 .eq("organization_id", orgId)
                 .order("is_active", { ascending: false })
                 .limit(1)
@@ -70,6 +71,15 @@ export async function GET(req: NextRequest) {
 
         if (leadsResult.error) throw leadsResult.error;
         if (stagesResult.error) throw stagesResult.error;
+        if (agentResult.error) {
+            console.error("[Dashboard] Agent query error:", agentResult.error);
+        }
+        if (productsCountResult.error) {
+            console.error("[Dashboard] Products count query error:", productsCountResult.error);
+        }
+        if (orgResult.error) {
+            console.error("[Dashboard] Org query error:", orgResult.error);
+        }
 
         const allLeads = leadsResult.data || [];
         const allStages = stagesResult.data || [];
@@ -187,15 +197,15 @@ export async function GET(req: NextRequest) {
                 // Recent leads
                 recentLeads,
 
-                // Agent info
+                // Agent info (campos opcionales con fallback para resiliencia)
                 agent: agent
                     ? {
                         id: agent.id,
-                        name: agent.name,
-                        is_active: agent.is_active,
-                        model: agent.model,
-                        welcome_message: agent.welcome_message,
-                        conversation_tone: agent.conversation_tone,
+                        name: agent.name || "Asistente",
+                        is_active: agent.is_active ?? false,
+                        model: agent.model || "gpt-4o-mini",
+                        welcome_message: agent.welcome_message || null,
+                        conversation_tone: agent.conversation_tone || null,
                     }
                     : null,
 

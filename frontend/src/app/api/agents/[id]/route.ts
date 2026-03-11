@@ -17,6 +17,27 @@ export async function PUT(
         const body: AgentUpdate = await req.json();
         const db = getSupabaseAdmin();
 
+        // ── Sanitize: only allow known safe columns ──
+        const ALLOWED_FIELDS = [
+            'name', 'system_prompt', 'welcome_message', 'model',
+            'personality', 'language', 'temperature', 'max_tokens',
+            'whatsapp_config', 'booking_url', 'conversation_tone',
+            'escalation_rule', 'scraped_context', 'is_active'
+        ];
+
+        const safeUpdate: Record<string, unknown> = {};
+        for (const key of ALLOWED_FIELDS) {
+            if (key in (body as Record<string, unknown>)) {
+                safeUpdate[key] = (body as Record<string, unknown>)[key];
+            }
+        }
+
+        if (Object.keys(safeUpdate).length === 0) {
+            return apiError("No hay campos válidos para actualizar", 400, "EMPTY_UPDATE");
+        }
+
+        safeUpdate.updated_at = new Date().toISOString();
+
         // Verify the agent belongs to the user's org
         const { data: existing } = await db
             .from("agents")
@@ -30,12 +51,19 @@ export async function PUT(
 
         const { data, error } = await db
             .from("agents")
-            .update(body)
+            .update(safeUpdate)
             .eq("id", id)
             .select()
             .single();
 
-        if (error) throw error;
+        if (error) {
+            console.error("[agents:PUT] Supabase error:", error);
+            return NextResponse.json(
+                { error: error.message || "Error al actualizar el agente", code: "DB_ERROR" },
+                { status: 500 }
+            );
+        }
+
         return NextResponse.json({ data });
     } catch (err) {
         return serverError(err, "agents:PUT");

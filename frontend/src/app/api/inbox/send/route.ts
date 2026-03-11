@@ -66,11 +66,12 @@ export async function POST(req: NextRequest) {
 
         // Send via WhatsApp
         const creds = org.whatsapp_credentials || {};
+        let whatsappError: string | null = null;
 
         if (org.whatsapp_provider === "meta" && creds.phone_number_id && creds.access_token) {
             try {
-                await fetch(
-                    `https://graph.facebook.com/v21.0/${creds.phone_number_id}/messages`,
+                const waRes = await fetch(
+                    `https://graph.facebook.com/v22.0/${creds.phone_number_id}/messages`,
                     {
                         method: "POST",
                         headers: {
@@ -85,9 +86,14 @@ export async function POST(req: NextRequest) {
                         }),
                     }
                 );
+                if (!waRes.ok) {
+                    const detail = await waRes.text().catch(() => "");
+                    console.error("WhatsApp API error:", waRes.status, detail);
+                    whatsappError = "No se pudo enviar por WhatsApp";
+                }
             } catch (whatsappErr) {
                 console.error("WhatsApp send error:", whatsappErr);
-                // Message saved in DB even if WhatsApp fails
+                whatsappError = "No se pudo enviar por WhatsApp";
             }
         } else if (org.whatsapp_provider === "twilio" && creds.account_sid && creds.auth_token) {
             try {
@@ -97,7 +103,7 @@ export async function POST(req: NextRequest) {
                 formData.append("To", `whatsapp:+${lead.phone}`);
                 formData.append("Body", message.trim());
 
-                await fetch(twilioUrl, {
+                const twRes = await fetch(twilioUrl, {
                     method: "POST",
                     headers: {
                         Authorization: `Basic ${Buffer.from(`${creds.account_sid}:${creds.auth_token}`).toString("base64")}`,
@@ -105,13 +111,20 @@ export async function POST(req: NextRequest) {
                     },
                     body: formData.toString(),
                 });
+                if (!twRes.ok) {
+                    const detail = await twRes.text().catch(() => "");
+                    console.error("Twilio API error:", twRes.status, detail);
+                    whatsappError = "No se pudo enviar por WhatsApp";
+                }
             } catch (twilioErr) {
                 console.error("Twilio send error:", twilioErr);
+                whatsappError = "No se pudo enviar por WhatsApp";
             }
         }
 
         return NextResponse.json({
             data: { success: true, bot_paused: true },
+            ...(whatsappError ? { whatsapp_error: whatsappError } : {}),
         });
     } catch (err) {
         return serverError(err, "inbox:send:POST");

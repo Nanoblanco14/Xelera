@@ -48,6 +48,7 @@ export interface Agent {
     system_prompt: string;
     personality: string;
     language: string;
+    model: string;
     temperature: number;
     max_tokens: number;
     welcome_message: string;
@@ -55,6 +56,7 @@ export interface Agent {
     booking_url: string | null;
     conversation_tone: ConversationTone | null;
     escalation_rule: string | null;
+    scraped_context: string | null;
     is_active: boolean;
     created_at: string;
     updated_at: string;
@@ -65,7 +67,7 @@ export type AgentCreate = Pick<Agent, "name" | "system_prompt" | "personality" |
     whatsapp_config?: WhatsAppConfig;
 };
 
-export type AgentUpdate = Partial<Omit<AgentCreate, "organization_id">>;
+export type AgentUpdate = Partial<Omit<AgentCreate, "organization_id"> & Pick<Agent, "model" | "booking_url" | "conversation_tone" | "escalation_rule" | "scraped_context">>;
 
 // ── Products (Agnostic: JSONB attributes) ───────────────────
 
@@ -226,4 +228,73 @@ export interface LeadCreate {
     budget?: string;
     appointment_date?: string;
     source?: string;
+}
+
+// ── Appointments ──────────────────────────────────────────────
+
+export type AppointmentStatus =
+    | "confirmed"
+    | "cancelled"
+    | "completed"
+    | "no_show"
+    | "rescheduled";
+
+export interface Appointment {
+    id: string;
+    organization_id: string;
+    lead_id: string;
+    product_id: string | null;
+    start_time: string;
+    end_time: string;
+    status: AppointmentStatus;
+    notes: string | null;
+    cancellation_reason: string | null;
+    rescheduled_from_id: string | null;
+    confirmation_sent_at: string | null;
+    reminder_sent_at: string | null;
+    created_at: string;
+    updated_at: string;
+    // Joined fields (optional, from queries)
+    lead?: Lead;
+    product?: Product;
+    lead_name?: string;
+    lead_phone?: string;
+    product_name?: string;
+}
+
+export interface BusinessDay {
+    id?: string;
+    organization_id?: string;
+    day_of_week: number; // 0=Sun, 1=Mon ... 6=Sat
+    is_open: boolean;
+    open_time: string;   // "HH:mm"
+    close_time: string;  // "HH:mm"
+    break_start: string | null;
+    break_end: string | null;
+}
+
+export interface BlockedDate {
+    id: string;
+    organization_id: string;
+    blocked_date: string; // "YYYY-MM-DD"
+    reason: string | null;
+    created_at: string;
+}
+
+export interface AppointmentConfig {
+    slot_duration_minutes: number;
+    buffer_minutes: number;
+    max_advance_days: number;
+    allow_client_cancel: boolean;
+    allow_client_reschedule: boolean;
+    reschedule_policy: "self_service" | "escalate_to_human";
+    daily_digest_enabled: boolean;
+    daily_digest_time: string; // "HH:mm"
+    owner_phone: string;
+    timezone: string;
+}
+
+export interface TimeSlot {
+    start: string; // ISO 8601
+    end: string;   // ISO 8601
 }

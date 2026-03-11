@@ -62,6 +62,7 @@ export async function POST(req: NextRequest) {
             name,
             description: description || "",
             attributes: attributes || {},
+            status: "active",
         };
         if (embedding) {
             insertData.embedding = JSON.stringify(embedding);

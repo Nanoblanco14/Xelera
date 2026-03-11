@@ -20,7 +20,7 @@ export async function PUT(
         // Verify the lead belongs to the user's org
         const { data: existing } = await db
             .from("leads")
-            .select("organization_id")
+            .select("organization_id, stage_id")
             .eq("id", id)
             .single();
 
@@ -44,7 +44,7 @@ export async function PUT(
         }
 
         // ── 🔄 Record stage change in history (if stage changed) ──
-        if (body.stage_id && body.stage_id !== existing.organization_id) {
+        if (body.stage_id && body.stage_id !== existing.stage_id) {
             // Get current stage_id for comparison
             const { data: currentLead } = await db
                 .from("leads")

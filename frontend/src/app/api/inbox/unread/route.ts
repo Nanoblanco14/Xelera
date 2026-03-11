@@ -1,61 +1,70 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { authenticateRequest, verifyOrgAccess, apiError, serverError } from "@/lib/api-auth";
 
 // GET /api/inbox/unread?org_id=xxx
 // Returns count of conversations where the last message is from 'user' (needs attention)
 export async function GET(req: NextRequest) {
-    const orgId = req.nextUrl.searchParams.get("org_id");
-    if (!orgId) {
-        return NextResponse.json({ error: "org_id required" }, { status: 400 });
-    }
+    try {
+        const result = await authenticateRequest("inbox-unread:GET");
+        if ("error" in result) return result.error;
+        const { auth } = result;
 
-    const sb = getSupabaseAdmin();
+        const orgId = req.nextUrl.searchParams.get("org_id");
+        if (!orgId) return apiError("org_id required", 400, "MISSING_PARAM");
 
-    // Get all leads for this org that have messages
-    const { data: leads, error: leadsError } = await sb
-        .from("leads")
-        .select("id")
-        .eq("organization_id", orgId);
+        const orgCheck = verifyOrgAccess(auth, orgId);
+        if (orgCheck) return orgCheck;
 
-    if (leadsError || !leads) {
-        return NextResponse.json({ count: 0 });
-    }
+        const sb = getSupabaseAdmin();
 
-    if (leads.length === 0) {
-        return NextResponse.json({ count: 0 });
-    }
+        // Get all leads for this org that have messages
+        const { data: leads, error: leadsError } = await sb
+            .from("leads")
+            .select("id")
+            .eq("organization_id", orgId);
 
-    // For each lead, get the last message and check if it's from 'user'
-    let pendingCount = 0;
-
-    // Batch: get the latest message per lead using a raw approach
-    // We'll query messages for all leads and group by lead_id
-    const leadIds = leads.map((l) => l.id);
-
-    const { data: messages, error: msgError } = await sb
-        .from("lead_messages")
-        .select("lead_id, role, created_at")
-        .in("lead_id", leadIds)
-        .order("created_at", { ascending: false });
-
-    if (msgError || !messages) {
-        return NextResponse.json({ count: 0 });
-    }
-
-    // Group by lead_id and get the latest message role
-    const latestByLead = new Map<string, string>();
-    for (const msg of messages) {
-        if (!latestByLead.has(msg.lead_id)) {
-            latestByLead.set(msg.lead_id, msg.role);
+        if (leadsError || !leads) {
+            return NextResponse.json({ count: 0 });
         }
-    }
 
-    // Count leads where latest message is from 'user' (customer waiting for response)
-    for (const [, role] of latestByLead) {
-        if (role === "user") {
-            pendingCount++;
+        if (leads.length === 0) {
+            return NextResponse.json({ count: 0 });
         }
-    }
 
-    return NextResponse.json({ count: pendingCount });
+        // For each lead, get the last message and check if it's from 'user'
+        let pendingCount = 0;
+
+        // Batch: get the latest message per lead
+        const leadIds = leads.map((l) => l.id);
+
+        const { data: messages, error: msgError } = await sb
+            .from("lead_messages")
+            .select("lead_id, role, created_at")
+            .in("lead_id", leadIds)
+            .order("created_at", { ascending: false });
+
+        if (msgError || !messages) {
+            return NextResponse.json({ count: 0 });
+        }
+
+        // Group by lead_id and get the latest message role
+        const latestByLead = new Map<string, string>();
+        for (const msg of messages) {
+            if (!latestByLead.has(msg.lead_id)) {
+                latestByLead.set(msg.lead_id, msg.role);
+            }
+        }
+
+        // Count leads where latest message is from 'user' (customer waiting for response)
+        for (const [, role] of latestByLead) {
+            if (role === "user") {
+                pendingCount++;
+            }
+        }
+
+        return NextResponse.json({ count: pendingCount });
+    } catch (err) {
+        return serverError(err, "inbox-unread:GET");
+    }
 }

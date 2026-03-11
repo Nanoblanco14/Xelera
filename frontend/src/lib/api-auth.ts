@@ -44,9 +44,9 @@ export function forbidden(detail?: string) {
 }
 
 export function serverError(err: unknown, context: string) {
-    const message = err instanceof Error ? err.message : "Error interno del servidor";
     console.error(`[API:${context}]`, err);
-    return apiError(message, 500, "INTERNAL_ERROR");
+    // Never leak internal error details to the client
+    return apiError("Error interno del servidor", 500, "INTERNAL_ERROR");
 }
 
 // ── Auth verification ─────────────────────────────────────────

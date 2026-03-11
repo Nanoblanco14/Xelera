@@ -5,6 +5,8 @@ import type {
     ChatCompletionTool,
 } from "openai/resources/chat/completions";
 import { isAppointmentCriticalIndustry } from "@/lib/industry-templates";
+import { getAvailableSlots, bookAppointment, cancelAppointment, rescheduleAppointment, getBusinessHours, getAppointmentConfig, businessHoursToText, formatChileDate } from "@/lib/appointments";
+import { sendWhatsAppMessage } from "@/lib/whatsapp";
 import { z } from "zod/v4";
 
 // ═══════════════════════════════════════════════════════════════
@@ -99,68 +101,154 @@ const supabaseAdmin = createClient(
 );
 
 // ═══════════════════════════════════════════════════════════════
-//  🔧 TOOL DEFINITION — gestionar_lead_crm
+//  🔧 TOOL DEFINITIONS
 // ═══════════════════════════════════════════════════════════════
-const tools: ChatCompletionTool[] = [
-    {
-        type: "function",
-        function: {
-            name: "gestionar_lead_crm",
-            description:
-                "Actualiza el estado del lead en el CRM. " +
-                "REGLA DE ORO: Cada acción que confirmes en el chat DEBE ir acompañada de la llamada a esta herramienta. " +
-                "Si dices (o implicas) que agendaste una cita, DEBES llamar a esta función con estado_filtro=\"Calificado\" de forma inmediata, en el mismo turno. " +
-                "Si NO llamas a la herramienta, el CRM quedará desactualizado y el lead se perderá. " +
-                "Llama a esta función en los siguientes casos exactos: " +
-                "(1) El cliente muestra interés activo (pregunta precios, pide información, compara opciones) → usa estado_filtro=\"Interesado\". " +
-                "(2) El cliente confirma explícitamente un día Y hora para una cita/visita → usa estado_filtro=\"Calificado\". " +
-                "(3) El cliente rechaza de forma definitiva, insulta, o dice explícitamente que ya NO le interesa → usa estado_filtro=\"Descartado\". " +
-                "(4) La regla de escalación se cumple → usa estado_filtro=\"Derivado a Humano\".",
-            parameters: {
-                type: "object",
-                properties: {
-                    nombre_cliente: {
-                        type: "string",
-                        description:
-                            "El nombre y apellido real del usuario. " +
-                            "REGLA ESTRICTA: Tienes PROHIBIDO usar valores genéricos como 'Cliente', 'Lead', 'Usuario', 'Lead WhatsApp' o 'N/A'. " +
-                            "Si el usuario NO te ha dicho su nombre explícitamente en la conversación activa, NO PUEDES ejecutar esta herramienta. " +
-                            "Debes preguntarle su nombre primero y esperar su respuesta antes de invocar la función.",
-                    },
-                    estado_filtro: {
-                        type: "string",
-                        enum: ["Interesado", "Calificado", "Descartado", "Derivado a Humano"],
-                        description:
-                            "Interesado = el cliente muestra interés activo (pregunta precios, solicita info, compara opciones) pero aún no confirma cita. Muévelo a la etapa 'Interesado' del pipeline. " +
-                            "Calificado = el prospecto confirmó explícitamente un día Y hora para la cita/visita. Debes moverlo a la etapa de visita/reunión del pipeline. " +
-                            "Descartado = el cliente dijo EXPLÍCITAMENTE que NO le interesa, o terminó la conversación de forma negativa o con insultos. " +
-                            "NUNCA uses 'Descartado' porque el cliente está pensando, porque no respondió, o porque está agendando una cita — eso es lo OPUESTO de Descartado. " +
-                            "⛔ REGLA CRÍTICA DE REPROGRAMACIÓN: Si el cliente pide cambiar la fecha u hora de una cita ya agendada ('¿puedo cambiar la hora?', 'necesito mover la cita'), " +
-                            "esto es una señal de ALTO INTERÉS. NUNCA uses 'Descartado' en este caso. Debes mantener 'Calificado' o moverlo a la etapa de visita agendada. " +
-                            "SOLO usa 'Descartado' si el cliente rechaza EXPLÍCITAMENTE el servicio, dice que ya no le interesa, o pide no ser contactado. " +
-                            "Derivado a Humano = prospecto requiere atención especializada según la regla de escalación configurada.",
-                    },
-                    fecha_hora_cita: {
-                        type: "string",
-                        description:
-                            "Fecha y hora de la cita en formato ISO 8601 (ej: 2026-02-26T11:00:00). " +
-                            "OBLIGATORIO cuando estado_filtro es 'Calificado'. Omitir en otros casos.",
-                    },
-                    resumen_conversacion: {
-                        type: "string",
-                        description:
-                            "Resumen breve con los datos clave: nombre, presupuesto, zona de interés, tipo de propiedad/servicio, fecha y hora de la cita si aplica, motivo de descarte o derivación si aplica.",
-                    },
+
+const gestionarLeadCrmTool: ChatCompletionTool = {
+    type: "function",
+    function: {
+        name: "gestionar_lead_crm",
+        description:
+            "Actualiza el estado del lead en el CRM. " +
+            "REGLA DE ORO: Cada acción que confirmes en el chat DEBE ir acompañada de la llamada a esta herramienta. " +
+            "Si dices (o implicas) que agendaste una cita, DEBES llamar a esta función con estado_filtro=\"Calificado\" de forma inmediata, en el mismo turno. " +
+            "Si NO llamas a la herramienta, el CRM quedará desactualizado y el lead se perderá. " +
+            "Llama a esta función en los siguientes casos exactos: " +
+            "(1) El cliente muestra interés activo (pregunta precios, pide información, compara opciones) → usa estado_filtro=\"Interesado\". " +
+            "(2) El cliente confirma explícitamente un día Y hora para una cita/visita → usa estado_filtro=\"Calificado\". " +
+            "(3) El cliente rechaza de forma definitiva, insulta, o dice explícitamente que ya NO le interesa → usa estado_filtro=\"Descartado\". " +
+            "(4) La regla de escalación se cumple → usa estado_filtro=\"Derivado a Humano\".",
+        parameters: {
+            type: "object",
+            properties: {
+                nombre_cliente: {
+                    type: "string",
+                    description:
+                        "El nombre y apellido real del usuario. " +
+                        "REGLA ESTRICTA: Tienes PROHIBIDO usar valores genéricos como 'Cliente', 'Lead', 'Usuario', 'Lead WhatsApp' o 'N/A'. " +
+                        "Si el usuario NO te ha dicho su nombre explícitamente en la conversación activa, NO PUEDES ejecutar esta herramienta. " +
+                        "Debes preguntarle su nombre primero y esperar su respuesta antes de invocar la función.",
                 },
-                required: [
-                    "nombre_cliente",
-                    "estado_filtro",
-                    "resumen_conversacion",
-                ],
+                estado_filtro: {
+                    type: "string",
+                    enum: ["Interesado", "Calificado", "Descartado", "Derivado a Humano"],
+                    description:
+                        "Interesado = el cliente muestra interés activo (pregunta precios, solicita info, compara opciones) pero aún no confirma cita. Muévelo a la etapa 'Interesado' del pipeline. " +
+                        "Calificado = el prospecto confirmó explícitamente un día Y hora para la cita/visita. Debes moverlo a la etapa de visita/reunión del pipeline. " +
+                        "Descartado = el cliente dijo EXPLÍCITAMENTE que NO le interesa, o terminó la conversación de forma negativa o con insultos. " +
+                        "NUNCA uses 'Descartado' porque el cliente está pensando, porque no respondió, o porque está agendando una cita — eso es lo OPUESTO de Descartado. " +
+                        "⛔ REGLA CRÍTICA DE REPROGRAMACIÓN: Si el cliente pide cambiar la fecha u hora de una cita ya agendada ('¿puedo cambiar la hora?', 'necesito mover la cita'), " +
+                        "esto es una señal de ALTO INTERÉS. NUNCA uses 'Descartado' en este caso. Debes mantener 'Calificado' o moverlo a la etapa de visita agendada. " +
+                        "SOLO usa 'Descartado' si el cliente rechaza EXPLÍCITAMENTE el servicio, dice que ya no le interesa, o pide no ser contactado. " +
+                        "Derivado a Humano = prospecto requiere atención especializada según la regla de escalación configurada.",
+                },
+                fecha_hora_cita: {
+                    type: "string",
+                    description:
+                        "Fecha y hora de la cita en formato ISO 8601 (ej: 2026-02-26T11:00:00). " +
+                        "OBLIGATORIO cuando estado_filtro es 'Calificado'. Omitir en otros casos.",
+                },
+                resumen_conversacion: {
+                    type: "string",
+                    description:
+                        "Resumen breve con los datos clave: nombre, presupuesto, zona de interés, tipo de propiedad/servicio, fecha y hora de la cita si aplica, motivo de descarte o derivación si aplica.",
+                },
             },
+            required: [
+                "nombre_cliente",
+                "estado_filtro",
+                "resumen_conversacion",
+            ],
         },
     },
-];
+};
+
+const verificarDisponibilidadTool: ChatCompletionTool = {
+    type: "function" as const,
+    function: {
+        name: "verificar_disponibilidad",
+        description: "Consulta los horarios disponibles para agendar una cita. SIEMPRE usa esta herramienta ANTES de ofrecer un horario al cliente. NUNCA ofrezcas un horario sin verificar disponibilidad primero.",
+        parameters: {
+            type: "object" as const,
+            properties: {
+                fecha: {
+                    type: "string",
+                    description: "Fecha a consultar en formato YYYY-MM-DD. Calcula la fecha exacta basándote en la fecha actual si el cliente usa términos relativos ('mañana', 'el viernes', etc.).",
+                },
+                servicio_nombre: {
+                    type: "string",
+                    description: "Nombre del servicio o producto (opcional). Permite ajustar la duración del slot.",
+                },
+            },
+            required: ["fecha"],
+        },
+    },
+};
+
+const agendarCitaTool: ChatCompletionTool = {
+    type: "function" as const,
+    function: {
+        name: "agendar_cita",
+        description: "Crea una cita confirmada. REGLA ABSOLUTA: Solo usar DESPUÉS de (1) verificar disponibilidad, (2) el cliente confirme fecha y hora explícitamente, y (3) tengas su nombre real.",
+        parameters: {
+            type: "object" as const,
+            properties: {
+                nombre_cliente: {
+                    type: "string",
+                    description: "Nombre real del cliente.",
+                },
+                fecha_hora: {
+                    type: "string",
+                    description: "Fecha y hora ISO 8601 (ej: 2026-03-15T09:00:00).",
+                },
+                servicio_nombre: {
+                    type: "string",
+                    description: "Nombre del servicio/producto para la cita.",
+                },
+                notas: {
+                    type: "string",
+                    description: "Notas adicionales (opcional).",
+                },
+            },
+            required: ["nombre_cliente", "fecha_hora", "servicio_nombre"],
+        },
+    },
+};
+
+const gestionarCitaTool: ChatCompletionTool = {
+    type: "function" as const,
+    function: {
+        name: "gestionar_cita_existente",
+        description: "Cancela o reprograma una cita existente del cliente.",
+        parameters: {
+            type: "object" as const,
+            properties: {
+                accion: {
+                    type: "string",
+                    enum: ["cancelar", "reprogramar"],
+                    description: "Acción a realizar.",
+                },
+                nueva_fecha_hora: {
+                    type: "string",
+                    description: "Nueva fecha/hora ISO 8601. Obligatorio si accion='reprogramar'.",
+                },
+                motivo: {
+                    type: "string",
+                    description: "Motivo de la cancelación/reprogramación.",
+                },
+            },
+            required: ["accion"],
+        },
+    },
+};
+
+function buildToolsForOrg(hasAppointmentConfig: boolean): ChatCompletionTool[] {
+    const baseTools: ChatCompletionTool[] = [gestionarLeadCrmTool];
+    if (hasAppointmentConfig) {
+        baseTools.push(verificarDisponibilidadTool, agendarCitaTool, gestionarCitaTool);
+    }
+    return baseTools;
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  🧠 SYSTEM PROMPT — Builds the dynamic prompt per tenant
@@ -883,7 +971,7 @@ export async function POST(
         const tenantSettings = (tenant as any)?.settings || {};
         const industryId: string | null = tenantSettings.industry_template ?? null;
         const faqEntries: FaqEntry[] | null = tenantSettings.faqs ?? null;
-        const systemPrompt = buildSystemPrompt(
+        let systemPrompt = buildSystemPrompt(
             fullPrompt,
             agent?.conversation_tone,
             agent?.escalation_rule,
@@ -893,6 +981,39 @@ export async function POST(
             industryId,
             faqEntries
         );
+
+        // ── 6a. Load appointment config & inject appointment prompt ──
+        const appointmentConfig = await getAppointmentConfig(tenantId);
+        const hasAppointmentConfig = !!(tenantSettings?.appointment_config);
+
+        if (hasAppointmentConfig) {
+            const hours = await getBusinessHours(tenantId);
+            const hoursText = businessHoursToText(hours);
+            const rescheduleText = appointmentConfig.reschedule_policy === "self_service"
+                ? "El cliente PUEDE cancelar y reprogramar su cita directamente por este chat."
+                : "El cliente puede cancelar por este chat, pero para REPROGRAMAR debe hablar con un asesor humano.";
+
+            systemPrompt += `\n\n═══ SISTEMA DE CITAS ═══
+TIENES ACCESO A UN SISTEMA DE AGENDAMIENTO con 3 herramientas:
+1. verificar_disponibilidad — SIEMPRE verifica antes de ofrecer un horario
+2. agendar_cita — Crea la cita SOLO después de confirmación explícita del cliente
+3. gestionar_cita_existente — Para cancelar o reprogramar citas
+
+FLUJO OBLIGATORIO:
+1. Cliente muestra interés → usa verificar_disponibilidad
+2. Ofrece 2-3 horarios disponibles
+3. Cliente elige → confirma fecha + hora + servicio
+4. Usa agendar_cita (esto actualiza el CRM automáticamente)
+
+REGLAS DE REPROGRAMACIÓN:
+${rescheduleText}
+
+HORARIO DE ATENCIÓN:
+${hoursText}
+`;
+        }
+
+        const dynamicTools = buildToolsForOrg(hasAppointmentConfig);
 
         // `currentTurnMessages` is the ephemeral working array for this
         // single request. It starts with the persisted DB history and
@@ -906,7 +1027,7 @@ export async function POST(
                 { role: "system", content: systemPrompt },
                 ...sanitizeMessageHistory(currentTurnMessages),
             ],
-            tools,
+            tools: dynamicTools,
             tool_choice: "auto",
         });
 
@@ -1151,6 +1272,198 @@ export async function POST(
                             estado: estado_filtro,
                             message: `Lead ${nombre_cliente} registrado como ${estado_filtro}`,
                         }),
+                    });
+                } else if (toolCall.function.name === "verificar_disponibilidad") {
+                    const args = JSON.parse(toolCall.function.arguments);
+                    const fecha = args.fecha;
+                    const servicioNombre = args.servicio_nombre;
+
+                    // Look up product duration if service name provided
+                    let duration: number | undefined;
+                    if (servicioNombre) {
+                        const { data: matchProduct } = await supabaseAdmin.from("products")
+                            .select("attributes")
+                            .eq("organization_id", tenantId)
+                            .ilike("name", `%${servicioNombre}%`)
+                            .limit(1);
+                        if (matchProduct?.[0]?.attributes?.duracion) {
+                            duration = Number(matchProduct[0].attributes.duracion);
+                        }
+                    }
+
+                    const slots = await getAvailableSlots(tenantId, fecha, duration);
+                    const dayNames = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+                    const d = new Date(`${fecha}T12:00:00`);
+
+                    currentTurnMessages.push({
+                        role: "tool",
+                        tool_call_id: toolCall.id,
+                        content: JSON.stringify({
+                            disponible: slots.length > 0,
+                            fecha,
+                            dia_semana: dayNames[d.getDay()],
+                            horarios_disponibles: slots.map(s => s.start.slice(11,16)),
+                            total_slots: slots.length,
+                            duracion_slot_minutos: duration || appointmentConfig.slot_duration_minutes,
+                        }),
+                    });
+                } else if (toolCall.function.name === "agendar_cita") {
+                    const args = JSON.parse(toolCall.function.arguments);
+
+                    // Look up product
+                    let productId: string | undefined;
+                    let duration = appointmentConfig.slot_duration_minutes;
+                    if (args.servicio_nombre) {
+                        const { data: matchProduct } = await supabaseAdmin.from("products")
+                            .select("id, attributes")
+                            .eq("organization_id", tenantId)
+                            .ilike("name", `%${args.servicio_nombre}%`)
+                            .limit(1);
+                        if (matchProduct?.[0]) {
+                            productId = matchProduct[0].id;
+                            if (matchProduct[0].attributes?.duracion) {
+                                duration = Number(matchProduct[0].attributes.duracion);
+                            }
+                        }
+                    }
+
+                    const startTime = args.fecha_hora;
+                    const endDate = new Date(new Date(startTime).getTime() + duration * 60000);
+                    const endTime = endDate.toISOString();
+
+                    const result = await bookAppointment({
+                        orgId: tenantId,
+                        leadId: leadId!,
+                        productId,
+                        startTime,
+                        endTime,
+                        notes: args.notas || `Cita para ${args.servicio_nombre}. Cliente: ${args.nombre_cliente}`,
+                    });
+
+                    if (result.success) {
+                        // Update lead name if still generic
+                        const { data: currentLead } = await supabaseAdmin
+                            .from("leads")
+                            .select("name")
+                            .eq("id", leadId!)
+                            .single();
+                        if (currentLead?.name === "Lead WhatsApp" || currentLead?.name?.startsWith("Lead")) {
+                            await supabaseAdmin.from("leads").update({ name: args.nombre_cliente }).eq("id", leadId!);
+                        }
+
+                        // Send confirmation WhatsApp
+                        const confirmMsg = `✅ *Cita confirmada*\nServicio: ${args.servicio_nombre}\nFecha: ${formatChileDate(startTime)}\n\n¡Te esperamos!\n\nPara cancelar o cambiar tu cita, escribe "cancelar cita" o "cambiar cita".`;
+                        await sendWhatsAppMessage(tenantId, phoneClean, confirmMsg);
+
+                        currentTurnMessages.push({
+                            role: "tool",
+                            tool_call_id: toolCall.id,
+                            content: JSON.stringify({
+                                exito: true,
+                                mensaje: `Cita agendada exitosamente para ${formatChileDate(startTime)}.`,
+                                appointment_id: result.appointment.id,
+                            }),
+                        });
+                    } else {
+                        currentTurnMessages.push({
+                            role: "tool",
+                            tool_call_id: toolCall.id,
+                            content: JSON.stringify({
+                                exito: false,
+                                error: result.error,
+                                mensaje: "No se pudo agendar. Sugiere otro horario.",
+                            }),
+                        });
+                    }
+                } else if (toolCall.function.name === "gestionar_cita_existente") {
+                    const args = JSON.parse(toolCall.function.arguments);
+
+                    // Find lead's most recent confirmed appointment
+                    const { data: appts } = await supabaseAdmin
+                        .from("appointments")
+                        .select("id, start_time, end_time, product_id, products(name)")
+                        .eq("lead_id", leadId!)
+                        .eq("organization_id", tenantId)
+                        .eq("status", "confirmed")
+                        .order("start_time", { ascending: false })
+                        .limit(1);
+
+                    let toolResultContent: string;
+
+                    if (!appts || appts.length === 0) {
+                        toolResultContent = JSON.stringify({
+                            exito: false,
+                            error: "El cliente no tiene citas activas.",
+                        });
+                    } else {
+                        const appt = appts[0];
+
+                        if (args.accion === "cancelar") {
+                            if (!appointmentConfig.allow_client_cancel) {
+                                toolResultContent = JSON.stringify({
+                                    exito: false,
+                                    error: "La cancelación por WhatsApp no está habilitada. Deriva al cliente a un humano.",
+                                });
+                            } else {
+                                await cancelAppointment(appt.id, tenantId, args.motivo || "Cancelada por el cliente via WhatsApp");
+                                const cancelMsg = `❌ Tu cita del ${formatChileDate(appt.start_time)} ha sido cancelada.\n\nSi deseas agendar una nueva cita, ¡estoy aquí para ayudarte!`;
+                                await sendWhatsAppMessage(tenantId, phoneClean, cancelMsg);
+                                toolResultContent = JSON.stringify({
+                                    exito: true,
+                                    mensaje: "Cita cancelada exitosamente.",
+                                });
+                            }
+                        } else if (args.accion === "reprogramar") {
+                            if (!appointmentConfig.allow_client_reschedule || appointmentConfig.reschedule_policy === "escalate_to_human") {
+                                toolResultContent = JSON.stringify({
+                                    exito: false,
+                                    error: "La reprogramación requiere hablar con un asesor humano. Deriva al cliente.",
+                                    derivar_a_humano: true,
+                                });
+                            } else if (!args.nueva_fecha_hora) {
+                                toolResultContent = JSON.stringify({
+                                    exito: false,
+                                    error: "Se necesita la nueva fecha y hora para reprogramar. Primero verifica disponibilidad.",
+                                });
+                            } else {
+                                const apptDuration = (new Date(appt.end_time).getTime() - new Date(appt.start_time).getTime()) / 60000;
+                                const newEnd = new Date(new Date(args.nueva_fecha_hora).getTime() + apptDuration * 60000).toISOString();
+
+                                const result = await rescheduleAppointment({
+                                    appointmentId: appt.id,
+                                    orgId: tenantId,
+                                    leadId: leadId!,
+                                    productId: appt.product_id || undefined,
+                                    newStartTime: args.nueva_fecha_hora,
+                                    newEndTime: newEnd,
+                                });
+
+                                if (result.success) {
+                                    const rescheduleMsg = `🔄 *Cita reprogramada*\nNueva fecha: ${formatChileDate(args.nueva_fecha_hora)}\n\n¡Te esperamos!`;
+                                    await sendWhatsAppMessage(tenantId, phoneClean, rescheduleMsg);
+                                    toolResultContent = JSON.stringify({
+                                        exito: true,
+                                        mensaje: `Cita reprogramada para ${formatChileDate(args.nueva_fecha_hora)}.`,
+                                    });
+                                } else {
+                                    toolResultContent = JSON.stringify({
+                                        exito: false,
+                                        error: result.error,
+                                    });
+                                }
+                            }
+                        } else {
+                            toolResultContent = JSON.stringify({
+                                exito: false,
+                                error: "Acción no reconocida. Usa 'cancelar' o 'reprogramar'.",
+                            });
+                        }
+                    }
+
+                    currentTurnMessages.push({
+                        role: "tool",
+                        tool_call_id: toolCall.id,
+                        content: toolResultContent,
                     });
                 }
             }
