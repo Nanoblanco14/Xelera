@@ -342,7 +342,33 @@ export default function WhatsAppSetupSection({
 
                     {/* Webhook info */}
                     {webhookUrl && (
-                        <div className="grid gap-2.5">
+                        <div className="grid gap-2">
+                            <div
+                                style={{
+                                    padding: "10px 14px",
+                                    borderRadius: "8px",
+                                    background: "rgba(59, 130, 246, 0.08)",
+                                    border: "1px solid rgba(59, 130, 246, 0.15)",
+                                    marginBottom: "2px",
+                                }}
+                            >
+                                <p
+                                    style={{
+                                        fontSize: "11.5px",
+                                        lineHeight: "1.5",
+                                        color: "rgba(147, 197, 253, 0.9)",
+                                        margin: 0,
+                                    }}
+                                >
+                                    <strong style={{ color: "rgba(191, 219, 254, 0.95)" }}>
+                                        Configura tu Webhook en Meta:
+                                    </strong>{" "}
+                                    Copia estos datos e ingresalos en{" "}
+                                    <span style={{ color: "rgba(96, 165, 250, 0.95)" }}>
+                                        Meta for Developers → Tu App → WhatsApp → Configuracion → Webhook
+                                    </span>
+                                </p>
+                            </div>
                             <CopyField
                                 icon={<Wifi size={11} />}
                                 label="Webhook URL"
