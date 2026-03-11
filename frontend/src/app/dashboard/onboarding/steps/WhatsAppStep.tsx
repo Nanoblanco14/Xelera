@@ -294,7 +294,7 @@ export default function WhatsAppStep({ data, onChange, webhookUrl, orgId }: Prop
                         border: "1px solid rgba(255,255,255,0.06)",
                     }}
                 >
-                    {wa.allSteps.map((step, i) => {
+                    {wa.manualSteps.map((step, i) => {
                         const isCompleted = wa.completedSteps.includes(step);
                         const isCurrent = wa.currentStep === step;
                         const isFailed = wa.failedStep === step;
@@ -309,7 +309,7 @@ export default function WhatsAppStep({ data, onChange, webhookUrl, orgId }: Prop
                                 className="flex items-center gap-3"
                                 style={{
                                     padding: "14px 0",
-                                    borderBottom: i < wa.allSteps.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
+                                    borderBottom: i < wa.manualSteps.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
                                 }}
                             >
                                 {/* Icon */}

@@ -22,11 +22,19 @@ export interface ConnectCredentials {
     business_account_id: string;
 }
 
-type StepName = "verify_token" | "register_phone" | "subscribe_webhooks" | "save_credentials";
+export interface EmbeddedSignupData {
+    code: string;
+    phone_number_id: string;
+    waba_id: string;
+}
 
-const ALL_STEPS: StepName[] = ["verify_token", "register_phone", "subscribe_webhooks", "save_credentials"];
+type StepName = "exchange_token" | "verify_token" | "register_phone" | "subscribe_webhooks" | "save_credentials";
+
+const MANUAL_STEPS: StepName[] = ["verify_token", "register_phone", "subscribe_webhooks", "save_credentials"];
+const EMBEDDED_STEPS: StepName[] = ["exchange_token", "verify_token", "register_phone", "subscribe_webhooks", "save_credentials"];
 
 const STEP_LABELS: Record<StepName, string> = {
+    exchange_token: "Intercambiando credenciales con Facebook",
     verify_token: "Verificando credenciales",
     register_phone: "Registrando numero de telefono",
     subscribe_webhooks: "Suscribiendo webhooks",
@@ -54,7 +62,7 @@ export function useWhatsAppConnection(orgId: string) {
                 const data = await res.json();
                 setStatus(data);
                 if (data.connected) {
-                    setCompletedSteps([...ALL_STEPS]);
+                    setCompletedSteps([...MANUAL_STEPS]);
                 }
             }
         } catch {
@@ -127,6 +135,69 @@ export function useWhatsAppConnection(orgId: string) {
         [orgId]
     );
 
+    // ── Connect via Embedded Signup ───────────────────────────
+    const connectViaEmbeddedSignup = useCallback(
+        async (data: EmbeddedSignupData) => {
+            setConnecting(true);
+            setError(null);
+            setFailedStep(null);
+            setCompletedSteps([]);
+            setCurrentStep("exchange_token");
+
+            try {
+                const res = await fetch("/api/whatsapp/embedded-signup", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ org_id: orgId, ...data }),
+                });
+
+                const result = await res.json();
+
+                if (result.success) {
+                    // Animate steps sequentially
+                    const steps = result.steps_completed as StepName[];
+                    for (let i = 0; i < steps.length; i++) {
+                        setCompletedSteps((prev) => [...prev, steps[i]]);
+                        setCurrentStep(steps[i + 1] || null);
+                        if (i < steps.length - 1) {
+                            await delay(400);
+                        }
+                    }
+
+                    // Final state
+                    await delay(300);
+                    setCurrentStep(null);
+                    setStatus({
+                        connected: true,
+                        phone_number_id: data.phone_number_id,
+                        display_phone: result.phone_info?.display_phone,
+                        verified_name: result.phone_info?.verified_name,
+                        quality_rating: result.phone_info?.quality_rating,
+                        connected_at: new Date().toISOString(),
+                        webhook_url: result.webhook_url,
+                        verify_token: result.verify_token,
+                    });
+                } else {
+                    // Animate completed steps up to failure
+                    const completed = (result.steps_completed || []) as StepName[];
+                    for (let i = 0; i < completed.length; i++) {
+                        setCompletedSteps((prev) => [...prev, completed[i]]);
+                        await delay(300);
+                    }
+                    setCurrentStep(null);
+                    setFailedStep(result.step as StepName);
+                    setError(result.error || "Error desconocido al conectar");
+                }
+            } catch {
+                setError("Error de red. Verifica tu conexion e intenta de nuevo.");
+                setCurrentStep(null);
+            } finally {
+                setConnecting(false);
+            }
+        },
+        [orgId]
+    );
+
     // ── Reset to initial state ────────────────────────────────
     const reset = useCallback(() => {
         setStatus({ connected: false });
@@ -145,9 +216,11 @@ export function useWhatsAppConnection(orgId: string) {
         failedStep,
         completedSteps,
         currentStep,
-        allSteps: ALL_STEPS,
+        manualSteps: MANUAL_STEPS,
+        embeddedSteps: EMBEDDED_STEPS,
         stepLabels: STEP_LABELS,
         connect,
+        connectViaEmbeddedSignup,
         checkStatus,
         reset,
     };
