@@ -9,6 +9,8 @@ import {
     Image as ImageIcon, Loader2, GripVertical, LayoutGrid,
     List, ArrowUpDown, CheckSquare, Square, Download,
     Eye, EyeOff, Archive, Filter, Edit3,
+    Globe, AlertCircle, CheckCircle, ArrowRight, ArrowLeft,
+    Sparkles, Table2,
 } from "lucide-react";
 
 /* ── Types ────────────────────────────────────────── */
@@ -37,6 +39,15 @@ const fmtDate = (d: string) =>
 const fmtSize = (b: number) =>
     b < 1024 ? b + " B" : b < 1048576 ? (b / 1024).toFixed(1) + " KB" : (b / 1048576).toFixed(1) + " MB";
 
+const fmtPrice = (price: string | number, currency?: string) => {
+    const num = Number(price);
+    if (isNaN(num) || !price) return String(price);
+    if (currency === "UF") {
+        return `UF ${num.toLocaleString("es-CL", { minimumFractionDigits: num % 1 !== 0 ? 2 : 0, maximumFractionDigits: 2 })}`;
+    }
+    return `$${num.toLocaleString("es-CL")}`;
+};
+
 const statusConfig: Record<string, { label: string; color: string; bg: string; dot: string; glow?: string }> = {
     active: { label: "Activo", color: "#22c55e", bg: "rgba(34,197,94,0.1)", dot: "#22c55e", glow: "0 0 6px rgba(34,197,94,0.4)" },
     inactive: { label: "Inactivo", color: "#f59e0b", bg: "rgba(245,158,11,0.1)", dot: "#f59e0b" },
@@ -62,6 +73,9 @@ export default function CatalogPage() {
     const industryId = (organization as any)?.settings?.industry_template ?? "real_estate";
     const template = INDUSTRY_TEMPLATES.find(t => t.id === industryId) ?? INDUSTRY_TEMPLATES[1];
     const itemLabel = template.catalogLabel;
+    const itemGender = template.catalogGender ?? "m";
+    const itemNew = itemGender === "f" ? `Nueva ${itemLabel}` : `Nuevo ${itemLabel}`;
+    const itemFirst = itemGender === "f" ? `Primera ${itemLabel}` : `Primer ${itemLabel}`;
     const industryFields: IndustryField[] = template.industryFields;
 
     /* Modal state */
@@ -73,6 +87,7 @@ export default function CatalogPage() {
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
     const [price, setPrice] = useState("");
+    const [currency, setCurrency] = useState<"CLP" | "UF">("CLP");
     const [quickFields, setQuickFields] = useState<Record<string, string>>({});
     const [attrs, setAttrs] = useState<AttrRow[]>([]);
     const [pendingFiles, setPendingFiles] = useState<File[]>([]);
@@ -81,15 +96,49 @@ export default function CatalogPage() {
     const [formError, setFormError] = useState("");
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    /* ── Import modal state ──────────────────────── */
+    const [showImport, setShowImport] = useState(false);
+    const [importTab, setImportTab] = useState<"csv" | "scrape">("csv");
+
+    // CSV state
+    const [csvFile, setCsvFile] = useState<File | null>(null);
+    const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
+    const [csvPreview, setCsvPreview] = useState<Record<string, string>[]>([]);
+    const [csvAllData, setCsvAllData] = useState<Record<string, string>[]>([]);
+    const [csvTotal, setCsvTotal] = useState(0);
+    const [csvMapping, setCsvMapping] = useState<Record<string, string>>({});
+    const [csvStep, setCsvStep] = useState(1); // 1=upload, 2=map, 3=confirm
+    const [csvParsing, setCsvParsing] = useState(false);
+    const [csvImporting, setCsvImporting] = useState(false);
+    const [csvResult, setCsvResult] = useState<{ imported: number; failed: number; errors: string[] } | null>(null);
+
+    // Scrape state
+    const [scrapeUrl, setScrapeUrl] = useState("");
+    const [scrapeLoading, setScrapeLoading] = useState(false);
+    const [scrapeProducts, setScrapeProducts] = useState<{ name: string; description: string; attributes: Record<string, string>; selected: boolean }[]>([]);
+    const [scrapeStep, setScrapeStep] = useState(1); // 1=url, 2=preview, 3=confirm
+    const [scrapeImporting, setScrapeImporting] = useState(false);
+    const [scrapeResult, setScrapeResult] = useState<{ imported: number; failed: number; errors: string[] } | null>(null);
+    const [scrapeError, setScrapeError] = useState("");
+
+    const importFileRef = useRef<HTMLInputElement>(null);
+
+    /* ── Error state ────────────────────────────────── */
+    const [error, setError] = useState<string | null>(null);
+
     /* ── Fetch items ────────────────────────────────── */
     const fetchItems = useCallback(async () => {
         if (!organization) return;
         setLoading(true);
+        setError(null);
         try {
-            const res = await fetch(`/api/products?organization_id=${organization.id}`);
-            const data = await res.json();
-            setItems(data.products || []);
-        } catch { /* empty */ }
+            const res = await fetch(`/api/products?org_id=${organization.id}`);
+            const json = await res.json();
+            setItems(json.data || []);
+        } catch (err) {
+            console.error("Failed to load products:", err);
+            setError("No se pudieron cargar los productos. Intenta de nuevo.");
+        }
         setLoading(false);
     }, [organization]);
 
@@ -126,7 +175,7 @@ export default function CatalogPage() {
     };
 
     const openCreate = () => {
-        setEditItem(null); setName(""); setDescription(""); setPrice("");
+        setEditItem(null); setName(""); setDescription(""); setPrice(""); setCurrency("CLP");
         initQuickFields();
         setAttrs([]); setPendingFiles([]); setExistingFiles([]);
         setFormError(""); setShowModal(true);
@@ -135,8 +184,9 @@ export default function CatalogPage() {
     const openEdit = (p: CatalogItem) => {
         setEditItem(p); setName(p.name); setDescription(p.description);
         setPrice(p.attributes?.precio ?? "");
+        setCurrency((p.attributes?.moneda === "UF" ? "UF" : "CLP") as "CLP" | "UF");
         initQuickFields(p.attributes ?? {});
-        const reservedKeys = new Set([...industryFields.map(f => f.key), "precio"]);
+        const reservedKeys = new Set([...industryFields.map(f => f.key), "precio", "moneda"]);
         setAttrs(Object.entries(p.attributes || {})
             .filter(([k]) => !reservedKeys.has(k))
             .map(([key, value]) => ({ key, value })));
@@ -150,7 +200,7 @@ export default function CatalogPage() {
         setSaving(true); setFormError("");
 
         const attributes: Record<string, string> = {};
-        if (price.trim()) attributes["precio"] = price.trim();
+        if (price.trim()) { attributes["precio"] = price.trim(); attributes["moneda"] = currency; }
         Object.entries(quickFields).forEach(([k, v]) => { if (v.trim()) attributes[k] = v.trim(); });
         attrs.forEach(a => { if (a.key.trim()) attributes[a.key.trim()] = a.value; });
 
@@ -167,7 +217,7 @@ export default function CatalogPage() {
                 const err = await res.json();
                 throw new Error(err.error || "Error al guardar");
             }
-            const { product } = await res.json();
+            const { data: product } = await res.json();
 
             for (const file of pendingFiles) {
                 const fd = new FormData();
@@ -239,11 +289,12 @@ export default function CatalogPage() {
     };
 
     const handleExportCSV = () => {
-        const headers = ["Nombre", "Descripcion", "Precio", "Estado", "Fecha"];
+        const headers = ["Nombre", "Descripcion", "Precio", "Moneda", "Estado", "Fecha"];
         const rows = filtered.map(p => [
             p.name,
             p.description,
             p.attributes?.precio || "",
+            p.attributes?.moneda || "CLP",
             p.status || "active",
             fmtDate(p.created_at),
         ]);
@@ -257,6 +308,253 @@ export default function CatalogPage() {
         URL.revokeObjectURL(url);
     };
 
+    /* ── Import: download template CSV ──────────────── */
+    const handleDownloadTemplate = () => {
+        const headers = ["Nombre", "Descripción", "Precio", "Moneda"];
+        industryFields.forEach(f => headers.push(f.label));
+
+        // Dynamic example data per industry
+        const examples: Record<string, { row1: string[]; row2: string[]; fields: Record<string, [string, string]> }> = {
+            real_estate: {
+                row1: ["Departamento Centro", "Amplio departamento de 3 dormitorios con vista al parque", "150000000", "CLP"],
+                row2: ["Casa Las Condes", "Casa familiar con jardín y piscina", "8500", "UF"],
+                fields: { operacion: ["Arriendo", "Venta"], habitaciones: ["3", "4"], banos: ["2", "3"], superficie: ["75", "120"], disponibilidad: ["Disponible", "Reservado"] },
+            },
+            hair_salon: {
+                row1: ["Corte de cabello", "Corte clásico con lavado y secado", "15000", "CLP"],
+                row2: ["Tinte completo", "Tinte completo con tratamiento hidratante", "45000", "CLP"],
+                fields: { duracion: ["30", "90"], disponibilidad: ["Disponible", "Disponible"] },
+            },
+            ecommerce: {
+                row1: ["Polera Premium", "Polera de algodón 100% diseño exclusivo", "25000", "CLP"],
+                row2: ["Zapatillas Running", "Zapatillas deportivas con amortiguación", "89990", "CLP"],
+                fields: { stock: ["50", "12"], tallas: ["S, M, L, XL", "38, 39, 40, 41, 42"] },
+            },
+            blank: {
+                row1: ["Producto ejemplo 1", "Descripción del producto o servicio", "10000", "CLP"],
+                row2: ["Producto ejemplo 2", "Otra descripción detallada", "25000", "CLP"],
+                fields: { stock: ["100", "50"], categoria: ["General", "Premium"] },
+            },
+        };
+        const ex = examples[industryId] || examples.blank;
+        const row1 = [...ex.row1];
+        const row2 = [...ex.row2];
+        industryFields.forEach(f => {
+            const vals = ex.fields[f.key];
+            row1.push(vals ? vals[0] : "");
+            row2.push(vals ? vals[1] : "");
+        });
+
+        const csv = [headers, row1, row2].map(r => r.map(c => `"${c}"`).join(",")).join("\n");
+        const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "plantilla_inventario.csv";
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    /* ── Import: reset ──────────────────────────────── */
+    const resetImport = () => {
+        setShowImport(false);
+        setImportTab("csv");
+        setCsvFile(null); setCsvHeaders([]); setCsvPreview([]); setCsvAllData([]);
+        setCsvTotal(0); setCsvMapping({}); setCsvStep(1); setCsvResult(null);
+        setCsvParsing(false); setCsvImporting(false);
+        setScrapeUrl(""); setScrapeProducts([]); setScrapeStep(1);
+        setScrapeResult(null); setScrapeError("");
+        setScrapeLoading(false); setScrapeImporting(false);
+        setFormError("");
+    };
+
+    /* ── Import CSV: parse file ──────────────────────── */
+    const handleCsvUpload = async (file: File) => {
+        setCsvFile(file);
+        setCsvParsing(true);
+        setCsvResult(null);
+        try {
+            const fd = new FormData();
+            fd.append("file", file);
+            fd.append("organization_id", organization.id);
+            const res = await fetch("/api/products/import", { method: "POST", body: fd });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Error parseando archivo");
+            setCsvHeaders(data.headers);
+            setCsvPreview(data.preview);
+            setCsvAllData(data.allData);
+            setCsvTotal(data.total);
+            // Auto-map columns that match field names (with synonyms)
+            const autoMap: Record<string, string> = {};
+            const fieldOptions = getMappingOptions();
+            const synonyms: Record<string, string[]> = {
+                // Campos base
+                name: ["nombre", "name", "titulo", "título", "propiedad", "producto", "departamento", "casa", "servicio"],
+                description: ["descripción", "descripcion", "description", "detalle", "detalles", "desc"],
+                precio: ["precio", "price", "valor", "monto", "costo", "arriendo", "renta"],
+                moneda: ["moneda", "currency", "divisa", "tipo_moneda"],
+                // Inmobiliaria
+                operacion: ["operación", "operacion", "tipo operación", "tipo operacion"],
+                habitaciones: ["habitaciones", "dormitorios", "rooms", "bedrooms", "dorms", "habs"],
+                banos: ["baños", "banos", "bathrooms"],
+                superficie: ["superficie", "metros", "m2", "mt2", "metraje", "area", "área", "sqm"],
+                // E-commerce + general
+                stock: ["stock", "inventario", "cantidad", "unidades", "disponibles", "qty", "quantity"],
+                tallas: ["tallas", "talla", "sizes", "size", "medidas"],
+                categoria: ["categoría", "categoria", "category", "tipo", "rubro"],
+                // Peluquería
+                duracion: ["duración", "duracion", "duration", "tiempo", "minutos"],
+                disponibilidad: ["disponibilidad", "availability", "estado", "disponible"],
+            };
+            for (const h of data.headers) {
+                const lower = h.toLowerCase().trim();
+                let matched = false;
+                // Check synonyms first
+                for (const [field, syns] of Object.entries(synonyms)) {
+                    if (syns.some(s => lower === s || lower.includes(s))) {
+                        autoMap[h] = field;
+                        matched = true;
+                        break;
+                    }
+                }
+                if (!matched) {
+                    // Fallback: exact match with field options
+                    for (const opt of fieldOptions) {
+                        if (opt.value === "ignore") continue;
+                        if (lower === opt.label.toLowerCase() || lower === opt.value.toLowerCase()) {
+                            autoMap[h] = opt.value;
+                            matched = true;
+                            break;
+                        }
+                    }
+                }
+                if (!autoMap[h]) autoMap[h] = "ignore";
+            }
+            setCsvMapping(autoMap);
+            setCsvStep(2);
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : "Error";
+            setFormError(msg);
+        } finally {
+            setCsvParsing(false);
+        }
+    };
+
+    /* ── Import CSV: confirm ─────────────────────────── */
+    const handleCsvImport = async () => {
+        if (!csvMapping || !csvAllData.length) return;
+        // Check that at least one column is mapped to "name"
+        const nameCol = Object.entries(csvMapping).find(([, v]) => v === "name")?.[0];
+        if (!nameCol) { setFormError("Debes mapear al menos una columna a 'Nombre'"); return; }
+        setCsvImporting(true);
+        setCsvResult(null);
+        try {
+            // Build products from data + mapping
+            const products = csvAllData.map(row => {
+                const p: { name: string; description: string; attributes: Record<string, string> } = {
+                    name: "", description: "", attributes: {},
+                };
+                for (const [col, field] of Object.entries(csvMapping)) {
+                    if (field === "ignore" || !row[col]) continue;
+                    const val = String(row[col]).trim();
+                    if (!val) continue;
+                    if (field === "name") p.name = val;
+                    else if (field === "description") p.description = val;
+                    else p.attributes[field] = val;
+                }
+                return p;
+            }).filter(p => p.name.trim().length > 0);
+
+            const res = await fetch("/api/products/import/confirm", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ organization_id: organization.id, products }),
+            });
+            const data = await res.json();
+            setCsvResult({ imported: data.imported || 0, failed: data.failed || 0, errors: data.errors || [] });
+            setCsvStep(3);
+            if (data.imported > 0) fetchItems();
+        } catch {
+            setCsvResult({ imported: 0, failed: csvTotal, errors: ["Error de conexión"] });
+            setCsvStep(3);
+        } finally {
+            setCsvImporting(false);
+        }
+    };
+
+    /* ── Scrape: analyze URL ─────────────────────────── */
+    const handleScrape = async () => {
+        if (!scrapeUrl.trim()) return;
+        setScrapeLoading(true);
+        setScrapeError("");
+        setScrapeProducts([]);
+        setScrapeResult(null);
+        try {
+            const res = await fetch("/api/products/scrape", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url: scrapeUrl, organization_id: organization.id }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Error analizando página");
+            if (!data.products || data.products.length === 0) {
+                setScrapeError(`No se encontraron ${itemLabel.toLowerCase()}s en esta página. Intenta con otra URL.`);
+                return;
+            }
+            setScrapeProducts(data.products.map((p: { name: string; description?: string; attributes?: Record<string, string> }) => ({
+                ...p, description: p.description || "", attributes: p.attributes || {}, selected: true,
+            })));
+            setScrapeStep(2);
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : "Error";
+            setScrapeError(msg);
+        } finally {
+            setScrapeLoading(false);
+        }
+    };
+
+    /* ── Scrape: import selected ─────────────────────── */
+    const handleScrapeImport = async () => {
+        const selected = scrapeProducts.filter(p => p.selected);
+        if (selected.length === 0) return;
+        setScrapeImporting(true);
+        setScrapeResult(null);
+        try {
+            const products = selected.map(p => ({
+                name: p.name,
+                description: p.description,
+                attributes: p.attributes,
+            }));
+            const res = await fetch("/api/products/import/confirm", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ organization_id: organization.id, products }),
+            });
+            const data = await res.json();
+            setScrapeResult({ imported: data.imported || 0, failed: data.failed || 0, errors: data.errors || [] });
+            setScrapeStep(3);
+            if (data.imported > 0) fetchItems();
+        } catch {
+            setScrapeResult({ imported: 0, failed: selected.length, errors: ["Error de conexión"] });
+            setScrapeStep(3);
+        } finally {
+            setScrapeImporting(false);
+        }
+    };
+
+    /* ── Mapping options for CSV columns ──────────────── */
+    const getMappingOptions = () => {
+        const opts = [
+            { value: "name", label: "Nombre" },
+            { value: "description", label: "Descripción" },
+            { value: "precio", label: "Precio" },
+            { value: "moneda", label: "Moneda (CLP/UF)" },
+            ...industryFields.map(f => ({ value: f.key, label: f.label })),
+            { value: "ignore", label: "— Ignorar —" },
+        ];
+        return opts;
+    };
+
     const toggleSort = (field: typeof sortBy) => {
         if (sortBy === field) setSortDir(d => d === "asc" ? "desc" : "asc");
         else { setSortBy(field); setSortDir("asc"); }
@@ -267,6 +565,11 @@ export default function CatalogPage() {
 
     return (
         <div className="animate-in">
+            {error && (
+                <div style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", borderRadius: 8, padding: "12px 16px", margin: "0 0 12px 0", color: "#DC2626", fontSize: 14 }}>
+                    {error}
+                </div>
+            )}
             {/* ── Header ───────────────────────────── */}
             <div className="page-header">
                 <div>
@@ -275,9 +578,14 @@ export default function CatalogPage() {
                         El bot usa este catálogo en cada conversación
                     </p>
                 </div>
-                <button onClick={openCreate} className="btn-primary">
-                    <Plus size={18} /> Nuevo {itemLabel}
-                </button>
+                <div style={{ display: "flex", gap: "8px" }}>
+                    <button onClick={() => setShowImport(true)} className="btn-secondary flex items-center gap-2" style={{ fontSize: "0.82rem" }}>
+                        <Upload size={15} /> Importar
+                    </button>
+                    <button onClick={openCreate} className="btn-primary">
+                        <Plus size={18} /> {itemNew}
+                    </button>
+                </div>
             </div>
 
             {/* ── KPI Stats ────────────────────────── */}
@@ -451,7 +759,7 @@ export default function CatalogPage() {
                             con informacion precisa de tu catalogo.
                         </p>
                         <button onClick={openCreate} className="btn-primary">
-                            <Plus size={18} /> Crear Primer {itemLabel}
+                            <Plus size={18} /> Crear {itemFirst}
                         </button>
                     </div>
                 </div>
@@ -523,7 +831,7 @@ export default function CatalogPage() {
                                         <h3 className="font-semibold text-sm mb-1 truncate" style={{ color: "var(--text-primary)" }}>{p.name}</h3>
                                         {p.attributes?.precio && (
                                             <p className="text-base font-bold mb-1" style={{ color: "var(--accent-light)" }}>
-                                                ${Number(p.attributes.precio).toLocaleString("es-CL")}
+                                                {fmtPrice(p.attributes.precio, p.attributes?.moneda)}
                                             </p>
                                         )}
                                         <p className="text-xs line-clamp-2 mb-3" style={{ color: "var(--text-secondary)" }}>
@@ -531,7 +839,7 @@ export default function CatalogPage() {
                                         </p>
                                         {Object.keys(p.attributes || {}).length > 0 && (
                                             <div className="flex flex-wrap gap-1.5 mb-3">
-                                                {Object.entries(p.attributes).filter(([k]) => k !== "precio").slice(0, 3).map(([k, v]) => (
+                                                {Object.entries(p.attributes).filter(([k]) => k !== "precio" && k !== "moneda").slice(0, 3).map(([k, v]) => (
                                                     <span key={k} className="text-[0.65rem] px-2 py-0.5 rounded-full"
                                                         style={{ background: "rgba(255,255,255,0.05)", color: "var(--text-secondary)", border: "1px solid rgba(255,255,255,0.07)" }}>
                                                         {k}: {v}
@@ -624,7 +932,7 @@ export default function CatalogPage() {
                                                 </div>
                                             </td>
                                             <td className="table-cell" style={{ color: p.attributes?.precio ? "var(--accent-light)" : "var(--text-muted)" }}>
-                                                {p.attributes?.precio ? `$${Number(p.attributes.precio).toLocaleString("es-CL")}` : "—"}
+                                                {p.attributes?.precio ? fmtPrice(p.attributes.precio, p.attributes?.moneda) : "—"}
                                             </td>
                                             <td className="table-cell">
                                                 <span style={{
@@ -672,57 +980,230 @@ export default function CatalogPage() {
                 </div>
             )}
 
-            {/* ── VIEW Modal ───────────────────────── */}
-            {viewItem && (
+            {/* ── VIEW Modal (Premium) ─────────────── */}
+            {viewItem && (() => {
+                const vSt = statusConfig[viewItem.status || "active"] || statusConfig.active;
+                const vImg = viewItem.product_files?.find(f => f.file_type === "image");
+                const vHasEmb = viewItem.embedding && (Array.isArray(viewItem.embedding) ? viewItem.embedding.length > 0 : true);
+                const vAttrs = Object.entries(viewItem.attributes || {}).filter(([k]) => k !== "moneda" && k !== "precio");
+                const vDisp = viewItem.attributes?.disponibilidad;
+                const dispColor = !vDisp ? null : vDisp === "Disponible" ? "#22c55e" : vDisp === "Reservado" ? "#f59e0b" : vDisp === "Vendido" || vDisp === "Arrendado" ? "#ef4444" : vDisp === "No Disponible" ? "#ef4444" : "#6366f1";
+
+                return (
                 <div className="modal-overlay animate-in" onClick={() => setViewItem(null)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: "560px" }}>
-                        <div className="modal-header">
-                            <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{viewItem.name}</h2>
-                            <button onClick={() => setViewItem(null)}
-                                className="p-1 rounded-lg transition-colors hover:bg-white/5 cursor-pointer"
-                                style={{ background: "none", border: "none", color: "var(--text-muted)" }}>
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <div className="modal-body space-y-4">
-                            {viewItem.description && (
-                                <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{viewItem.description}</p>
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="modal-content" onClick={e => e.stopPropagation()}
+                        style={{ maxWidth: "580px", padding: 0, overflow: "hidden", borderRadius: "18px" }}>
+
+                        {/* Hero image / placeholder */}
+                        <div style={{
+                            height: vImg ? "220px" : "120px",
+                            background: vImg ? "transparent" : "linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(139,92,246,0.08) 100%)",
+                            position: "relative", overflow: "hidden",
+                        }}>
+                            {vImg ? (
+                                <img src={vImg.file_url} alt={viewItem.name}
+                                    style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            ) : (
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
+                                    <Package size={48} style={{ color: "var(--text-muted)", opacity: 0.2 }} />
+                                </div>
                             )}
-                            {Object.keys(viewItem.attributes || {}).length > 0 && (
-                                <div>
-                                    <h4 className="form-label mb-2">Atributos</h4>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {Object.entries(viewItem.attributes).map(([k, v]) => (
-                                            <div key={k} className="flex items-center gap-2 p-2.5 rounded-lg"
-                                                style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}>
-                                                <span className="text-xs font-medium" style={{ color: "var(--accent-light)" }}>{k}</span>
-                                                <span className="text-xs" style={{ color: "var(--text-primary)" }}>{v}</span>
+                            {/* Gradient overlay */}
+                            <div style={{
+                                position: "absolute", bottom: 0, left: 0, right: 0, height: "80px",
+                                background: "linear-gradient(transparent, var(--bg-card))",
+                            }} />
+                            {/* Close button */}
+                            <button onClick={() => setViewItem(null)} style={{
+                                position: "absolute", top: "12px", right: "12px", zIndex: 3,
+                                width: "32px", height: "32px", borderRadius: "10px",
+                                background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)",
+                                border: "1px solid rgba(255,255,255,0.1)",
+                                color: "#fff", cursor: "pointer",
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                            }}>
+                                <X size={16} />
+                            </button>
+                            {/* Badges top-left */}
+                            <div style={{ position: "absolute", top: "12px", left: "12px", display: "flex", gap: "6px", zIndex: 3 }}>
+                                <span style={{
+                                    padding: "4px 10px", borderRadius: "100px",
+                                    fontSize: "0.65rem", fontWeight: 700,
+                                    background: vSt.bg, color: vSt.color,
+                                    backdropFilter: "blur(8px)",
+                                    border: `1px solid ${vSt.color}22`,
+                                }}>{vSt.label}</span>
+                                {vHasEmb && (
+                                    <span style={{
+                                        padding: "4px 10px", borderRadius: "100px",
+                                        fontSize: "0.65rem", fontWeight: 700,
+                                        background: "rgba(34,197,94,0.1)", color: "#22c55e",
+                                        backdropFilter: "blur(8px)",
+                                        border: "1px solid rgba(34,197,94,0.15)",
+                                    }}>✓ IA Ready</span>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Content */}
+                        <div style={{ padding: "20px 24px 24px" }}>
+                            {/* Title + Price */}
+                            <div style={{ marginBottom: "16px" }}>
+                                <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: "6px" }}>
+                                    {viewItem.name}
+                                </h2>
+                                <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                                    {viewItem.attributes?.precio && (
+                                        <span style={{
+                                            fontSize: "1.1rem", fontWeight: 800,
+                                            color: "var(--accent-light)",
+                                        }}>
+                                            {fmtPrice(viewItem.attributes.precio, viewItem.attributes?.moneda)}
+                                        </span>
+                                    )}
+                                    {viewItem.attributes?.precio && (
+                                        <span style={{
+                                            padding: "2px 8px", borderRadius: "6px",
+                                            fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.5px",
+                                            background: viewItem.attributes?.moneda === "UF" ? "rgba(167,139,250,0.1)" : "rgba(59,130,246,0.1)",
+                                            color: viewItem.attributes?.moneda === "UF" ? "#a78bfa" : "#60a5fa",
+                                            border: `1px solid ${viewItem.attributes?.moneda === "UF" ? "rgba(167,139,250,0.15)" : "rgba(59,130,246,0.15)"}`,
+                                        }}>
+                                            {viewItem.attributes?.moneda || "CLP"}
+                                        </span>
+                                    )}
+                                    {vDisp && (
+                                        <span style={{
+                                            padding: "2px 8px", borderRadius: "6px",
+                                            fontSize: "0.6rem", fontWeight: 700,
+                                            background: `${dispColor}15`,
+                                            color: dispColor || "var(--text-muted)",
+                                            border: `1px solid ${dispColor}25`,
+                                        }}>
+                                            {vDisp}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Description */}
+                            {viewItem.description && (
+                                <p style={{
+                                    fontSize: "0.82rem", lineHeight: 1.65, color: "var(--text-secondary)",
+                                    marginBottom: "18px",
+                                }}>
+                                    {viewItem.description}
+                                </p>
+                            )}
+
+                            {/* Attributes grid */}
+                            {vAttrs.length > 0 && (
+                                <div style={{ marginBottom: "18px" }}>
+                                    <p style={{
+                                        fontSize: "0.68rem", fontWeight: 700, color: "var(--text-muted)",
+                                        textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: "10px",
+                                    }}>Detalles</p>
+                                    <div style={{
+                                        display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+                                        gap: "8px",
+                                    }}>
+                                        {vAttrs.map(([k, v]) => (
+                                            <div key={k} style={{
+                                                padding: "10px 14px", borderRadius: "12px",
+                                                background: "rgba(255,255,255,0.02)",
+                                                border: "1px solid var(--border)",
+                                            }}>
+                                                <p style={{
+                                                    fontSize: "0.62rem", fontWeight: 600, color: "var(--text-muted)",
+                                                    textTransform: "capitalize", marginBottom: "3px",
+                                                }}>{k.replace(/_/g, " ")}</p>
+                                                <p style={{
+                                                    fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)",
+                                                }}>{v}</p>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
                             )}
+
+                            {/* Image gallery */}
                             {viewItem.product_files && viewItem.product_files.length > 0 && (
-                                <div>
-                                    <h4 className="form-label mb-2">Archivos</h4>
-                                    <div className="grid grid-cols-2 gap-2">
+                                <div style={{ marginBottom: "18px" }}>
+                                    <p style={{
+                                        fontSize: "0.68rem", fontWeight: 700, color: "var(--text-muted)",
+                                        textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: "10px",
+                                    }}>Archivos</p>
+                                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                                         {viewItem.product_files.map(f => (
                                             <a key={f.id} href={f.file_url} target="_blank" rel="noreferrer"
-                                                className="flex items-center gap-2 p-3 rounded-lg transition-colors hover:bg-white/5"
-                                                style={{ background: "var(--bg-card)", border: "1px solid var(--border)", textDecoration: "none" }}>
-                                                {f.file_type === "image" ?
-                                                    <ImageIcon size={16} style={{ color: "var(--info)" }} /> :
-                                                    <FileText size={16} style={{ color: "var(--warning)" }} />}
-                                                <span className="text-xs truncate" style={{ color: "var(--text-primary)" }}>{f.file_name}</span>
+                                                style={{
+                                                    width: "80px", height: "80px", borderRadius: "12px",
+                                                    overflow: "hidden", border: "1px solid var(--border)",
+                                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                                    background: "var(--bg-secondary)", textDecoration: "none",
+                                                    transition: "all 0.15s ease",
+                                                }}>
+                                                {f.file_type === "image" ? (
+                                                    <img src={f.file_url} alt={f.file_name}
+                                                        style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                                ) : (
+                                                    <div style={{ textAlign: "center" }}>
+                                                        <FileText size={20} style={{ color: "var(--warning)", margin: "0 auto 4px" }} />
+                                                        <p style={{ fontSize: "0.55rem", color: "var(--text-muted)" }}>
+                                                            {f.file_name.length > 10 ? f.file_name.slice(0, 10) + "…" : f.file_name}
+                                                        </p>
+                                                    </div>
+                                                )}
                                             </a>
                                         ))}
                                     </div>
                                 </div>
                             )}
+
+                            {/* Footer info */}
+                            <div style={{
+                                display: "flex", alignItems: "center", justifyContent: "space-between",
+                                paddingTop: "16px", borderTop: "1px solid var(--border)",
+                            }}>
+                                <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>
+                                    Creado el {fmtDate(viewItem.created_at)}
+                                </span>
+                                <div style={{ display: "flex", gap: "8px" }}>
+                                    <button onClick={() => {
+                                        if (!confirm(`¿Eliminar este ${itemLabel.toLowerCase()}?`)) return;
+                                        fetch(`/api/products/${viewItem.id}`, { method: "DELETE" }).then(() => fetchItems());
+                                        setViewItem(null);
+                                    }}
+                                        style={{
+                                            padding: "8px 14px", borderRadius: "10px", fontSize: "0.78rem", fontWeight: 600,
+                                            background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.12)",
+                                            color: "#f87171", cursor: "pointer",
+                                            display: "flex", alignItems: "center", gap: "6px",
+                                            transition: "all 0.15s ease",
+                                        }}>
+                                        <Trash2 size={14} /> Eliminar
+                                    </button>
+                                    <button onClick={() => { setViewItem(null); openEdit(viewItem); }}
+                                        style={{
+                                            padding: "8px 18px", borderRadius: "10px", fontSize: "0.78rem", fontWeight: 600,
+                                            background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.2)",
+                                            color: "#60a5fa", cursor: "pointer",
+                                            display: "flex", alignItems: "center", gap: "6px",
+                                            transition: "all 0.15s ease",
+                                        }}>
+                                        <Edit3 size={14} /> Editar {itemLabel.toLowerCase()}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    </motion.div>
                 </div>
-            )}
+                );
+            })()}
 
             {/* ── CREATE / EDIT Modal ──────────────── */}
             {showModal && (
@@ -730,7 +1211,7 @@ export default function CatalogPage() {
                     <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: "640px" }}>
                         <div className="modal-header mb-2">
                             <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>
-                                {editItem ? `Editar ${itemLabel}` : `Nuevo ${itemLabel}`}
+                                {editItem ? `Editar ${itemLabel}` : itemNew}
                             </h2>
                             <button onClick={() => setShowModal(false)}
                                 className="p-1 rounded-lg transition-colors hover:bg-white/5 cursor-pointer"
@@ -753,8 +1234,32 @@ export default function CatalogPage() {
                             </div>
                             <div className="form-group" style={{ marginBottom: 0 }}>
                                 <label className="form-label">Precio</label>
-                                <input className="input" placeholder="Ej: 150000" type="number" min="0"
-                                    value={price} onChange={e => setPrice(e.target.value)} />
+                                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                                    <div style={{
+                                        display: "flex", borderRadius: "8px", overflow: "hidden",
+                                        border: "1px solid var(--border)", flexShrink: 0,
+                                    }}>
+                                        {(["CLP", "UF"] as const).map(c => (
+                                            <button key={c} type="button" onClick={() => setCurrency(c)}
+                                                style={{
+                                                    padding: "8px 12px", fontSize: "0.78rem", fontWeight: 700,
+                                                    border: "none", cursor: "pointer",
+                                                    background: currency === c ? (c === "CLP" ? "rgba(59,130,246,0.12)" : "rgba(167,139,250,0.12)") : "transparent",
+                                                    color: currency === c ? (c === "CLP" ? "#60a5fa" : "#a78bfa") : "var(--text-muted)",
+                                                    transition: "all 0.15s ease",
+                                                }}>
+                                                {c === "CLP" ? "CLP" : "UF"}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <input className="input" placeholder={currency === "UF" ? "Ej: 3500" : "Ej: 150000000"} type="number" min="0"
+                                        step={currency === "UF" ? "0.01" : "1"}
+                                        value={price} onChange={e => setPrice(e.target.value)}
+                                        style={{ flex: 1 }} />
+                                </div>
+                                <p style={{ fontSize: "0.68rem", color: "var(--text-muted)", marginTop: "4px" }}>
+                                    {currency === "CLP" ? "Pesos chilenos (ej: 150.000.000)" : "Unidades de Fomento (ej: 3.500,50)"}
+                                </p>
                             </div>
                             <div className="form-group" style={{ marginBottom: 0 }}>
                                 <label className="form-label">Descripcion</label>
@@ -874,12 +1379,509 @@ export default function CatalogPage() {
                         <div className="modal-footer">
                             <button onClick={() => setShowModal(false)} className="btn-secondary">Cancelar</button>
                             <button onClick={handleSave} className="btn-primary" disabled={saving}>
-                                {saving ? <><Loader2 size={15} className="animate-spin" /> Guardando...</> : <>{editItem ? "Actualizar" : `Crear ${itemLabel}`}</>}
+                                {saving ? <><Loader2 size={15} className="animate-spin" /> Guardando...</> : <>{editItem ? "Actualizar" : `Crear ${itemLabel.toLowerCase()}`}</>}
                             </button>
                         </div>
                     </div>
                 </div>
             )}
+
+            {/* ── IMPORT Modal ─────────────────────────── */}
+            <AnimatePresence>
+                {showImport && (
+                    <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="modal-overlay" onClick={resetImport}
+                        style={{ display: "flex", alignItems: "center", justifyContent: "center" }}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 12 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 12 }}
+                            transition={{ duration: 0.2 }}
+                            onClick={e => e.stopPropagation()}
+                            className="modal-content"
+                            style={{ maxWidth: "680px", maxHeight: "85vh", overflowY: "auto" }}
+                        >
+                            {/* Header */}
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                                <div>
+                                    <h2 style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
+                                        Importar {itemLabel}s
+                                    </h2>
+                                    <p style={{ fontSize: "0.76rem", color: "var(--text-muted)", margin: "4px 0 0" }}>
+                                        Carga tu inventario masivamente
+                                    </p>
+                                </div>
+                                <button onClick={resetImport} style={{ color: "var(--text-muted)", cursor: "pointer", background: "none", border: "none" }}>
+                                    <X size={18} />
+                                </button>
+                            </div>
+
+                            {/* Tabs */}
+                            <div style={{
+                                display: "flex", gap: "4px", marginBottom: "20px",
+                                background: "rgba(255,255,255,0.03)", borderRadius: "10px", padding: "3px",
+                            }}>
+                                <button
+                                    onClick={() => { setImportTab("csv"); setCsvStep(1); setCsvResult(null); }}
+                                    style={{
+                                        flex: 1, padding: "8px 16px", borderRadius: "8px",
+                                        fontSize: "0.8rem", fontWeight: 600, border: "none", cursor: "pointer",
+                                        display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                                        background: importTab === "csv" ? "rgba(59,130,246,0.1)" : "transparent",
+                                        color: importTab === "csv" ? "#60a5fa" : "var(--text-secondary)",
+                                        transition: "all 0.2s ease",
+                                    }}
+                                >
+                                    <Table2 size={14} /> Archivo CSV / Excel
+                                </button>
+                                <button
+                                    onClick={() => { setImportTab("scrape"); setScrapeStep(1); setScrapeResult(null); setScrapeError(""); }}
+                                    style={{
+                                        flex: 1, padding: "8px 16px", borderRadius: "8px",
+                                        fontSize: "0.8rem", fontWeight: 600, border: "none", cursor: "pointer",
+                                        display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
+                                        background: importTab === "scrape" ? "rgba(167,139,250,0.1)" : "transparent",
+                                        color: importTab === "scrape" ? "#a78bfa" : "var(--text-secondary)",
+                                        transition: "all 0.2s ease",
+                                    }}
+                                >
+                                    <Globe size={14} /> Desde página web
+                                </button>
+                            </div>
+
+                            {/* ═══ CSV/Excel Tab ═══ */}
+                            {importTab === "csv" && (
+                                <div>
+                                    {/* Step 1: Upload */}
+                                    {csvStep === 1 && (
+                                        <div>
+                                            {/* Guide box */}
+                                            <div style={{
+                                                padding: "14px 16px", borderRadius: "10px",
+                                                background: "rgba(59,130,246,0.03)", border: "1px solid rgba(59,130,246,0.1)",
+                                                marginBottom: "16px",
+                                            }}>
+                                                <p style={{ fontSize: "0.78rem", fontWeight: 600, color: "#60a5fa", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
+                                                    <Sparkles size={13} /> ¿Cómo organizar tu archivo?
+                                                </p>
+                                                <div style={{ fontSize: "0.74rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                                                    <p style={{ margin: "0 0 4px" }}>• Cada <strong style={{ color: "var(--text-primary)" }}>fila</strong> = un {itemLabel.toLowerCase()}</p>
+                                                    <p style={{ margin: "0 0 4px" }}>• Cada <strong style={{ color: "var(--text-primary)" }}>columna</strong> = un dato (Nombre, Precio, Habitaciones, etc.)</p>
+                                                    <p style={{ margin: "0 0 4px" }}>• La primera fila debe tener los <strong style={{ color: "var(--text-primary)" }}>nombres de las columnas</strong></p>
+                                                    <p style={{ margin: "0 0 4px" }}>• El precio puede ser en <strong style={{ color: "#60a5fa" }}>CLP</strong> o <strong style={{ color: "#a78bfa" }}>UF</strong> (agrega una columna &quot;Moneda&quot;)</p>
+                                                </div>
+                                                <button onClick={handleDownloadTemplate}
+                                                    style={{
+                                                        marginTop: "10px", padding: "6px 14px", borderRadius: "8px",
+                                                        fontSize: "0.74rem", fontWeight: 600, cursor: "pointer",
+                                                        background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.15)",
+                                                        color: "#60a5fa", display: "flex", alignItems: "center", gap: "6px",
+                                                    }}>
+                                                    <Download size={13} /> Descargar plantilla de ejemplo (.csv)
+                                                </button>
+                                            </div>
+
+                                            <input
+                                                ref={importFileRef}
+                                                type="file"
+                                                accept=".csv,.xlsx,.xls"
+                                                style={{ display: "none" }}
+                                                onChange={e => {
+                                                    const f = e.target.files?.[0];
+                                                    if (f) handleCsvUpload(f);
+                                                }}
+                                            />
+                                            <div
+                                                onClick={() => importFileRef.current?.click()}
+                                                onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = "#60a5fa"; }}
+                                                onDragLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; }}
+                                                onDrop={e => {
+                                                    e.preventDefault();
+                                                    e.currentTarget.style.borderColor = "var(--border)";
+                                                    const f = e.dataTransfer.files[0];
+                                                    if (f) handleCsvUpload(f);
+                                                }}
+                                                style={{
+                                                    padding: "40px 20px",
+                                                    borderRadius: "14px",
+                                                    border: "2px dashed var(--border)",
+                                                    background: "rgba(255,255,255,0.01)",
+                                                    textAlign: "center",
+                                                    cursor: "pointer",
+                                                    transition: "all 0.2s ease",
+                                                }}
+                                            >
+                                                {csvParsing ? (
+                                                    <Loader2 size={32} className="animate-spin" style={{ color: "var(--text-muted)", margin: "0 auto 12px" }} />
+                                                ) : (
+                                                    <Upload size={32} style={{ color: "var(--text-muted)", margin: "0 auto 12px" }} />
+                                                )}
+                                                <p style={{ fontSize: "0.88rem", fontWeight: 600, color: "var(--text-primary)", marginBottom: "4px" }}>
+                                                    {csvParsing ? "Analizando archivo..." : "Arrastra tu archivo aquí o haz clic"}
+                                                </p>
+                                                <p style={{ fontSize: "0.74rem", color: "var(--text-muted)" }}>
+                                                    Formatos soportados: .csv, .xlsx, .xls
+                                                </p>
+                                            </div>
+                                            {formError && (
+                                                <div style={{
+                                                    marginTop: "12px", padding: "10px 14px", borderRadius: "10px",
+                                                    background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.12)",
+                                                    color: "#f87171", fontSize: "0.8rem",
+                                                    display: "flex", alignItems: "center", gap: "8px",
+                                                }}>
+                                                    <AlertCircle size={14} /> {formError}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Step 2: Column Mapping */}
+                                    {csvStep === 2 && (
+                                        <div>
+                                            <div style={{
+                                                padding: "10px 14px", borderRadius: "10px",
+                                                background: "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.1)",
+                                                marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px",
+                                            }}>
+                                                <Sparkles size={14} style={{ color: "#60a5fa" }} />
+                                                <p style={{ fontSize: "0.76rem", color: "var(--text-secondary)", margin: 0 }}>
+                                                    <strong>{csvTotal}</strong> filas encontradas en <strong>{csvFile?.name}</strong>. Mapea cada columna al campo correspondiente.
+                                                </p>
+                                            </div>
+
+                                            {/* Mapping table */}
+                                            <div style={{ marginBottom: "16px" }}>
+                                                {csvHeaders.map(h => (
+                                                    <div key={h} style={{
+                                                        display: "flex", alignItems: "center", gap: "12px",
+                                                        padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.04)",
+                                                    }}>
+                                                        <span style={{
+                                                            flex: 1, fontSize: "0.82rem", fontWeight: 600,
+                                                            color: "var(--text-primary)",
+                                                        }}>
+                                                            {h}
+                                                        </span>
+                                                        <ArrowRight size={14} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+                                                        <select
+                                                            className="select"
+                                                            value={csvMapping[h] || "ignore"}
+                                                            onChange={e => setCsvMapping(prev => ({ ...prev, [h]: e.target.value }))}
+                                                            style={{ width: "180px", fontSize: "0.8rem" }}
+                                                        >
+                                                            {getMappingOptions().map(opt => (
+                                                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            {/* Preview first 3 rows */}
+                                            {csvPreview.length > 0 && (
+                                                <div style={{ marginBottom: "16px" }}>
+                                                    <p style={{ fontSize: "0.72rem", fontWeight: 600, color: "var(--text-muted)", marginBottom: "6px", textTransform: "uppercase" }}>
+                                                        Vista previa (primeras 3 filas)
+                                                    </p>
+                                                    <div style={{ overflowX: "auto" }}>
+                                                        <table style={{ width: "100%", fontSize: "0.74rem", borderCollapse: "collapse" }}>
+                                                            <thead>
+                                                                <tr>
+                                                                    {csvHeaders.filter(h => csvMapping[h] !== "ignore").map(h => (
+                                                                        <th key={h} style={{
+                                                                            padding: "6px 8px", textAlign: "left",
+                                                                            color: "#60a5fa", fontWeight: 600,
+                                                                            borderBottom: "1px solid var(--border)",
+                                                                        }}>
+                                                                            {getMappingOptions().find(o => o.value === csvMapping[h])?.label || h}
+                                                                        </th>
+                                                                    ))}
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {csvPreview.slice(0, 3).map((row, i) => (
+                                                                    <tr key={i}>
+                                                                        {csvHeaders.filter(h => csvMapping[h] !== "ignore").map(h => (
+                                                                            <td key={h} style={{
+                                                                                padding: "6px 8px", color: "var(--text-secondary)",
+                                                                                borderBottom: "1px solid rgba(255,255,255,0.03)",
+                                                                                maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                                                                            }}>
+                                                                                {row[h] || "—"}
+                                                                            </td>
+                                                                        ))}
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {formError && (
+                                                <div style={{
+                                                    marginBottom: "12px", padding: "10px 14px", borderRadius: "10px",
+                                                    background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.12)",
+                                                    color: "#f87171", fontSize: "0.8rem",
+                                                }}>
+                                                    {formError}
+                                                </div>
+                                            )}
+
+                                            <div style={{ display: "flex", gap: "10px" }}>
+                                                <button onClick={() => { setCsvStep(1); setCsvFile(null); setFormError(""); }}
+                                                    className="btn-secondary flex items-center gap-2" style={{ fontSize: "0.82rem" }}>
+                                                    <ArrowLeft size={14} /> Atrás
+                                                </button>
+                                                <button
+                                                    onClick={handleCsvImport}
+                                                    disabled={csvImporting}
+                                                    className="btn-primary flex items-center gap-2"
+                                                    style={{
+                                                        flex: 1, justifyContent: "center", fontSize: "0.82rem",
+                                                        opacity: csvImporting ? 0.5 : 1,
+                                                        background: "linear-gradient(135deg, #22c55e, #16a34a)",
+                                                    }}
+                                                >
+                                                    {csvImporting ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                                                    {csvImporting ? "Importando..." : `Importar ${csvTotal} ${itemLabel.toLowerCase()}s`}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Step 3: Result */}
+                                    {csvStep === 3 && csvResult && (
+                                        <div style={{ textAlign: "center", padding: "20px 0" }}>
+                                            <div style={{
+                                                width: "56px", height: "56px", borderRadius: "50%",
+                                                background: csvResult.imported > 0 ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)",
+                                                display: "flex", alignItems: "center", justifyContent: "center",
+                                                margin: "0 auto 16px",
+                                            }}>
+                                                {csvResult.imported > 0
+                                                    ? <CheckCircle size={28} style={{ color: "#22c55e" }} />
+                                                    : <AlertCircle size={28} style={{ color: "#ef4444" }} />}
+                                            </div>
+                                            <p style={{ fontSize: "1rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: "4px" }}>
+                                                {csvResult.imported > 0 ? "¡Importación completada!" : "Error en la importación"}
+                                            </p>
+                                            <p style={{ fontSize: "0.82rem", color: "var(--text-secondary)", marginBottom: "16px" }}>
+                                                {csvResult.imported} importados · {csvResult.failed} fallidos
+                                            </p>
+                                            {csvResult.errors.length > 0 && (
+                                                <div style={{
+                                                    textAlign: "left", padding: "10px 14px", borderRadius: "10px",
+                                                    background: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.1)",
+                                                    marginBottom: "16px", maxHeight: "120px", overflowY: "auto",
+                                                }}>
+                                                    {csvResult.errors.map((e, i) => (
+                                                        <p key={i} style={{ fontSize: "0.72rem", color: "#f87171", margin: "2px 0" }}>{e}</p>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            <button onClick={resetImport} className="btn-primary" style={{ fontSize: "0.84rem" }}>
+                                                Cerrar
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* ═══ Scrape Tab ═══ */}
+                            {importTab === "scrape" && (
+                                <div>
+                                    {/* Step 1: URL */}
+                                    {scrapeStep === 1 && (
+                                        <div>
+                                            <div style={{
+                                                padding: "12px 14px", borderRadius: "10px",
+                                                background: "rgba(167,139,250,0.04)", border: "1px solid rgba(167,139,250,0.1)",
+                                                marginBottom: "16px", display: "flex", alignItems: "flex-start", gap: "8px",
+                                            }}>
+                                                <Sparkles size={14} style={{ color: "#a78bfa", marginTop: "1px", flexShrink: 0 }} />
+                                                <p style={{ fontSize: "0.76rem", color: "var(--text-secondary)", margin: 0, lineHeight: 1.5 }}>
+                                                    Pega la URL de tu sitio web y nuestra IA analizará la página para extraer automáticamente
+                                                    todos tus {itemLabel.toLowerCase()}s automaticamente.
+                                                </p>
+                                            </div>
+
+                                            <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+                                                <input
+                                                    className="input"
+                                                    placeholder={`https://tusitio.com/${itemLabel.toLowerCase()}s`}
+                                                    value={scrapeUrl}
+                                                    onChange={e => setScrapeUrl(e.target.value)}
+                                                    style={{ flex: 1, fontSize: "0.84rem" }}
+                                                    onKeyDown={e => e.key === "Enter" && handleScrape()}
+                                                />
+                                                <button
+                                                    onClick={handleScrape}
+                                                    disabled={scrapeLoading || !scrapeUrl.trim()}
+                                                    className="btn-primary flex items-center gap-2"
+                                                    style={{
+                                                        fontSize: "0.82rem", whiteSpace: "nowrap",
+                                                        opacity: scrapeLoading || !scrapeUrl.trim() ? 0.5 : 1,
+                                                        background: "linear-gradient(135deg, #a78bfa, #7c3aed)",
+                                                    }}
+                                                >
+                                                    {scrapeLoading ? <Loader2 size={14} className="animate-spin" /> : <Globe size={14} />}
+                                                    {scrapeLoading ? "Analizando..." : "Analizar"}
+                                                </button>
+                                            </div>
+
+                                            {scrapeError && (
+                                                <div style={{
+                                                    padding: "10px 14px", borderRadius: "10px",
+                                                    background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.12)",
+                                                    color: "#f87171", fontSize: "0.8rem",
+                                                    display: "flex", alignItems: "center", gap: "8px",
+                                                }}>
+                                                    <AlertCircle size={14} /> {scrapeError}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Step 2: Preview extracted products */}
+                                    {scrapeStep === 2 && (
+                                        <div>
+                                            <div style={{
+                                                padding: "10px 14px", borderRadius: "10px",
+                                                background: "rgba(34,197,94,0.04)", border: "1px solid rgba(34,197,94,0.1)",
+                                                marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px",
+                                            }}>
+                                                <CheckCircle size={14} style={{ color: "#22c55e" }} />
+                                                <p style={{ fontSize: "0.76rem", color: "var(--text-secondary)", margin: 0 }}>
+                                                    La IA encontró <strong style={{ color: "#22c55e" }}>{scrapeProducts.length}</strong> productos. Revisa y selecciona los que quieres importar.
+                                                </p>
+                                            </div>
+
+                                            <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "16px", maxHeight: "360px", overflowY: "auto" }}>
+                                                {scrapeProducts.map((p, i) => (
+                                                    <div key={i} style={{
+                                                        padding: "12px 14px", borderRadius: "10px",
+                                                        background: p.selected ? "var(--bg-card)" : "rgba(255,255,255,0.01)",
+                                                        border: `1px solid ${p.selected ? "rgba(34,197,94,0.15)" : "var(--border)"}`,
+                                                        opacity: p.selected ? 1 : 0.5,
+                                                        cursor: "pointer",
+                                                        transition: "all 0.2s ease",
+                                                    }}
+                                                        onClick={() => {
+                                                            const next = [...scrapeProducts];
+                                                            next[i] = { ...next[i], selected: !next[i].selected };
+                                                            setScrapeProducts(next);
+                                                        }}
+                                                    >
+                                                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                                            <div style={{
+                                                                width: "20px", height: "20px", borderRadius: "4px",
+                                                                border: `2px solid ${p.selected ? "#22c55e" : "var(--border)"}`,
+                                                                background: p.selected ? "rgba(34,197,94,0.1)" : "transparent",
+                                                                display: "flex", alignItems: "center", justifyContent: "center",
+                                                                flexShrink: 0,
+                                                            }}>
+                                                                {p.selected && <CheckCircle size={12} style={{ color: "#22c55e" }} />}
+                                                            </div>
+                                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                                <div style={{ fontSize: "0.84rem", fontWeight: 600, color: "var(--text-primary)", marginBottom: "2px" }}>
+                                                                    {p.name}
+                                                                </div>
+                                                                {p.description && (
+                                                                    <p style={{
+                                                                        fontSize: "0.74rem", color: "var(--text-secondary)", margin: 0,
+                                                                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                                                                    }}>
+                                                                        {p.description}
+                                                                    </p>
+                                                                )}
+                                                                {Object.keys(p.attributes).length > 0 && (
+                                                                    <div style={{ display: "flex", gap: "6px", marginTop: "4px", flexWrap: "wrap" }}>
+                                                                        {Object.entries(p.attributes).slice(0, 4).map(([k, v]) => (
+                                                                            <span key={k} style={{
+                                                                                padding: "1px 6px", borderRadius: "4px",
+                                                                                fontSize: "0.65rem", fontWeight: 600,
+                                                                                background: "rgba(255,255,255,0.04)",
+                                                                                border: "1px solid rgba(255,255,255,0.06)",
+                                                                                color: "var(--text-muted)",
+                                                                            }}>
+                                                                                {k}: {v}
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            <div style={{ display: "flex", gap: "10px" }}>
+                                                <button onClick={() => { setScrapeStep(1); setScrapeProducts([]); }}
+                                                    className="btn-secondary flex items-center gap-2" style={{ fontSize: "0.82rem" }}>
+                                                    <ArrowLeft size={14} /> Atrás
+                                                </button>
+                                                <button
+                                                    onClick={handleScrapeImport}
+                                                    disabled={scrapeImporting || scrapeProducts.filter(p => p.selected).length === 0}
+                                                    className="btn-primary flex items-center gap-2"
+                                                    style={{
+                                                        flex: 1, justifyContent: "center", fontSize: "0.82rem",
+                                                        opacity: scrapeImporting || scrapeProducts.filter(p => p.selected).length === 0 ? 0.5 : 1,
+                                                        background: "linear-gradient(135deg, #22c55e, #16a34a)",
+                                                    }}
+                                                >
+                                                    {scrapeImporting ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                                                    {scrapeImporting ? "Importando..." : `Importar ${scrapeProducts.filter(p => p.selected).length} ${itemLabel.toLowerCase()}s`}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Step 3: Result */}
+                                    {scrapeStep === 3 && scrapeResult && (
+                                        <div style={{ textAlign: "center", padding: "20px 0" }}>
+                                            <div style={{
+                                                width: "56px", height: "56px", borderRadius: "50%",
+                                                background: scrapeResult.imported > 0 ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)",
+                                                display: "flex", alignItems: "center", justifyContent: "center",
+                                                margin: "0 auto 16px",
+                                            }}>
+                                                {scrapeResult.imported > 0
+                                                    ? <CheckCircle size={28} style={{ color: "#22c55e" }} />
+                                                    : <AlertCircle size={28} style={{ color: "#ef4444" }} />}
+                                            </div>
+                                            <p style={{ fontSize: "1rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: "4px" }}>
+                                                {scrapeResult.imported > 0 ? "¡Importación completada!" : "Error en la importación"}
+                                            </p>
+                                            <p style={{ fontSize: "0.82rem", color: "var(--text-secondary)", marginBottom: "16px" }}>
+                                                {scrapeResult.imported} importados · {scrapeResult.failed} fallidos
+                                            </p>
+                                            {scrapeResult.errors.length > 0 && (
+                                                <div style={{
+                                                    textAlign: "left", padding: "10px 14px", borderRadius: "10px",
+                                                    background: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.1)",
+                                                    marginBottom: "16px", maxHeight: "120px", overflowY: "auto",
+                                                }}>
+                                                    {scrapeResult.errors.map((e, i) => (
+                                                        <p key={i} style={{ fontSize: "0.72rem", color: "#f87171", margin: "2px 0" }}>{e}</p>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            <button onClick={resetImport} className="btn-primary" style={{ fontSize: "0.84rem" }}>
+                                                Cerrar
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
