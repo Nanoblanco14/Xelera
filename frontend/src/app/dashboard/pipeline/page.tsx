@@ -44,6 +44,60 @@ const COLOR_PALETTE = [
     "#f97316", "#14b8a6", "#6366f1", "#84cc16",
 ];
 
+/* ── ConfirmModal ──────────────────────────── */
+function ConfirmModal({ open, title, message, confirmLabel, confirmColor, onConfirm, onCancel }: {
+  open: boolean;
+  title: string;
+  message: string;
+  confirmLabel?: string;
+  confirmColor?: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  if (!open) return null;
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }}
+      onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
+      <div style={{ background: "#fff", borderRadius: 12, padding: 24, maxWidth: 420, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.15)" }}>
+        <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 600, color: "#1E293B" }}>{title}</h3>
+        <p style={{ margin: "0 0 20px", fontSize: 14, color: "#64748B", lineHeight: 1.5 }}>{message}</p>
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          <button onClick={onCancel} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff", cursor: "pointer", fontSize: 13, color: "#64748B" }}>
+            Cancelar
+          </button>
+          <button onClick={onConfirm} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: confirmColor || "#3B82F6", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 500 }}>
+            {confirmLabel || "Confirmar"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── AlertModal ───────────────────────────── */
+function AlertModal({ open, title, message, onClose }: {
+  open: boolean;
+  title: string;
+  message: string;
+  onClose: () => void;
+}) {
+  if (!open) return null;
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ background: "#fff", borderRadius: 12, padding: 24, maxWidth: 400, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.15)" }}>
+        <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 600, color: "#1E293B" }}>{title}</h3>
+        <p style={{ margin: "0 0 20px", fontSize: 14, color: "#64748B", lineHeight: 1.5 }}>{message}</p>
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <button onClick={onClose} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#3B82F6", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 500 }}>
+            Entendido
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PipelinePage() {
     const { organization, userEmail } = useOrg();
     const [stages, setStages] = useState<PipelineStage[]>([]);
@@ -97,18 +151,39 @@ export default function PipelinePage() {
     const [savingConfig, setSavingConfig] = useState(false);
     const [newStageName, setNewStageName] = useState("");
 
+    /* ── Modal: confirmación / alerta ─────────────── */
+    const [confirmModal, setConfirmModal] = useState<{
+        open: boolean;
+        title: string;
+        message: string;
+        confirmLabel?: string;
+        confirmColor?: string;
+        onConfirm: () => void;
+    } | null>(null);
+
+    const [alertModal, setAlertModal] = useState<{
+        open: boolean;
+        title: string;
+        message: string;
+    } | null>(null);
+
+    /* ── Error state ──────────────────────────────────── */
+    const [error, setError] = useState<string | null>(null);
+
     /* ── Search / Filter ───────────────────────────── */
     const [searchQuery, setSearchQuery] = useState("");
     const [filterSource, setFilterSource] = useState<"all" | "whatsapp" | "manual">("all");
 
     /* ── Fetch pipeline ───────────────────────────── */
     const loadPipeline = useCallback(async () => {
+        setError(null);
         try {
             const res = await fetch(`/api/pipeline?org_id=${organization.id}`);
             const { data } = await res.json();
             if (data) setStages(data);
         } catch (err) {
             console.error("Failed to load pipeline:", err);
+            setError("No se pudo cargar el pipeline. Intenta de nuevo.");
         }
         setLoading(false);
     }, [organization.id]);
@@ -242,6 +317,7 @@ export default function PipelinePage() {
             });
         } catch (err) {
             console.error("Failed to update lead stage:", err);
+            setError("No se pudo mover el lead. Intenta de nuevo.");
             loadPipeline();
         }
     };
@@ -283,6 +359,7 @@ export default function PipelinePage() {
             setShowModal(false);
         } catch (err) {
             console.error("Failed to create lead:", err);
+            setError("No se pudo crear el lead. Intenta de nuevo.");
         }
         setCreating(false);
     };
@@ -315,6 +392,7 @@ export default function PipelinePage() {
             setChatMessages(data || []);
         } catch (err) {
             console.error("Failed to load chat messages:", err);
+            setError("No se pudieron cargar los mensajes del chat. Intenta de nuevo.");
         }
         setChatLoading(false);
     }, []);
@@ -341,6 +419,7 @@ export default function PipelinePage() {
             setLeadNotes(data || []);
         } catch (err) {
             console.error("Failed to load notes:", err);
+            setError("No se pudieron cargar las notas. Intenta de nuevo.");
         }
         setNotesLoading(false);
     }, [organization.id]);
@@ -360,6 +439,7 @@ export default function PipelinePage() {
             setStageHistory(data || []);
         } catch (err) {
             console.error("Failed to load stage history:", err);
+            setError("No se pudo cargar el historial de etapas. Intenta de nuevo.");
         }
         setHistoryLoading(false);
     }, []);
@@ -398,6 +478,7 @@ export default function PipelinePage() {
             }
         } catch (err) {
             console.error("Failed to add note:", err);
+            setError("No se pudo guardar la nota. Intenta de nuevo.");
         }
         setSavingNote(false);
     };
@@ -411,6 +492,7 @@ export default function PipelinePage() {
             setLeadNotes((prev) => prev.filter((n) => n.id !== noteId));
         } catch (err) {
             console.error("Failed to delete note:", err);
+            setError("No se pudo eliminar la nota. Intenta de nuevo.");
         }
     };
 
@@ -438,6 +520,7 @@ export default function PipelinePage() {
         } catch (err) {
             console.error("Failed to toggle bot pause:", err);
             setBotPaused(!newPaused); // revert on error
+            setError("No se pudo cambiar el estado del bot. Intenta de nuevo.");
         }
         setPauseLoading(false);
     };
@@ -463,32 +546,40 @@ export default function PipelinePage() {
             setEditLead(null);
         } catch (err) {
             console.error("Failed to update lead:", err);
+            setError("No se pudo actualizar el lead. Intenta de nuevo.");
         }
         setSaving(false);
     };
 
     /* ── Delete lead ──────────────────────────────── */
-    const handleDeleteLead = async () => {
+    const handleDeleteLead = () => {
         if (!editLead) return;
-        const confirmed = window.confirm(
-            `¿Eliminar a "${editLead.name}" del pipeline? Esta acción no se puede deshacer.`
-        );
-        if (!confirmed) return;
-        setDeleting(true);
-        try {
-            await fetch(`/api/pipeline/leads/${editLead.id}`, { method: "DELETE" });
-            // Optimistic UI: remove from local state immediately
-            setStages((prev) =>
-                prev.map((s) => ({
-                    ...s,
-                    leads: (s.leads || []).filter((l) => l.id !== editLead.id),
-                }))
-            );
-            setEditLead(null);
-        } catch (err) {
-            console.error("Failed to delete lead:", err);
-        }
-        setDeleting(false);
+        setConfirmModal({
+            open: true,
+            title: "Eliminar lead",
+            message: `¿Eliminar a "${editLead.name}" del pipeline? Esta acción no se puede deshacer.`,
+            confirmLabel: "Eliminar",
+            confirmColor: "#DC2626",
+            onConfirm: async () => {
+                setConfirmModal(null);
+                setDeleting(true);
+                try {
+                    await fetch(`/api/pipeline/leads/${editLead.id}`, { method: "DELETE" });
+                    // Optimistic UI: remove from local state immediately
+                    setStages((prev) =>
+                        prev.map((s) => ({
+                            ...s,
+                            leads: (s.leads || []).filter((l) => l.id !== editLead.id),
+                        }))
+                    );
+                    setEditLead(null);
+                } catch (err) {
+                    console.error("Failed to delete lead:", err);
+                    setError("No se pudo eliminar el lead. Intenta de nuevo.");
+                }
+                setDeleting(false);
+            },
+        });
     };
 
     /* ── Helper: source badge ─────────────────────── */
@@ -617,7 +708,7 @@ export default function PipelinePage() {
     const handleDeleteStage = (idx: number) => {
         const stage = editableStages[idx];
         if (stage.leadCount > 0 && !stage.isNew) {
-            alert("No puedes eliminar una etapa con leads. Muévelos primero.");
+            setAlertModal({ open: true, title: "Error", message: "No puedes eliminar una etapa con leads. Muévelos primero." });
             return;
         }
         setEditableStages((prev) =>
@@ -680,6 +771,7 @@ export default function PipelinePage() {
             await loadPipeline();
         } catch (err) {
             console.error("Failed to save config:", err);
+            setError("No se pudo guardar la configuracion del pipeline. Intenta de nuevo.");
         }
         setSavingConfig(false);
     };
@@ -758,6 +850,11 @@ export default function PipelinePage() {
 
     return (
         <div className="animate-in" style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 64px)" }}>
+            {error && (
+                <div style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", borderRadius: 8, padding: "12px 16px", margin: "0 0 12px 0", color: "#DC2626", fontSize: 14 }}>
+                    {error}
+                </div>
+            )}
             {/* ── Header ──────────────────────────────── */}
             <div style={{ flexShrink: 0, marginBottom: "16px" }}>
                 <div className="page-header" style={{ marginBottom: "16px" }}>
@@ -2314,6 +2411,29 @@ export default function PipelinePage() {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* ── Confirm Modal ──────────────────────── */}
+            {confirmModal && (
+                <ConfirmModal
+                    open={confirmModal.open}
+                    title={confirmModal.title}
+                    message={confirmModal.message}
+                    confirmLabel={confirmModal.confirmLabel}
+                    confirmColor={confirmModal.confirmColor}
+                    onConfirm={confirmModal.onConfirm}
+                    onCancel={() => setConfirmModal(null)}
+                />
+            )}
+
+            {/* ── Alert Modal ────────────────────────── */}
+            {alertModal && (
+                <AlertModal
+                    open={alertModal.open}
+                    title={alertModal.title}
+                    message={alertModal.message}
+                    onClose={() => setAlertModal(null)}
+                />
             )}
         </div>
     );

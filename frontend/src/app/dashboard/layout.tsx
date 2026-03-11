@@ -8,7 +8,7 @@ import type { Organization } from "@/lib/types";
 import {
     Home, Bot, Kanban, BarChart3, Package, MessageSquare,
     LogOut, Loader2, ChevronRight, Settings, Zap, AlertCircle,
-    FileText,
+    FileText, Calendar,
 } from "lucide-react";
 import NotificationBell from "./NotificationBell";
 import ToastProvider from "./Toast";
@@ -18,6 +18,7 @@ const NAV_ITEMS = [
     { href: "/dashboard/inbox", label: "Inbox", icon: MessageSquare },
     { href: "/dashboard/products", label: "Inventario", icon: Package },
     { href: "/dashboard/pipeline", label: "Pipeline", icon: Kanban },
+    { href: "/dashboard/calendar", label: "Calendario", icon: Calendar },
     { href: "/dashboard/templates", label: "Templates", icon: FileText },
     { href: "/dashboard/analytics", label: "Analítica", icon: BarChart3 },
     { href: "/dashboard/agents", label: "Mi Asistente", icon: Bot },

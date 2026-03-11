@@ -145,7 +145,10 @@ export default function TemplatesPage() {
                     id: l.id, name: l.name, phone: l.phone,
                 })));
             }
-        } catch { /* silent */ }
+        } catch (err) {
+            console.error("Failed to load leads:", err);
+            setError("No se pudieron cargar los leads para envio.");
+        }
     }, []);
 
     // ── Open detail ──
@@ -188,7 +191,7 @@ export default function TemplatesPage() {
                     lead_id: selectedLead,
                     template_name: selectedTemplate.name,
                     template_language: selectedTemplate.language,
-                    parameters: sendParams.filter(p => p.trim()),
+                    parameters: sendParams,
                 }),
             });
             const data = await res.json();

@@ -19,6 +19,14 @@ export interface IndustryField {
     options?: string[];   // only for type = "select"
 }
 
+export interface IndustryAppointmentConfig {
+    slot_duration_minutes: number;
+    buffer_minutes: number;
+    allow_client_cancel: boolean;
+    allow_client_reschedule: boolean;
+    reschedule_policy: "self_service" | "escalate_to_human";
+}
+
 export interface IndustryTemplate {
     id: string;
     label: string;
@@ -30,10 +38,14 @@ export interface IndustryTemplate {
     industryFields: IndustryField[];
     /** Label for a single catalog item (e.g. "Propiedad", "Servicio", "Producto") */
     catalogLabel: string;
+    /** Grammatical gender for Spanish articles: "m" → Nuevo/Primer, "f" → Nueva/Primera */
+    catalogGender: "m" | "f";
     /** Default agent name pre-filled when this template is applied */
     defaultName: string;
     /** Default welcome message pre-filled when this template is applied */
     defaultWelcome: string;
+    /** Default appointment config for this industry (null = no appointments) */
+    appointmentConfig: IndustryAppointmentConfig | null;
 }
 
 export const INDUSTRY_TEMPLATES: IndustryTemplate[] = [
@@ -44,8 +56,16 @@ export const INDUSTRY_TEMPLATES: IndustryTemplate[] = [
         emoji: "💇",
         description: "Cortes, tintes, manicura y servicios de belleza",
         catalogLabel: "Servicio",
+        catalogGender: "m",
         defaultName: "Recepcionista Estrella",
         defaultWelcome: "¡Hola! Soy tu asistente virtual del salón. ¿En qué puedo ayudarte hoy? ✂️",
+        appointmentConfig: {
+            slot_duration_minutes: 60,
+            buffer_minutes: 15,
+            allow_client_cancel: true,
+            allow_client_reschedule: true,
+            reschedule_policy: "self_service",
+        },
         systemPrompt: `Eres la recepcionista estrella de un salón de belleza. Tu objetivo principal es AGENDAR CITAS. Eres cálida, cercana y resolutiva — como la mejor recepcionista que existe.
 
 ═══ FLUJO DE CONVERSACIÓN (máx. 4 intercambios para cerrar) ═══
@@ -89,6 +109,12 @@ TONO: Cálida, empática, como una amiga que trabaja en el mejor salón. Usa emo
                 type: "number",
                 placeholder: "Ej: 60",
             },
+            {
+                key: "disponibilidad",
+                label: "Disponibilidad",
+                type: "select",
+                options: ["Disponible", "No Disponible"],
+            },
         ],
     },
 
@@ -99,8 +125,16 @@ TONO: Cálida, empática, como una amiga que trabaja en el mejor salón. Usa emo
         emoji: "🏠",
         description: "Compra, venta y arriendo de propiedades",
         catalogLabel: "Propiedad",
+        catalogGender: "f",
         defaultName: "Asistente Inmobiliario",
         defaultWelcome: "¡Hola! Soy tu asistente virtual inmobiliario. ¿Estás buscando comprar, arrendar o invertir?",
+        appointmentConfig: {
+            slot_duration_minutes: 60,
+            buffer_minutes: 30,
+            allow_client_cancel: true,
+            allow_client_reschedule: false,
+            reschedule_policy: "escalate_to_human",
+        },
         systemPrompt: `Eres un asesor inmobiliario de alto nivel. Tu objetivo es calificar al prospecto de forma natural y agendar una visita o reunión con un ejecutivo.
 
 ═══ FLUJO DE CONVERSACIÓN (elegante, NUNCA interrogatorio) ═══
@@ -161,6 +195,18 @@ TONO: Exclusivo y confiable pero cercano. Como un asesor premium que te hace sen
                 type: "number",
                 placeholder: "Ej: 2",
             },
+            {
+                key: "superficie",
+                label: "Superficie (m²)",
+                type: "number",
+                placeholder: "Ej: 85",
+            },
+            {
+                key: "disponibilidad",
+                label: "Disponibilidad",
+                type: "select",
+                options: ["Disponible", "Reservado", "Vendido", "Arrendado"],
+            },
         ],
     },
 
@@ -171,8 +217,10 @@ TONO: Exclusivo y confiable pero cercano. Como un asesor premium que te hace sen
         emoji: "🛍️",
         description: "E-commerce, tiendas y venta de productos físicos o digitales",
         catalogLabel: "Producto",
+        catalogGender: "m",
         defaultName: "Tu Personal Shopper",
         defaultWelcome: "¡Hola! Soy tu asistente virtual de compras. ¿Qué estás buscando hoy? 🛍️",
+        appointmentConfig: null, // E-commerce typically doesn't use appointments
         systemPrompt: `Eres un personal shopper experto. Tu objetivo es recomendar el producto ideal, resolver todas las dudas y cerrar la venta o pedido.
 
 ═══ FLUJO DE CONVERSACIÓN (máx. 5 intercambios para cerrar) ═══
@@ -242,8 +290,16 @@ TONO: Entusiasta pero honesto. Cercano, como un amigo con buen gusto que te ayud
         emoji: "📝",
         description: "Empieza desde cero con tu propio prompt",
         catalogLabel: "Ítem",
+        catalogGender: "m",
         defaultName: "Tu Asistente Virtual",
         defaultWelcome: "¡Hola! Soy tu asistente virtual. ¿En qué puedo ayudarte hoy?",
+        appointmentConfig: {
+            slot_duration_minutes: 30,
+            buffer_minutes: 10,
+            allow_client_cancel: true,
+            allow_client_reschedule: true,
+            reschedule_policy: "self_service",
+        },
         systemPrompt: `Eres un asistente virtual profesional. Tu objetivo es atender a los clientes por WhatsApp de forma eficiente, amable y resolutiva.
 
 ═══ FLUJO DE CONVERSACIÓN ═══
@@ -278,7 +334,20 @@ TONO: Amable, profesional y directo. Mensajes cortos — esto es WhatsApp, no un
             { name: "En Proceso", color: "#f59e0b", position: 1 },
             { name: "Cerrado", color: "#10b981", position: 2 },
         ],
-        industryFields: [],
+        industryFields: [
+            {
+                key: "stock",
+                label: "Stock disponible",
+                type: "number",
+                placeholder: "Ej: 10",
+            },
+            {
+                key: "categoria",
+                label: "Categoría",
+                type: "text",
+                placeholder: "Ej: Electrónica, Ropa, Comida",
+            },
+        ],
     },
 ];
 

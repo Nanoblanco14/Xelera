@@ -205,6 +205,9 @@ export default function AgentConfigPage() {
     const [faqDraft, setFaqDraft] = useState({ question: "", answer: "" });
     const [editingFaqId, setEditingFaqId] = useState<string | null>(null);
 
+    // ── Error state ─────────────────────────────────────────────
+    const [error, setError] = useState<string | null>(null);
+
     // ── Accordion state ───────────────────────────────────────
     const [openSections, setOpenSections] = useState<Set<string>>(
         new Set(["personality", "instructions"])
@@ -229,8 +232,12 @@ export default function AgentConfigPage() {
 
     /* ── Data loaders ──────────────────────────────────────── */
     const loadAgent = useCallback(async () => {
+        setError(null);
         try {
             const res = await fetch(`/api/agents?org_id=${organization.id}`);
+            if (!res.ok) {
+                throw new Error("Error al cargar el agente");
+            }
             const { data } = await res.json();
             if (data && data.length > 0) {
                 const a: AgentData = data[0];
@@ -248,6 +255,9 @@ export default function AgentConfigPage() {
                     method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ organization_id: organization.id, name: "Asistente Virtual", system_prompt: "", welcome_message: "¡Hola! ¿En qué puedo ayudarte hoy?" }),
                 });
+                if (!createRes.ok) {
+                    throw new Error("Error al crear el agente");
+                }
                 const { data: newAgent } = await createRes.json();
                 if (newAgent) {
                     setAgent(newAgent); setName(newAgent.name || "Asistente Virtual");
@@ -257,7 +267,10 @@ export default function AgentConfigPage() {
                     setTemperature(newAgent.temperature ?? 0.7);
                 }
             }
-        } catch (err) { console.error("Failed to load agent:", err); }
+        } catch (err) {
+            console.error("Failed to load agent:", err);
+            setError("No se pudo cargar la configuracion del agente. Intenta de nuevo.");
+        }
         setLoading(false);
     }, [organization.id]);
 
@@ -268,7 +281,10 @@ export default function AgentConfigPage() {
             const res = await fetch(`/api/faqs?org_id=${organization.id}`);
             const { data } = await res.json();
             if (data) setFaqs(data);
-        } catch (err) { console.error("Failed to load FAQs:", err); }
+        } catch (err) {
+            console.error("Failed to load FAQs:", err);
+            setError("No se pudieron cargar las preguntas frecuentes. Intenta de nuevo.");
+        }
         setFaqLoading(false);
     }, [organization.id]);
 
@@ -285,7 +301,10 @@ export default function AgentConfigPage() {
             setFaqs(updatedFaqs);
             setFaqSaved(true);
             setTimeout(() => setFaqSaved(false), 2500);
-        } catch (err) { console.error("Failed to save FAQs:", err); }
+        } catch (err) {
+            console.error("Failed to save FAQs:", err);
+            setError("No se pudieron guardar las preguntas frecuentes. Intenta de nuevo.");
+        }
         setFaqSaving(false);
     };
 
@@ -318,19 +337,55 @@ export default function AgentConfigPage() {
 
     /* ── Template handler ─────────────────────────────────── */
     const handleApplyTemplate = async () => {
-        if (!selectedTplId) return;
+        if (!selectedTplId || !agent) return;
         setApplyingTpl(true); setTplResult(null);
-        const tpl = INDUSTRY_TEMPLATES.find((t) => t.id === selectedTplId);
-        if (tpl?.systemPrompt) setSystemPrompt(tpl.systemPrompt);
-        if (tpl?.defaultName) setName(tpl.defaultName);
-        if (tpl?.defaultWelcome) setWelcomeMessage(tpl.defaultWelcome);
-        const result = await applyIndustryTemplate(organization.id, selectedTplId);
-        setTplResult({
-            stagesCreated: result.stagesCreated ?? false,
-            msg: result.stagesCreated
-                ? "Pipeline creado con las columnas de tu industria."
-                : "Prompt actualizado. Tu pipeline existente no fue modificado.",
-        });
+        try {
+            const tpl = INDUSTRY_TEMPLATES.find((t) => t.id === selectedTplId);
+            if (!tpl) throw new Error("Plantilla no encontrada");
+
+            const newName = tpl.defaultName || name;
+            const newPrompt = tpl.systemPrompt || systemPrompt;
+            const newWelcome = tpl.defaultWelcome || welcomeMessage;
+
+            // 1. Guardar datos del agente via PUT API (ruta confiable)
+            const saveRes = await fetch(`/api/agents/${agent.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: newName,
+                    system_prompt: newPrompt,
+                    welcome_message: newWelcome,
+                }),
+            });
+            if (!saveRes.ok) {
+                const errData = await saveRes.json().catch(() => ({}));
+                throw new Error(errData.error || "Error al guardar el agente");
+            }
+
+            // 2. Aplicar pipeline/stages via server action (solo etapas)
+            const result = await applyIndustryTemplate(organization.id, selectedTplId);
+
+            // 3. Actualizar estado local
+            setName(newName);
+            setSystemPrompt(newPrompt);
+            setWelcomeMessage(newWelcome);
+            setAgent((prev) => prev ? {
+                ...prev,
+                name: newName,
+                system_prompt: newPrompt,
+                welcome_message: newWelcome,
+            } : prev);
+
+            setTplResult({
+                stagesCreated: result.stagesCreated ?? false,
+                msg: result.stagesCreated
+                    ? "✅ Plantilla aplicada y pipeline creado con las etapas de tu industria."
+                    : "✅ Plantilla aplicada. Tu pipeline existente no fue modificado.",
+            });
+        } catch (err) {
+            console.error("Template apply error:", err);
+            setTplResult({ stagesCreated: false, msg: "❌ Error al aplicar la plantilla. Intenta de nuevo." });
+        }
         setApplyingTpl(false);
     };
 
@@ -339,12 +394,19 @@ export default function AgentConfigPage() {
         if (!agent) return;
         setSaving(true); setSaved(false);
         try {
-            await fetch(`/api/agents/${agent.id}`, {
+            const res = await fetch(`/api/agents/${agent.id}`, {
                 method: "PUT", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ name, system_prompt: systemPrompt, welcome_message: welcomeMessage, model, temperature, booking_url: bookingUrl || null, conversation_tone: tone, escalation_rule: escalationRule || null }),
             });
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || `Error ${res.status}`);
+            }
             setSaved(true); setTimeout(() => setSaved(false), 2500);
-        } catch (err) { console.error("Failed to save agent:", err); }
+        } catch (err) {
+            console.error("Failed to save agent:", err);
+            setError("No se pudo guardar el agente. Intenta de nuevo.");
+        }
         setSaving(false);
     };
 
@@ -410,6 +472,11 @@ export default function AgentConfigPage() {
        ═════════════════════════════════════════════════════════ */
     return (
         <div className="animate-in">
+            {error && (
+                <div style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", borderRadius: 8, padding: "12px 16px", margin: "0 0 12px 0", color: "#DC2626", fontSize: 14 }}>
+                    {error}
+                </div>
+            )}
             {/* ── Page header ── */}
             <div className="page-header">
                 <div>

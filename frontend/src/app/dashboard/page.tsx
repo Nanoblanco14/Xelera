@@ -50,8 +50,8 @@ interface AgentInfo {
     id: string;
     name: string;
     is_active: boolean;
-    model: string;
-    welcome_message: string;
+    model: string | null;
+    welcome_message: string | null;
     conversation_tone: string | null;
 }
 
@@ -282,14 +282,23 @@ export default function DashboardHome() {
     const router = useRouter();
     const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     const loadDashboard = useCallback(async () => {
+        setError(null);
         try {
             const res = await fetch(`/api/dashboard?org_id=${organization.id}`);
+            if (!res.ok) {
+                console.error("Dashboard API error:", res.status, res.statusText);
+                setError("Error al cargar el dashboard. Intenta de nuevo.");
+                setLoading(false);
+                return;
+            }
             const json = await res.json();
             if (json.data) setData(json.data);
         } catch (err) {
             console.error("Failed to load dashboard:", err);
+            setError("No se pudieron cargar los datos del dashboard. Intenta de nuevo.");
         }
         setLoading(false);
     }, [organization.id]);
@@ -331,9 +340,16 @@ export default function DashboardHome() {
     return (
         <div className="animate-in" style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
 
+            {error && (
+                <div style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", borderRadius: 8, padding: "12px 16px", margin: "0 0 8px 0", color: "#DC2626", fontSize: 14 }}>
+                    {error}
+                </div>
+            )}
+
             {/* ══════════════════════════════════════════════════════
                  WELCOME HEADER
                  ══════════════════════════════════════════════════════ */}
+            <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
             <div style={{ marginBottom: "4px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
                     <div
@@ -351,7 +367,7 @@ export default function DashboardHome() {
                     >
                         <Zap size={20} color="white" />
                     </div>
-                    <div>
+                    <div style={{ flex: 1 }}>
                         <h1
                             style={{
                                 fontSize: "1.6rem",
@@ -367,6 +383,28 @@ export default function DashboardHome() {
                             Aqui tienes el resumen de tu plataforma
                         </p>
                     </div>
+                    <button
+                        onClick={() => loadDashboard()}
+                        disabled={loading}
+                        style={{
+                            background: "none",
+                            border: "1px solid #E2E8F0",
+                            borderRadius: 8,
+                            padding: "6px 12px",
+                            cursor: loading ? "not-allowed" : "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                            fontSize: 13,
+                            color: "#64748B",
+                            transition: "all 0.2s",
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#3B82F6"; e.currentTarget.style.color = "#3B82F6"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.color = "#64748B"; }}
+                    >
+                        <span style={{ display: "inline-block", animation: loading ? "spin 1s linear infinite" : "none" }}>↻</span>
+                        Actualizar
+                    </button>
                 </div>
             </div>
 
@@ -591,7 +629,7 @@ export default function DashboardHome() {
             <div
                 style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(4, 1fr)",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
                     gap: "16px",
                 }}
             >
@@ -754,18 +792,32 @@ export default function DashboardHome() {
                                         border: "1px solid rgba(255,255,255,0.05)",
                                     }}
                                 >
-                                    <p
-                                        style={{
-                                            fontSize: "0.82rem",
-                                            color: "var(--text-secondary)",
-                                            lineHeight: 1.6,
-                                            marginBottom: "10px",
-                                        }}
-                                    >
-                                        &ldquo;{data.agent.welcome_message?.slice(0, 100)}
-                                        {(data.agent.welcome_message?.length || 0) > 100 ? "..." : ""}
-                                        &rdquo;
-                                    </p>
+                                    {data.agent.welcome_message ? (
+                                        <p
+                                            style={{
+                                                fontSize: "0.82rem",
+                                                color: "var(--text-secondary)",
+                                                lineHeight: 1.6,
+                                                marginBottom: "10px",
+                                            }}
+                                        >
+                                            &ldquo;{data.agent.welcome_message.slice(0, 100)}
+                                            {data.agent.welcome_message.length > 100 ? "..." : ""}
+                                            &rdquo;
+                                        </p>
+                                    ) : (
+                                        <p
+                                            style={{
+                                                fontSize: "0.82rem",
+                                                color: "var(--text-muted)",
+                                                lineHeight: 1.6,
+                                                marginBottom: "10px",
+                                                fontStyle: "italic",
+                                            }}
+                                        >
+                                            Sin mensaje de bienvenida configurado
+                                        </p>
+                                    )}
                                     <div style={{ display: "flex", gap: "16px" }}>
                                         <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
                                             Modelo: <strong style={{ color: "var(--text-secondary)" }}>{data.agent.model || "gpt-4o-mini"}</strong>

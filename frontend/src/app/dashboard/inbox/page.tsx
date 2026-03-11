@@ -144,6 +144,7 @@ export default function InboxPage() {
     // ── Filters & typing ─────────────────────────────
     const [convoFilter, setConvoFilter] = useState<"all" | "bot_active" | "bot_paused" | "unread">("all");
     const [isTyping, setIsTyping] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const saveTemplates = (updated: string[]) => {
@@ -229,6 +230,7 @@ export default function InboxPage() {
             }
         } catch (err) {
             console.error("Send WA template failed:", err);
+            setError("No se pudo enviar el template de WhatsApp. Intenta de nuevo.");
         }
         setWaSending(false);
     };
@@ -242,6 +244,7 @@ export default function InboxPage() {
             setLeadNotes(data || []);
         } catch (err) {
             console.error("Failed to load notes:", err);
+            setError("No se pudieron cargar las notas. Intenta de nuevo.");
         }
         setNotesLoading(false);
     }, [organization.id]);
@@ -266,6 +269,7 @@ export default function InboxPage() {
             }
         } catch (err) {
             console.error("Failed to add note:", err);
+            setError("No se pudo guardar la nota. Intenta de nuevo.");
         }
         setSavingNote(false);
     };
@@ -279,6 +283,7 @@ export default function InboxPage() {
             setLeadNotes((prev) => prev.filter((n) => n.id !== noteId));
         } catch (err) {
             console.error("Failed to delete note:", err);
+            setError("No se pudo eliminar la nota. Intenta de nuevo.");
         }
     };
 
@@ -309,12 +314,14 @@ export default function InboxPage() {
 
     // ── Load conversations ────────────────────────────────
     const loadConversations = useCallback(async () => {
+        setError(null);
         try {
             const res = await fetch(`/api/inbox?org_id=${organization.id}`);
             const { data } = await res.json();
             if (data) setConversations(data);
         } catch (err) {
             console.error("Failed to load inbox:", err);
+            setError("No se pudieron cargar las conversaciones. Intenta de nuevo.");
         }
         setLoading(false);
     }, [organization.id]);
@@ -332,6 +339,7 @@ export default function InboxPage() {
             if (data) setMessages(data);
         } catch (err) {
             console.error("Failed to load messages:", err);
+            setError("No se pudieron cargar los mensajes. Intenta de nuevo.");
         }
         setMessagesLoading(false);
     }, []);
@@ -412,9 +420,11 @@ export default function InboxPage() {
             } else {
                 const err = await res.json().catch(() => ({}));
                 console.error("Toggle bot pause failed:", err);
+                setError("No se pudo cambiar el estado del bot. Intenta de nuevo.");
             }
         } catch (err) {
             console.error("Toggle bot pause failed:", err);
+            setError("No se pudo cambiar el estado del bot. Intenta de nuevo.");
         }
     };
 
@@ -454,6 +464,7 @@ export default function InboxPage() {
             }
         } catch (err) {
             console.error("Send message failed:", err);
+            setError("No se pudo enviar el mensaje. Intenta de nuevo.");
         }
         setSending(false);
     };
@@ -495,6 +506,12 @@ export default function InboxPage() {
 
     return (
         <div className="animate-in" style={{ height: "calc(100vh - 110px)" }}>
+
+            {error && (
+                <div style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", borderRadius: 8, padding: "12px 16px", margin: "0 0 12px 0", color: "#DC2626", fontSize: 14 }}>
+                    {error}
+                </div>
+            )}
 
             {/* ── Header ── */}
             <div className="page-header" style={{ marginBottom: "16px" }}>

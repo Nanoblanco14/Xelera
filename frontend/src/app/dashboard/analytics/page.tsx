@@ -143,14 +143,17 @@ export default function AnalyticsPage() {
     const { organization } = useOrg();
     const [data, setData] = useState<AnalyticsData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     const loadAnalytics = useCallback(async () => {
+        setError(null);
         try {
             const res = await fetch(`/api/analytics?org_id=${organization.id}`);
             const json = await res.json();
             if (json.data) setData(json.data);
         } catch (err) {
             console.error("Failed to load analytics:", err);
+            setError("No se pudieron cargar las metricas. Intenta de nuevo.");
         }
         setLoading(false);
     }, [organization.id]);
@@ -178,6 +181,12 @@ export default function AnalyticsPage() {
 
     return (
         <div className="animate-in" style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+
+            {error && (
+                <div style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", borderRadius: 8, padding: "12px 16px", margin: "0 0 8px 0", color: "#DC2626", fontSize: 14 }}>
+                    {error}
+                </div>
+            )}
 
             {/* ── Header ────────────────────────────────────────── */}
             <div className="page-header">
