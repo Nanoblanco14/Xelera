@@ -66,7 +66,7 @@ const styles = {
         gap: "14px",
         padding: "12px 16px",
         background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        border: "0.5px solid rgba(255,255,255,0.08)",
         borderRadius: "12px",
         transition: "all 0.25s ease",
     } as React.CSSProperties,
@@ -78,20 +78,20 @@ const styles = {
         minWidth: "52px",
         height: "52px",
         borderRadius: "10px",
-        background: "linear-gradient(135deg, rgba(59,130,246,0.15), rgba(59,130,246,0.06))",
-        border: "1px solid rgba(59,130,246,0.2)",
+        background: "linear-gradient(135deg, rgba(122,158,138,0.15), rgba(122,158,138,0.06))",
+        border: "0.5px solid rgba(122,158,138,0.2)",
         flexShrink: 0,
     } as React.CSSProperties,
     badgeDay: {
         fontSize: "18px",
         fontWeight: 800,
-        color: "#3B82F6",
+        color: "#7a9e8a",
         lineHeight: 1,
     } as React.CSSProperties,
     badgeMonth: {
         fontSize: "10px",
         fontWeight: 700,
-        color: "#3B82F6",
+        color: "#7a9e8a",
         letterSpacing: "0.8px",
         lineHeight: 1,
         marginTop: "3px",
@@ -119,7 +119,7 @@ const styles = {
     } as React.CSSProperties,
     deleteBtn: (isDeleting: boolean): React.CSSProperties => ({
         background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.06)",
+        border: "0.5px solid rgba(255,255,255,0.06)",
         cursor: isDeleting ? "wait" : "pointer",
         padding: "8px",
         color: "var(--text-muted)",
@@ -144,7 +144,7 @@ const styles = {
         height: "56px",
         borderRadius: "16px",
         background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.06)",
+        border: "0.5px solid rgba(255,255,255,0.06)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -164,7 +164,7 @@ const styles = {
     } as React.CSSProperties,
     addCard: {
         background: "rgba(255,255,255,0.025)",
-        border: "1px solid rgba(255,255,255,0.06)",
+        border: "0.5px solid rgba(255,255,255,0.06)",
         borderRadius: "12px",
         padding: "16px 18px",
         transition: "all 0.25s ease",
@@ -179,12 +179,12 @@ const styles = {
         width: "28px",
         height: "28px",
         borderRadius: "8px",
-        background: "rgba(59,130,246,0.1)",
-        border: "1px solid rgba(59,130,246,0.15)",
+        background: "rgba(122,158,138,0.1)",
+        border: "0.5px solid rgba(122,158,138,0.15)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        color: "#3B82F6",
+        color: "#7a9e8a",
     } as React.CSSProperties,
     addHeaderText: {
         fontSize: "13px",
@@ -212,7 +212,7 @@ const styles = {
     input: {
         padding: "9px 12px",
         borderRadius: "8px",
-        border: "1px solid rgba(255,255,255,0.08)",
+        border: "0.5px solid rgba(255,255,255,0.08)",
         background: "rgba(255,255,255,0.04)",
         color: "var(--text-primary)",
         fontSize: "13px",
@@ -226,11 +226,11 @@ const styles = {
         gap: "6px",
         padding: "9px 18px",
         borderRadius: "8px",
-        border: "1px solid rgba(59,130,246,0.3)",
+        border: "0.5px solid rgba(122,158,138,0.3)",
         background: disabled
-            ? "rgba(59,130,246,0.05)"
-            : "linear-gradient(135deg, rgba(59,130,246,0.15), rgba(59,130,246,0.08))",
-        color: disabled ? "rgba(59,130,246,0.4)" : "#3B82F6",
+            ? "rgba(122,158,138,0.05)"
+            : "linear-gradient(135deg, rgba(122,158,138,0.15), rgba(122,158,138,0.08))",
+        color: disabled ? "rgba(122,158,138,0.4)" : "#7a9e8a",
         fontSize: "13px",
         fontWeight: 600,
         cursor: disabled ? "not-allowed" : "pointer",
@@ -242,7 +242,7 @@ const styles = {
     presetsSection: {
         marginTop: "14px",
         paddingTop: "14px",
-        borderTop: "1px solid rgba(255,255,255,0.04)",
+        borderTop: "0.5px solid rgba(255,255,255,0.04)",
     } as React.CSSProperties,
     presetsLabel: {
         display: "flex",
@@ -263,7 +263,7 @@ const styles = {
     presetPill: {
         padding: "5px 11px",
         borderRadius: "20px",
-        border: "1px solid rgba(255,255,255,0.06)",
+        border: "0.5px solid rgba(255,255,255,0.06)",
         background: "rgba(255,255,255,0.03)",
         color: "var(--text-secondary)",
         fontSize: "11px",
@@ -279,7 +279,7 @@ const styles = {
         padding: "10px 14px",
         borderRadius: "10px",
         background: "rgba(239,68,68,0.07)",
-        border: "1px solid rgba(239,68,68,0.14)",
+        border: "0.5px solid rgba(239,68,68,0.14)",
         color: "#EF4444",
         fontSize: "12px",
         marginBottom: "14px",
@@ -531,7 +531,7 @@ export default function BlockedDatesSection({ orgId }: BlockedDatesSectionProps)
                             min={new Date().toISOString().split("T")[0]}
                             style={{ ...styles.input, width: "155px" }}
                             onFocus={(e) => {
-                                e.currentTarget.style.borderColor = "rgba(59,130,246,0.4)";
+                                e.currentTarget.style.borderColor = "rgba(122,158,138,0.4)";
                                 e.currentTarget.style.background = "rgba(255,255,255,0.06)";
                             }}
                             onBlur={(e) => {
@@ -549,7 +549,7 @@ export default function BlockedDatesSection({ orgId }: BlockedDatesSectionProps)
                             placeholder="Ej: Feriado nacional, Vacaciones..."
                             style={{ ...styles.input, width: "100%" }}
                             onFocus={(e) => {
-                                e.currentTarget.style.borderColor = "rgba(59,130,246,0.4)";
+                                e.currentTarget.style.borderColor = "rgba(122,158,138,0.4)";
                                 e.currentTarget.style.background = "rgba(255,255,255,0.06)";
                             }}
                             onBlur={(e) => {
@@ -569,16 +569,16 @@ export default function BlockedDatesSection({ orgId }: BlockedDatesSectionProps)
                         onMouseEnter={(e) => {
                             if (!adding && newDate) {
                                 e.currentTarget.style.background =
-                                    "linear-gradient(135deg, rgba(59,130,246,0.22), rgba(59,130,246,0.12))";
-                                e.currentTarget.style.borderColor = "rgba(59,130,246,0.45)";
+                                    "linear-gradient(135deg, rgba(122,158,138,0.22), rgba(122,158,138,0.12))";
+                                e.currentTarget.style.borderColor = "rgba(122,158,138,0.45)";
                             }
                         }}
                         onMouseLeave={(e) => {
                             e.currentTarget.style.background =
                                 adding || !newDate
-                                    ? "rgba(59,130,246,0.05)"
-                                    : "linear-gradient(135deg, rgba(59,130,246,0.15), rgba(59,130,246,0.08))";
-                            e.currentTarget.style.borderColor = "rgba(59,130,246,0.3)";
+                                    ? "rgba(122,158,138,0.05)"
+                                    : "linear-gradient(135deg, rgba(122,158,138,0.15), rgba(122,158,138,0.08))";
+                            e.currentTarget.style.borderColor = "rgba(122,158,138,0.3)";
                         }}
                     >
                         {adding ? (
@@ -605,9 +605,9 @@ export default function BlockedDatesSection({ orgId }: BlockedDatesSectionProps)
                                     style={styles.presetPill}
                                     onClick={() => handlePreset(p.date, p.reason)}
                                     onMouseEnter={(e) => {
-                                        e.currentTarget.style.background = "rgba(59,130,246,0.1)";
-                                        e.currentTarget.style.borderColor = "rgba(59,130,246,0.2)";
-                                        e.currentTarget.style.color = "#3B82F6";
+                                        e.currentTarget.style.background = "rgba(122,158,138,0.1)";
+                                        e.currentTarget.style.borderColor = "rgba(122,158,138,0.2)";
+                                        e.currentTarget.style.color = "#7a9e8a";
                                     }}
                                     onMouseLeave={(e) => {
                                         e.currentTarget.style.background = "rgba(255,255,255,0.03)";

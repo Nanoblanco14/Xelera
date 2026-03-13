@@ -37,7 +37,7 @@ export default function CompleteStep({ status, onFinish, loading }: Props) {
                 style={{
                     width: "80px", height: "80px", borderRadius: "50%",
                     background: "rgba(16,185,129,0.1)",
-                    border: "1px solid rgba(16,185,129,0.15)",
+                    border: "0.5px solid rgba(16,185,129,0.15)",
                 }}
             >
                 <CheckCircle2 size={44} style={{ color: "#34d399" }} />
@@ -114,11 +114,11 @@ export default function CompleteStep({ status, onFinish, loading }: Props) {
                     padding: "14px 36px",
                     borderRadius: "14px",
                     fontSize: "1rem",
-                    background: "linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%)",
+                    background: "linear-gradient(135deg, #7a9e8a 0%, #5d8270 100%)",
                     border: "none",
                     cursor: loading ? "not-allowed" : "pointer",
                     opacity: loading ? 0.6 : 1,
-                    boxShadow: "0 4px 20px rgba(59,130,246,0.35)",
+                    boxShadow: "0 4px 20px rgba(122,158,138,0.35)",
                 }}
             >
                 {loading ? "Guardando..." : "Ir al Dashboard"}

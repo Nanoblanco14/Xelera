@@ -65,7 +65,7 @@ const PRESETS = [
 const styles = {
     dayCard: (isOpen: boolean): React.CSSProperties => ({
         background: isOpen ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.015)",
-        border: isOpen ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(255,255,255,0.04)",
+        border: isOpen ? "0.5px solid rgba(255,255,255,0.08)" : "0.5px solid rgba(255,255,255,0.04)",
         borderRadius: "12px",
         padding: "14px 16px",
         transition: "all 0.25s ease",
@@ -99,8 +99,8 @@ const styles = {
         width: "42px",
         height: "24px",
         borderRadius: "12px",
-        background: active ? "#3B82F6" : "rgba(255,255,255,0.08)",
-        border: active ? "1px solid rgba(59,130,246,0.3)" : "1px solid rgba(255,255,255,0.06)",
+        background: active ? "#7a9e8a" : "rgba(255,255,255,0.08)",
+        border: active ? "0.5px solid rgba(122,158,138,0.3)" : "0.5px solid rgba(255,255,255,0.06)",
         cursor: "pointer",
         position: "relative",
         transition: "all 0.25s ease",
@@ -125,7 +125,7 @@ const styles = {
         padding: "4px 12px",
         background: "rgba(255,255,255,0.03)",
         borderRadius: "8px",
-        border: "1px solid rgba(255,255,255,0.04)",
+        border: "0.5px solid rgba(255,255,255,0.04)",
     } as React.CSSProperties,
     timeGroup: {
         display: "flex",
@@ -151,7 +151,7 @@ const styles = {
         width: "100px",
         padding: "6px 10px",
         borderRadius: "8px",
-        border: "1px solid rgba(255,255,255,0.08)",
+        border: "0.5px solid rgba(255,255,255,0.08)",
         background: "rgba(255,255,255,0.04)",
         color: "var(--text-primary)",
         fontSize: "13px",
@@ -187,16 +187,16 @@ const styles = {
         gap: "8px",
         marginTop: "10px",
         paddingTop: "10px",
-        borderTop: "1px solid rgba(255,255,255,0.04)",
+        borderTop: "0.5px solid rgba(255,255,255,0.04)",
         paddingLeft: "68px",
         flexWrap: "wrap" as const,
     } as React.CSSProperties,
     presetBtn: (isActive: boolean): React.CSSProperties => ({
         padding: "7px 14px",
         borderRadius: "8px",
-        border: isActive ? "1px solid rgba(59,130,246,0.3)" : "1px solid rgba(255,255,255,0.06)",
-        background: isActive ? "rgba(59,130,246,0.1)" : "rgba(255,255,255,0.03)",
-        color: isActive ? "#3B82F6" : "var(--text-secondary)",
+        border: isActive ? "0.5px solid rgba(122,158,138,0.3)" : "0.5px solid rgba(255,255,255,0.06)",
+        background: isActive ? "rgba(122,158,138,0.1)" : "rgba(255,255,255,0.03)",
+        color: isActive ? "#7a9e8a" : "var(--text-secondary)",
         fontSize: "12px",
         fontWeight: 600,
         cursor: "pointer",
@@ -220,12 +220,12 @@ const styles = {
         padding: "10px 24px",
         borderRadius: "10px",
         border: saved
-            ? "1px solid rgba(34,197,94,0.3)"
-            : "1px solid rgba(59,130,246,0.3)",
+            ? "0.5px solid rgba(34,197,94,0.3)"
+            : "0.5px solid rgba(122,158,138,0.3)",
         background: saved
             ? "rgba(34,197,94,0.12)"
-            : "linear-gradient(135deg, rgba(59,130,246,0.15), rgba(59,130,246,0.08))",
-        color: saved ? "#22C55E" : "#3B82F6",
+            : "linear-gradient(135deg, rgba(122,158,138,0.15), rgba(122,158,138,0.08))",
+        color: saved ? "#22C55E" : "#7a9e8a",
         fontSize: "13px",
         fontWeight: 600,
         cursor: saving ? "not-allowed" : "pointer",
@@ -237,7 +237,7 @@ const styles = {
         padding: "10px 14px",
         borderRadius: "10px",
         background: "rgba(239,68,68,0.07)",
-        border: "1px solid rgba(239,68,68,0.14)",
+        border: "0.5px solid rgba(239,68,68,0.14)",
         color: "#EF4444",
         fontSize: "12px",
         marginBottom: "14px",
@@ -524,9 +524,9 @@ export default function BusinessHoursSection({ orgId }: BusinessHoursSectionProp
                                             type="button"
                                             style={{
                                                 ...styles.breakToggle,
-                                                color: hasBreak ? "#3B82F6" : "var(--text-muted)",
+                                                color: hasBreak ? "#7a9e8a" : "var(--text-muted)",
                                                 background: hasBreak
-                                                    ? "rgba(59,130,246,0.08)"
+                                                    ? "rgba(122,158,138,0.08)"
                                                     : "transparent",
                                             }}
                                             onClick={() => toggleBreak(day.day_of_week)}

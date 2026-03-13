@@ -33,7 +33,7 @@ const s = {
     /* Sub-section glass card */
     groupCard: {
         background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.06)",
+        border: "0.5px solid rgba(255,255,255,0.06)",
         borderRadius: "12px",
         padding: "18px 20px",
         transition: "all 0.25s ease",
@@ -51,7 +51,7 @@ const s = {
         height: "28px",
         borderRadius: "8px",
         background: `${color}14`,
-        border: `1px solid ${color}28`,
+        border: `0.5px solid ${color}28`,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -83,7 +83,7 @@ const s = {
     /* Stepper card (for duration, buffer, max days) */
     stepperCard: {
         background: "rgba(255,255,255,0.025)",
-        border: "1px solid rgba(255,255,255,0.06)",
+        border: "0.5px solid rgba(255,255,255,0.06)",
         borderRadius: "10px",
         padding: "14px 12px",
         display: "flex",
@@ -108,7 +108,7 @@ const s = {
         width: "32px",
         height: "32px",
         borderRadius: "8px",
-        border: "1px solid rgba(255,255,255,0.08)",
+        border: "0.5px solid rgba(255,255,255,0.08)",
         background: disabled ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.05)",
         color: disabled ? "rgba(255,255,255,0.15)" : "var(--text-secondary)",
         cursor: disabled ? "not-allowed" : "pointer",
@@ -124,7 +124,7 @@ const s = {
         textAlign: "center" as const,
         fontSize: "18px",
         fontWeight: 700,
-        color: "#3B82F6",
+        color: "#7a9e8a",
         fontVariantNumeric: "tabular-nums",
         lineHeight: 1,
     } as React.CSSProperties,
@@ -150,7 +150,7 @@ const s = {
         justifyContent: "space-between",
         gap: "16px",
         padding: "12px 0",
-        borderBottom: "1px solid rgba(255,255,255,0.04)",
+        borderBottom: "0.5px solid rgba(255,255,255,0.04)",
     } as React.CSSProperties,
     toggleLabel: {
         fontSize: "13px",
@@ -170,8 +170,8 @@ const s = {
         width: "42px",
         height: "24px",
         borderRadius: "12px",
-        background: active ? "#3B82F6" : "rgba(255,255,255,0.08)",
-        border: active ? "1px solid rgba(59,130,246,0.3)" : "1px solid rgba(255,255,255,0.06)",
+        background: active ? "#7a9e8a" : "rgba(255,255,255,0.08)",
+        border: active ? "0.5px solid rgba(122,158,138,0.3)" : "0.5px solid rgba(255,255,255,0.06)",
         cursor: "pointer",
         position: "relative",
         transition: "all 0.25s ease",
@@ -195,7 +195,7 @@ const s = {
         width: "100%",
         padding: "8px 12px",
         borderRadius: "8px",
-        border: "1px solid rgba(255,255,255,0.08)",
+        border: "0.5px solid rgba(255,255,255,0.08)",
         background: "rgba(255,255,255,0.04)",
         color: "var(--text-primary)",
         fontSize: "13px",
@@ -214,7 +214,7 @@ const s = {
     timeInput: {
         padding: "8px 12px",
         borderRadius: "8px",
-        border: "1px solid rgba(255,255,255,0.08)",
+        border: "0.5px solid rgba(255,255,255,0.08)",
         background: "rgba(255,255,255,0.04)",
         color: "var(--text-primary)",
         fontSize: "13px",
@@ -230,7 +230,7 @@ const s = {
         maxWidth: "260px",
         padding: "9px 12px 9px 40px",
         borderRadius: "8px",
-        border: "1px solid rgba(255,255,255,0.08)",
+        border: "0.5px solid rgba(255,255,255,0.08)",
         background: "rgba(255,255,255,0.04)",
         color: "var(--text-primary)",
         fontSize: "13px",
@@ -276,12 +276,12 @@ const s = {
         padding: "10px 24px",
         borderRadius: "10px",
         border: saved
-            ? "1px solid rgba(34,197,94,0.3)"
-            : "1px solid rgba(59,130,246,0.3)",
+            ? "0.5px solid rgba(34,197,94,0.3)"
+            : "0.5px solid rgba(122,158,138,0.3)",
         background: saved
             ? "rgba(34,197,94,0.12)"
-            : "linear-gradient(135deg, rgba(59,130,246,0.15), rgba(59,130,246,0.08))",
-        color: saved ? "#22C55E" : "#3B82F6",
+            : "linear-gradient(135deg, rgba(122,158,138,0.15), rgba(122,158,138,0.08))",
+        color: saved ? "#22C55E" : "#7a9e8a",
         fontSize: "13px",
         fontWeight: 600,
         cursor: saving ? "not-allowed" : "pointer",
@@ -295,7 +295,7 @@ const s = {
         padding: "10px 14px",
         borderRadius: "10px",
         background: "rgba(239,68,68,0.07)",
-        border: "1px solid rgba(239,68,68,0.14)",
+        border: "0.5px solid rgba(239,68,68,0.14)",
         color: "#EF4444",
         fontSize: "12px",
         marginBottom: "14px",
@@ -405,7 +405,7 @@ export default function AppointmentConfigSection({ orgId, orgSettings }: Appoint
         return (
             <div style={s.stepperCard}>
                 <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    <span style={{ color: "#3B82F6", display: "flex" }}>{icon}</span>
+                    <span style={{ color: "#7a9e8a", display: "flex" }}>{icon}</span>
                     <span style={s.stepperLabel}>{label}</span>
                 </div>
                 <div style={s.stepperControls}>
@@ -520,7 +520,7 @@ export default function AppointmentConfigSection({ orgId, orgSettings }: Appoint
                    ═══════════════════════════════════════════════════ */}
                 <div style={s.groupCard}>
                     <div style={s.groupHeader}>
-                        <div style={s.groupHeaderIcon("#3B82F6")}>
+                        <div style={s.groupHeaderIcon("#7a9e8a")}>
                             <Timer size={14} />
                         </div>
                         <div>
@@ -650,7 +650,7 @@ export default function AppointmentConfigSection({ orgId, orgSettings }: Appoint
                             alignItems: "flex-end",
                             gap: "16px",
                             padding: "12px 0 4px 0",
-                            borderTop: "1px solid rgba(255,255,255,0.04)",
+                            borderTop: "0.5px solid rgba(255,255,255,0.04)",
                         }}>
                             <div>
                                 <label style={s.inlineLabel}>
@@ -672,7 +672,7 @@ export default function AppointmentConfigSection({ orgId, orgSettings }: Appoint
                     {/* Owner phone */}
                     <div style={{
                         padding: "14px 0 4px 0",
-                        borderTop: "1px solid rgba(255,255,255,0.04)",
+                        borderTop: "0.5px solid rgba(255,255,255,0.04)",
                         marginTop: "4px",
                     }}>
                         <label style={s.inlineLabel}>

@@ -121,7 +121,7 @@ export const getMonthGrid = (year: number, month: number) => {
 
 export const glassCard = {
     background: "var(--bg-card)",
-    border: "1px solid var(--border)",
+    border: "0.5px solid var(--border)",
     borderRadius: 14,
     padding: 20,
 } as const;

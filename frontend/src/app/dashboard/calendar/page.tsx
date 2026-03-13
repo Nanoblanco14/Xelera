@@ -16,7 +16,7 @@ import {
     Appointment, Lead, Product, TimeSlot,
     MONTH_NAMES,
     toDateKey, isoToDateKey, fmtDateShort,
-    getMonday, getMonthGrid, glassCard,
+    getMonday, getMonthGrid,
 } from "@/components/calendar/types";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -372,10 +372,11 @@ export default function CalendarPage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35 }}
-            style={{ maxWidth: 1200, margin: "0 auto" }}
+            className="animate-in"
+            style={{ maxWidth: 1200, margin: "0 auto", animationDelay: "0s" }}
         >
             {error && (
-                <div style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", borderRadius: 8, padding: "12px 16px", margin: "0 0 12px 0", color: "#DC2626", fontSize: 14 }}>
+                <div style={{ background: "var(--danger-bg)", border: "0.5px solid rgba(199,90,90,0.15)", borderRadius: 8, padding: "12px 16px", margin: "0 0 12px 0", color: "var(--danger)", fontSize: 14 }}>
                     {error}
                 </div>
             )}
@@ -400,7 +401,7 @@ export default function CalendarPage() {
             />
 
             {/* ── Calendar Body ──────────────────────────────── */}
-            <div style={glassCard}>
+            <div className="glass-panel" style={{ padding: 20, borderRadius: 14 }}>
                 {loading ? (
                     <div style={{ display: "flex", justifyContent: "center", padding: 60 }}>
                         <Loader2 size={28} style={{ animation: "spin 1s linear infinite", color: "var(--text-muted)" }} />

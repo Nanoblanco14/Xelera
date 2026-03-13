@@ -284,7 +284,7 @@ export default function WhatsAppSetupSection({
                                     height: "40px",
                                     borderRadius: "12px",
                                     background: "rgba(37,211,102,0.1)",
-                                    border: "1px solid rgba(37,211,102,0.15)",
+                                    border: "0.5px solid rgba(37,211,102,0.15)",
                                 }}
                             >
                                 <WhatsAppIcon size={22} />
@@ -306,7 +306,7 @@ export default function WhatsAppSetupSection({
                                 padding: "7px 14px",
                                 borderRadius: "8px",
                                 background: "rgba(255,255,255,0.04)",
-                                border: "1px solid rgba(255,255,255,0.08)",
+                                border: "0.5px solid rgba(255,255,255,0.08)",
                                 color: "var(--text-muted)",
                                 cursor: "pointer",
                             }}
@@ -322,17 +322,17 @@ export default function WhatsAppSetupSection({
                             padding: "14px 18px",
                             borderRadius: "12px",
                             background: "rgba(34,197,94,0.04)",
-                            border: "1px solid rgba(34,197,94,0.1)",
+                            border: "0.5px solid rgba(34,197,94,0.1)",
                             marginBottom: webhookUrl ? "14px" : "0",
                         }}
                     >
                         <div className="flex items-center gap-3">
                             <Phone size={16} style={{ color: "#25d366" }} />
                             <div className="flex-1 min-w-0">
-                                <div className="text-sm font-semibold" style={{ color: "#f0f0f5" }}>
+                                <div className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
                                     {verifiedName || "WhatsApp Business"}
                                 </div>
-                                <div className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>
+                                <div className="text-xs" style={{ color: "var(--text-muted)" }}>
                                     {displayPhone || metaPhoneId}
                                 </div>
                             </div>
@@ -347,8 +347,8 @@ export default function WhatsAppSetupSection({
                                 style={{
                                     padding: "10px 14px",
                                     borderRadius: "8px",
-                                    background: "rgba(59, 130, 246, 0.08)",
-                                    border: "1px solid rgba(59, 130, 246, 0.15)",
+                                    background: "rgba(122, 158, 138, 0.08)",
+                                    border: "0.5px solid rgba(122, 158, 138, 0.15)",
                                     marginBottom: "2px",
                                 }}
                             >
@@ -356,15 +356,15 @@ export default function WhatsAppSetupSection({
                                     style={{
                                         fontSize: "11.5px",
                                         lineHeight: "1.5",
-                                        color: "rgba(147, 197, 253, 0.9)",
+                                        color: "var(--text-secondary)",
                                         margin: 0,
                                     }}
                                 >
-                                    <strong style={{ color: "rgba(191, 219, 254, 0.95)" }}>
+                                    <strong style={{ color: "var(--text-primary)" }}>
                                         Configura tu Webhook en Meta:
                                     </strong>{" "}
                                     Copia estos datos e ingresalos en{" "}
-                                    <span style={{ color: "rgba(96, 165, 250, 0.95)" }}>
+                                    <span style={{ color: "var(--accent)" }}>
                                         Meta for Developers → Tu App → WhatsApp → Configuracion → Webhook
                                     </span>
                                 </p>
@@ -421,7 +421,7 @@ export default function WhatsAppSetupSection({
                                     height: "64px",
                                     borderRadius: "18px",
                                     background: "rgba(37,211,102,0.08)",
-                                    border: "1px solid rgba(37,211,102,0.12)",
+                                    border: "0.5px solid rgba(37,211,102,0.12)",
                                     margin: "0 auto 20px",
                                 }}
                             >
@@ -535,7 +535,7 @@ export default function WhatsAppSetupSection({
                                 padding: "20px",
                                 borderRadius: "12px",
                                 background: "rgba(255,255,255,0.02)",
-                                border: "1px solid rgba(255,255,255,0.06)",
+                                border: "0.5px solid rgba(255,255,255,0.06)",
                             }}
                         >
                             {/* Collapse toggle — entire header is clickable */}
@@ -673,7 +673,7 @@ export default function WhatsAppSetupSection({
                             maxWidth: "420px",
                             borderRadius: "16px",
                             background: "var(--bg-card)",
-                            border: "1px solid var(--border)",
+                            border: "0.5px solid var(--border)",
                             boxShadow: "0 24px 48px rgba(0,0,0,0.4)",
                             padding: "28px",
                             position: "relative",
@@ -687,7 +687,7 @@ export default function WhatsAppSetupSection({
                                 top: "16px",
                                 right: "16px",
                                 background: "rgba(255,255,255,0.04)",
-                                border: "1px solid rgba(255,255,255,0.06)",
+                                border: "0.5px solid rgba(255,255,255,0.06)",
                                 borderRadius: "8px",
                                 width: "32px",
                                 height: "32px",
@@ -710,7 +710,7 @@ export default function WhatsAppSetupSection({
                                     height: "52px",
                                     borderRadius: "14px",
                                     background: "rgba(37,211,102,0.1)",
-                                    border: "1px solid rgba(37,211,102,0.15)",
+                                    border: "0.5px solid rgba(37,211,102,0.15)",
                                     marginBottom: "16px",
                                 }}
                             >
@@ -736,15 +736,15 @@ export default function WhatsAppSetupSection({
                             style={{
                                 padding: "12px 14px",
                                 borderRadius: "10px",
-                                background: "rgba(59,130,246,0.04)",
-                                border: "1px solid rgba(59,130,246,0.08)",
+                                background: "rgba(122,158,138,0.04)",
+                                border: "0.5px solid rgba(122,158,138,0.08)",
                                 marginBottom: "24px",
                             }}
                         >
                             <Info
                                 size={14}
                                 className="flex-shrink-0 mt-0.5"
-                                style={{ color: "#3B82F6" }}
+                                style={{ color: "#7a9e8a" }}
                             />
                             <span
                                 className="text-xs leading-relaxed"
@@ -763,7 +763,7 @@ export default function WhatsAppSetupSection({
                                     padding: "11px 0",
                                     borderRadius: "10px",
                                     background: "rgba(255,255,255,0.04)",
-                                    border: "1px solid rgba(255,255,255,0.08)",
+                                    border: "0.5px solid rgba(255,255,255,0.08)",
                                     color: "var(--text-secondary)",
                                     cursor: "pointer",
                                 }}
@@ -857,7 +857,7 @@ function StepProgress<T extends string>({
                 padding: "16px 20px",
                 borderRadius: "12px",
                 background: "rgba(37,211,102,0.03)",
-                border: "1px solid rgba(37,211,102,0.08)",
+                border: "0.5px solid rgba(37,211,102,0.08)",
             }}
         >
             {steps.map((step) => {
@@ -889,8 +889,8 @@ function StepProgress<T extends string>({
                                 color: isCompleted
                                     ? "#22c55e"
                                     : isCurrent
-                                      ? "#f0f0f5"
-                                      : "rgba(255,255,255,0.2)",
+                                      ? "var(--text-primary)"
+                                      : "var(--text-muted)",
                                 fontWeight: isCurrent ? 600 : 400,
                             }}
                         >
@@ -912,7 +912,7 @@ function ErrorBanner({ message }: { message: string }) {
                 padding: "12px 16px",
                 borderRadius: "10px",
                 background: "rgba(239,68,68,0.06)",
-                border: "1px solid rgba(239,68,68,0.12)",
+                border: "0.5px solid rgba(239,68,68,0.12)",
                 color: "#f87171",
                 fontSize: "0.8rem",
                 marginBottom: "16px",
@@ -962,8 +962,8 @@ function CopyField({
                             ? "rgba(16,185,129,0.1)"
                             : "rgba(255,255,255,0.04)",
                         border: isCopied
-                            ? "1px solid rgba(16,185,129,0.2)"
-                            : "1px solid rgba(255,255,255,0.06)",
+                            ? "0.5px solid rgba(16,185,129,0.2)"
+                            : "0.5px solid rgba(255,255,255,0.06)",
                         color: isCopied ? "#34d399" : "var(--text-secondary)",
                         cursor: "pointer",
                         whiteSpace: "nowrap",
@@ -1015,7 +1015,7 @@ function QualityBadge({ rating }: { rating: string }) {
                 letterSpacing: "0.05em",
                 textTransform: "uppercase",
                 background: c.bg,
-                border: `1px solid ${c.border}`,
+                border: `0.5px solid ${c.border}`,
                 color: c.text,
             }}
         >

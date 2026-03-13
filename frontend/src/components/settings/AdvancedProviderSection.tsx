@@ -62,8 +62,8 @@ export default function AdvancedProviderSection({
                             onClick={() => onProviderChange(id)}
                             className={`flex-1 py-2.5 px-3.5 rounded-[10px] cursor-pointer transition-all duration-150 text-[0.83rem] flex items-center justify-center gap-2 ${
                                 isActive
-                                    ? "border border-blue-500/40 bg-blue-500/[0.07] text-blue-400 font-semibold"
-                                    : "border border-white/[0.06] bg-white/[0.02] text-[var(--text-muted)] font-normal"
+                                    ? "border-[0.5px] border-[rgba(122,158,138,0.4)] bg-[rgba(122,158,138,0.07)] text-[var(--accent)] font-semibold"
+                                    : "border-[0.5px] border-white/[0.06] bg-white/[0.02] text-[var(--text-muted)] font-normal"
                             }`}
                         >
                             {icon}{label}

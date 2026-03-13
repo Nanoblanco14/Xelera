@@ -154,7 +154,7 @@ export default function NotificationBell({ orgId }: Props) {
                         right: "0",
                         width: "320px",
                         background: "#111113",
-                        border: "1px solid rgba(255,255,255,0.07)",
+                        border: "0.5px solid rgba(255,255,255,0.07)",
                         borderRadius: "14px",
                         boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
                         zIndex: 200,
@@ -168,7 +168,7 @@ export default function NotificationBell({ orgId }: Props) {
                             alignItems: "center",
                             justifyContent: "space-between",
                             padding: "14px 16px 12px",
-                            borderBottom: "1px solid rgba(255,255,255,0.06)",
+                            borderBottom: "0.5px solid rgba(255,255,255,0.06)",
                         }}
                     >
                         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -187,7 +187,7 @@ export default function NotificationBell({ orgId }: Props) {
                                         fontSize: "0.6875rem",
                                         fontWeight: 600,
                                         color: "#818cf8",
-                                        background: "rgba(99,102,241,0.12)",
+                                        background: "rgba(122,158,138,0.12)",
                                         padding: "1px 6px",
                                         borderRadius: "20px",
                                     }}
@@ -251,9 +251,9 @@ export default function NotificationBell({ orgId }: Props) {
                                         alignItems: "flex-start",
                                         gap: "10px",
                                         padding: "12px 16px",
-                                        background: n.is_read ? "none" : "rgba(99,102,241,0.05)",
+                                        background: n.is_read ? "none" : "rgba(122,158,138,0.05)",
                                         border: "none",
-                                        borderBottom: "1px solid rgba(255,255,255,0.04)",
+                                        borderBottom: "0.5px solid rgba(255,255,255,0.04)",
                                         cursor: n.is_read ? "default" : "pointer",
                                         textAlign: "left",
                                         transition: "background 0.15s ease",
@@ -261,12 +261,12 @@ export default function NotificationBell({ orgId }: Props) {
                                     onMouseEnter={(e) => {
                                         if (!n.is_read)
                                             (e.currentTarget as HTMLButtonElement).style.background =
-                                                "rgba(99,102,241,0.08)";
+                                                "rgba(122,158,138,0.08)";
                                     }}
                                     onMouseLeave={(e) => {
                                         (e.currentTarget as HTMLButtonElement).style.background = n.is_read
                                             ? "none"
-                                            : "rgba(99,102,241,0.05)";
+                                            : "rgba(122,158,138,0.05)";
                                     }}
                                 >
                                     {/* Dot */}
@@ -278,7 +278,7 @@ export default function NotificationBell({ orgId }: Props) {
                                             height: "6px",
                                             borderRadius: "50%",
                                             background: n.is_read ? "transparent" : "#6366f1",
-                                            border: n.is_read ? "1px solid rgba(255,255,255,0.12)" : "none",
+                                            border: n.is_read ? "0.5px solid rgba(255,255,255,0.12)" : "none",
                                         }}
                                     />
                                     <div style={{ flex: 1, minWidth: 0 }}>

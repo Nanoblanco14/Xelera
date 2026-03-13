@@ -39,11 +39,11 @@ export default function AgentStep({ data, onChange }: Props) {
                     className="inline-flex items-center justify-center mb-4"
                     style={{
                         width: "64px", height: "64px", borderRadius: "18px",
-                        background: "rgba(59,130,246,0.1)",
-                        border: "1px solid rgba(59,130,246,0.15)",
+                        background: "rgba(122,158,138,0.1)",
+                        border: "0.5px solid rgba(122,158,138,0.15)",
                     }}
                 >
-                    <Bot size={32} style={{ color: "#60a5fa" }} />
+                    <Bot size={32} style={{ color: "#9ab8a8" }} />
                 </div>
                 <h2 className="text-3xl font-bold mb-3" style={{ color: "#f0f0f5" }}>
                     Personaliza tu asistente
@@ -98,15 +98,15 @@ export default function AgentStep({ data, onChange }: Props) {
                                     className="relative text-center transition-all"
                                     style={{
                                         padding: "14px 12px", borderRadius: "12px",
-                                        background: isActive ? "rgba(59,130,246,0.12)" : "rgba(255,255,255,0.03)",
-                                        border: isActive ? "1.5px solid rgba(59,130,246,0.4)" : "1.5px solid rgba(255,255,255,0.06)",
+                                        background: isActive ? "rgba(122,158,138,0.12)" : "rgba(255,255,255,0.03)",
+                                        border: isActive ? "1.5px solid rgba(122,158,138,0.4)" : "1.5px solid rgba(255,255,255,0.06)",
                                         cursor: "pointer",
-                                        boxShadow: isActive ? "0 2px 12px rgba(59,130,246,0.15)" : "none",
+                                        boxShadow: isActive ? "0 2px 12px rgba(122,158,138,0.15)" : "none",
                                     }}
                                 >
                                     {isActive && (
                                         <div className="absolute top-2 right-2">
-                                            <Check size={14} color="#60a5fa" />
+                                            <Check size={14} color="#9ab8a8" />
                                         </div>
                                     )}
                                     <div className="text-sm font-semibold mb-1" style={{ color: isActive ? "#93bbfc" : "#e0e0e8" }}>

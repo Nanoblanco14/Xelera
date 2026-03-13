@@ -74,19 +74,19 @@ export default function TestChatStep({ agentId, agentName, welcomeMessage }: Pro
                 <div
                     className="px-5 py-3.5 flex items-center gap-3"
                     style={{
-                        borderBottom: "1px solid rgba(255,255,255,0.06)",
-                        background: "rgba(59,130,246,0.04)",
+                        borderBottom: "0.5px solid rgba(255,255,255,0.06)",
+                        background: "rgba(122,158,138,0.04)",
                     }}
                 >
                     <div
                         className="flex items-center justify-center"
                         style={{
                             width: "36px", height: "36px", borderRadius: "50%",
-                            background: "rgba(59,130,246,0.12)",
-                            border: "1px solid rgba(59,130,246,0.2)",
+                            background: "rgba(122,158,138,0.12)",
+                            border: "0.5px solid rgba(122,158,138,0.2)",
                         }}
                     >
-                        <Bot size={18} style={{ color: "#60a5fa" }} />
+                        <Bot size={18} style={{ color: "#9ab8a8" }} />
                     </div>
                     <div>
                         <div className="text-sm font-semibold" style={{ color: "#e0e0e8" }}>
@@ -114,11 +114,11 @@ export default function TestChatStep({ agentId, agentName, welcomeMessage }: Pro
                                     style={{
                                         borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
                                         background: msg.role === "user"
-                                            ? "linear-gradient(135deg, rgba(59,130,246,0.25), rgba(139,92,246,0.2))"
+                                            ? "linear-gradient(135deg, rgba(122,158,138,0.25), rgba(93,130,112,0.2))"
                                             : "rgba(255,255,255,0.05)",
                                         border: msg.role === "user"
-                                            ? "1px solid rgba(59,130,246,0.2)"
-                                            : "1px solid rgba(255,255,255,0.06)",
+                                            ? "0.5px solid rgba(122,158,138,0.2)"
+                                            : "0.5px solid rgba(255,255,255,0.06)",
                                         color: "#e0e0e8",
                                     }}
                                 >
@@ -134,7 +134,7 @@ export default function TestChatStep({ agentId, agentName, welcomeMessage }: Pro
                                 style={{
                                     borderRadius: "16px 16px 16px 4px",
                                     background: "rgba(255,255,255,0.05)",
-                                    border: "1px solid rgba(255,255,255,0.06)",
+                                    border: "0.5px solid rgba(255,255,255,0.06)",
                                     color: "rgba(255,255,255,0.3)",
                                 }}
                             >
@@ -150,7 +150,7 @@ export default function TestChatStep({ agentId, agentName, welcomeMessage }: Pro
                 </div>
 
                 {/* Input */}
-                <div className="px-4 py-3 flex items-center gap-3" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                <div className="px-4 py-3 flex items-center gap-3" style={{ borderTop: "0.5px solid rgba(255,255,255,0.06)" }}>
                     <input
                         type="text"
                         value={input}
@@ -179,10 +179,10 @@ export default function TestChatStep({ agentId, agentName, welcomeMessage }: Pro
                             width: "42px", height: "42px", borderRadius: "12px",
                             background: loading || !input.trim()
                                 ? "rgba(255,255,255,0.04)"
-                                : "linear-gradient(135deg, #3b82f6, #7c3aed)",
+                                : "linear-gradient(135deg, #7a9e8a, #5d8270)",
                             border: "none",
                             cursor: loading || !input.trim() ? "not-allowed" : "pointer",
-                            boxShadow: !loading && input.trim() ? "0 2px 10px rgba(59,130,246,0.3)" : "none",
+                            boxShadow: !loading && input.trim() ? "0 2px 10px rgba(122,158,138,0.3)" : "none",
                         }}
                     >
                         <Send size={16} color={loading || !input.trim() ? "rgba(255,255,255,0.2)" : "white"} />

@@ -7,11 +7,11 @@ import {
 
 /* ─── Palette: elegant dark-mode colors ─────────────────────── */
 const DONUT_COLORS = [
-    "#3b82f6", // blue-500
+    "#7a9e8a", // blue-500
     "#22c55e", // green-500
     "#f59e0b", // amber-500
     "#ef4444", // red-500
-    "#8b5cf6", // violet-500
+    "#5d8270", // violet-500
     "#06b6d4", // cyan-500
     "#ec4899", // pink-500
 ];
@@ -58,10 +58,10 @@ export function PipelineDonut({ data }: PipelineDonutProps) {
                 </Pie>
                 <Tooltip
                     contentStyle={{
-                        background: "#18181b",
-                        border: "1px solid rgba(255,255,255,0.08)",
+                        background: "var(--bg-elevated)",
+                        border: "0.5px solid var(--border)",
                         borderRadius: "10px",
-                        color: "#f4f4f5",
+                        color: "var(--text-primary)",
                         fontSize: "0.78rem",
                     }}
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -73,7 +73,7 @@ export function PipelineDonut({ data }: PipelineDonutProps) {
                 <Legend
                     iconType="circle"
                     iconSize={8}
-                    wrapperStyle={{ fontSize: "0.72rem", color: "#a1a1aa", paddingTop: "12px" }}
+                    wrapperStyle={{ fontSize: "0.72rem", color: "var(--text-muted)", paddingTop: "12px" }}
                 />
             </PieChart>
         </ResponsiveContainer>
@@ -120,10 +120,10 @@ export function LeadsBarChart({ data }: LeadsBarChartProps) {
                 <Tooltip
                     cursor={{ fill: "rgba(255,255,255,0.03)" }}
                     contentStyle={{
-                        background: "#18181b",
-                        border: "1px solid rgba(255,255,255,0.08)",
+                        background: "var(--bg-elevated)",
+                        border: "0.5px solid var(--border)",
                         borderRadius: "10px",
-                        color: "#f4f4f5",
+                        color: "var(--text-primary)",
                         fontSize: "0.78rem",
                     }}
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -176,12 +176,12 @@ export function LeadsTrendChart({ data }: LeadsTrendChartProps) {
             <AreaChart data={formatted} margin={{ top: 4, right: 4, left: -20, bottom: 4 }}>
                 <defs>
                     <linearGradient id="gradLeads" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} />
-                        <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+                        <stop offset="0%" stopColor="#7a9e8a" stopOpacity={0.3} />
+                        <stop offset="100%" stopColor="#7a9e8a" stopOpacity={0} />
                     </linearGradient>
                     <linearGradient id="gradMsgs" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.2} />
-                        <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0} />
+                        <stop offset="0%" stopColor="#5d8270" stopOpacity={0.2} />
+                        <stop offset="100%" stopColor="#5d8270" stopOpacity={0} />
                     </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
@@ -200,10 +200,10 @@ export function LeadsTrendChart({ data }: LeadsTrendChartProps) {
                 />
                 <Tooltip
                     contentStyle={{
-                        background: "#18181b",
-                        border: "1px solid rgba(255,255,255,0.08)",
+                        background: "var(--bg-elevated)",
+                        border: "0.5px solid var(--border)",
                         borderRadius: "10px",
-                        color: "#f4f4f5",
+                        color: "var(--text-primary)",
                         fontSize: "0.78rem",
                     }}
                 />
@@ -211,26 +211,26 @@ export function LeadsTrendChart({ data }: LeadsTrendChartProps) {
                     type="monotone"
                     dataKey="leads"
                     name="Leads"
-                    stroke="#3b82f6"
+                    stroke="#7a9e8a"
                     fill="url(#gradLeads)"
                     strokeWidth={2}
                     dot={false}
-                    activeDot={{ r: 4, fill: "#3b82f6" }}
+                    activeDot={{ r: 4, fill: "#7a9e8a" }}
                 />
                 <Area
                     type="monotone"
                     dataKey="messages"
                     name="Mensajes"
-                    stroke="#8b5cf6"
+                    stroke="#5d8270"
                     fill="url(#gradMsgs)"
                     strokeWidth={2}
                     dot={false}
-                    activeDot={{ r: 4, fill: "#8b5cf6" }}
+                    activeDot={{ r: 4, fill: "#5d8270" }}
                 />
                 <Legend
                     iconType="circle"
                     iconSize={8}
-                    wrapperStyle={{ fontSize: "0.72rem", color: "#a1a1aa", paddingTop: "8px" }}
+                    wrapperStyle={{ fontSize: "0.72rem", color: "var(--text-muted)", paddingTop: "8px" }}
                 />
             </AreaChart>
         </ResponsiveContainer>
@@ -283,10 +283,10 @@ export function PeakHoursChart({ data }: PeakHoursChartProps) {
                 <Tooltip
                     cursor={{ fill: "rgba(255,255,255,0.03)" }}
                     contentStyle={{
-                        background: "#18181b",
-                        border: "1px solid rgba(255,255,255,0.08)",
+                        background: "var(--bg-elevated)",
+                        border: "0.5px solid var(--border)",
                         borderRadius: "10px",
-                        color: "#f4f4f5",
+                        color: "var(--text-primary)",
                         fontSize: "0.78rem",
                     }}
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -299,7 +299,7 @@ export function PeakHoursChart({ data }: PeakHoursChartProps) {
                     {formatted.map((entry, index) => (
                         <Cell
                             key={`peak-${index}`}
-                            fill={`rgba(59, 130, 246, ${0.3 + entry.intensity * 0.7})`}
+                            fill={`rgba(122, 158, 138, ${0.3 + entry.intensity * 0.7})`}
                         />
                     ))}
                 </Bar>

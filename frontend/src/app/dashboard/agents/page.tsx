@@ -85,9 +85,9 @@ function AccordionSection({
                 <div style={{
                     display: "flex", alignItems: "center", justifyContent: "center",
                     width: "36px", height: "36px", borderRadius: "10px",
-                    background: isOpen ? "rgba(59,130,246,0.08)" : "rgba(255,255,255,0.05)",
-                    border: isOpen ? "1px solid rgba(59,130,246,0.15)" : "1px solid rgba(255,255,255,0.07)",
-                    color: isOpen ? "#60a5fa" : "#a1a1aa",
+                    background: isOpen ? "rgba(122,158,138,0.08)" : "rgba(255,255,255,0.05)",
+                    border: isOpen ? "0.5px solid rgba(122,158,138,0.15)" : "0.5px solid rgba(255,255,255,0.07)",
+                    color: isOpen ? "#9ab8a8" : "#a1a1aa",
                     flexShrink: 0,
                     transition: "all 0.2s ease",
                 }}>
@@ -120,7 +120,7 @@ function AccordionSection({
                         fontSize: "0.68rem",
                         fontWeight: 600,
                         background: "rgba(255,255,255,0.04)",
-                        border: "1px solid rgba(255,255,255,0.08)",
+                        border: "0.5px solid rgba(255,255,255,0.08)",
                         color: "var(--text-secondary)",
                         whiteSpace: "nowrap",
                         flexShrink: 0,
@@ -152,7 +152,7 @@ function AccordionSection({
                     >
                         <div style={{
                             padding: "0 22px 22px",
-                            borderTop: "1px solid rgba(255,255,255,0.04)",
+                            borderTop: "0.5px solid rgba(255,255,255,0.04)",
                         }}>
                             <div style={{ paddingTop: "18px" }}>
                                 {children}
@@ -473,17 +473,22 @@ export default function AgentConfigPage() {
     return (
         <div className="animate-in">
             {error && (
-                <div style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", borderRadius: 8, padding: "12px 16px", margin: "0 0 12px 0", color: "#DC2626", fontSize: 14 }}>
+                <div style={{ background: "var(--danger-bg)", border: "0.5px solid rgba(199,90,90,0.15)", borderRadius: 8, padding: "12px 16px", margin: "0 0 12px 0", color: "var(--danger)", fontSize: 14 }}>
                     {error}
                 </div>
             )}
             {/* ── Page header ── */}
             <div className="page-header">
                 <div>
-                    <h1 className="page-title">Mi Asistente</h1>
+                    <h1 className="page-title" style={{ fontFamily: "'Playfair Display', serif" }}>Mi Asistente</h1>
                     <p className="page-subtitle">Define la personalidad, el tono y el comportamiento de tu bot</p>
                 </div>
-                <button onClick={handleSave} className="btn-primary" disabled={saving} style={{ minWidth: "160px" }}>
+                <button onClick={handleSave} className="btn-primary" disabled={saving} style={{
+                    minWidth: "160px",
+                    background: saving ? undefined : saved ? "rgba(34,197,94,0.12)" : "var(--gradient-accent)",
+                    color: saved ? "var(--success)" : saving ? undefined : "white",
+                    border: saved ? "0.5px solid rgba(34,197,94,0.2)" : "none",
+                }}>
                     {saving ? <><Loader2 size={14} className="animate-spin" /> Guardando…</>
                         : saved ? <><CheckCircle size={14} /> ¡Guardado!</>
                             : <><Save size={14} /> Guardar Cambios</>}
@@ -513,7 +518,7 @@ export default function AgentConfigPage() {
                                 {INDUSTRY_TEMPLATES.map((tpl) => {
                                     const isSelected = selectedTplId === tpl.id;
                                     return (
-                                        <button key={tpl.id} onClick={() => {
+                                        <button key={tpl.id} className={`glass-card card-hover-lift`} onClick={() => {
                                             setSelectedTplId(tpl.id);
                                             setTplResult(null);
                                             if (tpl.systemPrompt) setSystemPrompt(tpl.systemPrompt);
@@ -521,18 +526,24 @@ export default function AgentConfigPage() {
                                             if (tpl.defaultWelcome) setWelcomeMessage(tpl.defaultWelcome);
                                         }}
                                             style={{
-                                                padding: "13px 10px", borderRadius: "10px",
-                                                border: isSelected ? "1px solid rgba(59,130,246,0.5)" : "1px solid rgba(255,255,255,0.06)",
-                                                background: isSelected ? "rgba(59,130,246,0.07)" : "rgba(255,255,255,0.02)",
+                                                padding: "16px 14px", borderRadius: "12px",
+                                                border: isSelected ? "0.5px solid rgba(122,158,138,0.5)" : undefined,
+                                                background: isSelected ? "rgba(122,158,138,0.07)" : undefined,
                                                 cursor: "pointer", textAlign: "left" as const,
-                                                transition: "all 0.15s ease",
-                                                boxShadow: isSelected ? "0 0 0 1px rgba(59,130,246,0.15)" : "none",
+                                                boxShadow: isSelected ? "0 0 12px rgba(122,158,138,0.08)" : undefined,
                                             }}>
-                                            <div style={{ marginBottom: "7px", color: isSelected ? "#60a5fa" : "#52525b" }}>
+                                            <div style={{
+                                                marginBottom: "9px",
+                                                width: "32px", height: "32px", borderRadius: "9px",
+                                                display: "flex", alignItems: "center", justifyContent: "center",
+                                                background: isSelected ? "rgba(122,158,138,0.12)" : "rgba(255,255,255,0.05)",
+                                                border: isSelected ? "0.5px solid rgba(122,158,138,0.2)" : "0.5px solid rgba(255,255,255,0.06)",
+                                                color: isSelected ? "#9ab8a8" : "var(--text-muted)",
+                                            }}>
                                                 {TEMPLATE_ICONS[tpl.id] ?? <FileText size={17} />}
                                             </div>
-                                            <div style={{ fontSize: "0.77rem", fontWeight: 600, color: isSelected ? "#f4f4f5" : "#a1a1aa" }}>{tpl.label}</div>
-                                            <div style={{ fontSize: "0.67rem", color: "#52525b", marginTop: "2px" }}>{tpl.description}</div>
+                                            <div style={{ fontSize: "0.77rem", fontWeight: 600, color: isSelected ? "var(--text-primary)" : "var(--text-secondary)" }}>{tpl.label}</div>
+                                            <div style={{ fontSize: "0.67rem", color: "var(--text-muted)", marginTop: "3px" }}>{tpl.description}</div>
                                         </button>
                                     );
                                 })}
@@ -543,14 +554,14 @@ export default function AgentConfigPage() {
                                 const tpl = INDUSTRY_TEMPLATES.find((t) => t.id === selectedTplId);
                                 if (!tpl) return null;
                                 return (
-                                    <div style={{ padding: "10px 14px", borderRadius: "10px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", marginBottom: "12px" }}>
+                                    <div style={{ padding: "10px 14px", borderRadius: "10px", background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.06)", marginBottom: "12px" }}>
                                         <div style={{ display: "flex", alignItems: "center", gap: "7px", marginBottom: "8px" }}>
                                             <Kanban size={12} style={{ color: "var(--text-muted)" }} />
                                             <span style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em" }}>Pipeline</span>
                                         </div>
                                         <div style={{ display: "flex", flexWrap: "wrap", gap: "5px" }}>
                                             {tpl.stages.map((s) => (
-                                                <span key={s.name} style={{ padding: "2px 9px", borderRadius: "100px", fontSize: "0.7rem", fontWeight: 500, background: `${s.color}14`, color: s.color, border: `1px solid ${s.color}30` }}>
+                                                <span key={s.name} style={{ padding: "2px 9px", borderRadius: "100px", fontSize: "0.7rem", fontWeight: 500, background: `${s.color}14`, color: s.color, border: `0.5px solid ${s.color}30` }}>
                                                     {s.name}
                                                 </span>
                                             ))}
@@ -561,7 +572,7 @@ export default function AgentConfigPage() {
 
                             {/* Template result */}
                             {tplResult && (
-                                <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 14px", borderRadius: "10px", marginBottom: "12px", fontSize: "0.8rem", fontWeight: 500, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", color: "var(--text-secondary)" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 14px", borderRadius: "10px", marginBottom: "12px", fontSize: "0.8rem", fontWeight: 500, background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.06)", color: "var(--text-secondary)" }}>
                                     <Check size={13} style={{ color: "var(--success)" }} />{tplResult.msg}
                                 </div>
                             )}
@@ -605,20 +616,20 @@ export default function AgentConfigPage() {
                                 {TONE_OPTIONS.map((opt) => {
                                     const isSelected = tone === opt.value;
                                     return (
-                                        <button key={opt.value} type="button" onClick={() => setTone(opt.value)} style={{
+                                        <button key={opt.value} type="button" className="card-hover-lift" onClick={() => setTone(opt.value)} style={{
                                             display: "flex", alignItems: "center", gap: "11px", padding: "11px 13px", borderRadius: "10px",
-                                            border: isSelected ? "1px solid rgba(59,130,246,0.4)" : "1px solid rgba(255,255,255,0.06)",
-                                            background: isSelected ? "rgba(59,130,246,0.07)" : "rgba(255,255,255,0.02)",
+                                            border: isSelected ? "0.5px solid rgba(122,158,138,0.4)" : "0.5px solid rgba(255,255,255,0.06)",
+                                            background: isSelected ? "rgba(122,158,138,0.07)" : "rgba(255,255,255,0.02)",
                                             cursor: "pointer", textAlign: "left", transition: "all 0.15s ease", width: "100%",
                                         }}>
-                                            <span style={{ color: isSelected ? "#60a5fa" : "#52525b", flexShrink: 0 }}>
+                                            <span style={{ color: isSelected ? "#9ab8a8" : "#52525b", flexShrink: 0 }}>
                                                 {TONE_ICONS[opt.value]}
                                             </span>
                                             <div style={{ flex: 1 }}>
                                                 <div style={{ fontSize: "0.82rem", fontWeight: 600, color: isSelected ? "#f4f4f5" : "#a1a1aa" }}>{opt.label}</div>
                                                 <div style={{ fontSize: "0.7rem", color: "#52525b" }}>{opt.desc}</div>
                                             </div>
-                                            {isSelected && <Check size={13} style={{ color: "#60a5fa", flexShrink: 0 }} />}
+                                            {isSelected && <Check size={13} style={{ color: "#9ab8a8", flexShrink: 0 }} />}
                                         </button>
                                     );
                                 })}
@@ -648,7 +659,15 @@ export default function AgentConfigPage() {
                                 value={systemPrompt}
                                 onChange={e => setSystemPrompt(e.target.value)}
                                 placeholder="Selecciona una plantilla arriba o escribe aquí las instrucciones para tu agente…"
-                                style={{ minHeight: "260px", fontFamily: "monospace", fontSize: "0.78rem", lineHeight: 1.7 }}
+                                style={{
+                                    minHeight: "300px",
+                                    fontFamily: "monospace",
+                                    fontSize: "0.78rem",
+                                    lineHeight: 1.8,
+                                    padding: "18px 20px",
+                                    background: "rgba(14, 14, 13, 0.5)",
+                                    borderRadius: "12px",
+                                }}
                             />
                             <p className="text-xs mt-1.5" style={{ color: "var(--text-muted)" }}>
                                 Este es el cerebro de tu agente. Define cómo debe comportarse, qué información dar y cuándo derivar.
@@ -711,7 +730,7 @@ export default function AgentConfigPage() {
                                     {urls.length > 1 && (
                                         <button type="button" onClick={() => removeUrl(i)} disabled={scraping} title="Eliminar esta URL"
                                             style={{
-                                                background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)",
+                                                background: "rgba(239,68,68,0.08)", border: "0.5px solid rgba(239,68,68,0.2)",
                                                 borderRadius: "8px", color: "#f87171", padding: "8px", cursor: "pointer",
                                                 display: "flex", alignItems: "center", transition: "all 0.15s ease", flexShrink: 0,
                                             }}>
@@ -728,7 +747,7 @@ export default function AgentConfigPage() {
                                 style={{
                                     display: "flex", alignItems: "center", gap: "6px",
                                     padding: "9px 14px", borderRadius: "9px", fontSize: "0.8rem",
-                                    background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)",
+                                    background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.08)",
                                     color: "var(--text-secondary)", cursor: "pointer", transition: "all 0.15s ease",
                                 }}>
                                 <Plus size={14} /> Agregar otra URL
@@ -745,7 +764,7 @@ export default function AgentConfigPage() {
                         {scrapeErrors.length > 0 && (
                             <div style={{
                                 padding: "10px 14px", borderRadius: "10px", fontSize: "0.78rem",
-                                background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.2)",
+                                background: "rgba(239,68,68,0.07)", border: "0.5px solid rgba(239,68,68,0.2)",
                                 color: "#f87171", display: "flex", flexDirection: "column", gap: "4px",
                             }}>
                                 {scrapeErrors.map((e, i) => <span key={i}>{e}</span>)}
@@ -779,7 +798,7 @@ export default function AgentConfigPage() {
                                             display: "flex", alignItems: "center", gap: "7px",
                                             minWidth: "240px", justifyContent: "center",
                                             ...(contextSaved
-                                                ? { background: "rgba(34,197,94,0.12)", color: "var(--success)", border: "1px solid rgba(34,197,94,0.2)" }
+                                                ? { background: "rgba(34,197,94,0.12)", color: "var(--success)", border: "0.5px solid rgba(34,197,94,0.2)" }
                                                 : {}),
                                         }}>
                                         {contextSaving
@@ -806,7 +825,7 @@ export default function AgentConfigPage() {
                                 </div>
                                 <div style={{
                                     padding: "12px 14px", borderRadius: "10px",
-                                    background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)",
+                                    background: "rgba(255,255,255,0.03)", border: "0.5px solid rgba(255,255,255,0.06)",
                                     fontSize: "0.75rem", lineHeight: 1.7, color: "var(--text-secondary)",
                                     maxHeight: "130px", overflowY: "auto", fontFamily: "monospace",
                                 }}>
@@ -852,7 +871,7 @@ export default function AgentConfigPage() {
                                         <div key={faq.id} style={{
                                             padding: "12px 14px", borderRadius: "10px",
                                             background: "rgba(255,255,255,0.02)",
-                                            border: isEditing ? "1px solid rgba(59,130,246,0.3)" : "1px solid rgba(255,255,255,0.06)",
+                                            border: isEditing ? "0.5px solid rgba(122,158,138,0.3)" : "0.5px solid rgba(255,255,255,0.06)",
                                             transition: "all 0.15s ease",
                                         }}>
                                             <div style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
@@ -892,7 +911,7 @@ export default function AgentConfigPage() {
                                                         <button onClick={() => setEditingFaqId(faq.id)} title="Editar"
                                                             style={{
                                                                 padding: "5px", borderRadius: "6px",
-                                                                background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)",
+                                                                background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.06)",
                                                                 color: "var(--text-muted)", cursor: "pointer",
                                                                 display: "flex", alignItems: "center", transition: "all 0.15s ease",
                                                             }}>
@@ -901,7 +920,7 @@ export default function AgentConfigPage() {
                                                         <button onClick={() => removeFaq(faq.id)} title="Eliminar"
                                                             style={{
                                                                 padding: "5px", borderRadius: "6px",
-                                                                background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)",
+                                                                background: "rgba(239,68,68,0.06)", border: "0.5px solid rgba(239,68,68,0.15)",
                                                                 color: "#f87171", cursor: "pointer",
                                                                 display: "flex", alignItems: "center", transition: "all 0.15s ease",
                                                             }}>
@@ -929,7 +948,7 @@ export default function AgentConfigPage() {
                         {/* Add new FAQ */}
                         <div style={{
                             padding: "14px", borderRadius: "10px",
-                            background: "rgba(59,130,246,0.03)", border: "1px solid rgba(59,130,246,0.1)",
+                            background: "rgba(122,158,138,0.03)", border: "0.5px solid rgba(122,158,138,0.1)",
                         }}>
                             <div style={{
                                 display: "flex", alignItems: "center", gap: "6px",
@@ -987,7 +1006,8 @@ export default function AgentConfigPage() {
                                     <SlidersHorizontal size={11} className="inline mr-1" />
                                     Modelo de IA
                                 </label>
-                                <select className="select" value={model} onChange={e => setModel(e.target.value)}>
+                                <select className="select" value={model} onChange={e => setModel(e.target.value)}
+                                    style={{ background: "rgba(14, 14, 13, 0.5)", borderRadius: "10px" }}>
                                     <option value="gpt-4o-mini">GPT-4o Mini (rápido y económico)</option>
                                     <option value="gpt-4o">GPT-4o (más inteligente)</option>
                                     <option value="gpt-4-turbo">GPT-4 Turbo (máxima capacidad)</option>
@@ -1000,7 +1020,7 @@ export default function AgentConfigPage() {
                                 <label className="form-label">Estilo de Respuesta</label>
                                 <input type="range" min="0" max="1" step="0.1" value={temperature}
                                     onChange={e => setTemperature(parseFloat(e.target.value))}
-                                    style={{ width: "100%", marginTop: "8px", accentColor: "#3b82f6" }} />
+                                    style={{ width: "100%", marginTop: "8px", accentColor: "#7a9e8a" }} />
                                 <div className="flex justify-between mt-1" style={{ color: "var(--text-muted)", fontSize: "0.65rem", fontWeight: 500 }}>
                                     <span>Preciso y directo</span>
                                     <span style={{ color: "var(--text-secondary)", fontWeight: 600 }}>
@@ -1050,7 +1070,10 @@ export default function AgentConfigPage() {
                             right: "28px",
                             zIndex: 50,
                             minWidth: "170px",
-                            boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
+                            background: saving ? undefined : saved ? "rgba(34,197,94,0.12)" : "var(--gradient-accent)",
+                            color: saved ? "var(--success)" : saving ? undefined : "white",
+                            border: saved ? "0.5px solid rgba(34,197,94,0.2)" : "none",
+                            boxShadow: "0 4px 20px rgba(0,0,0,0.5), 0 0 20px rgba(122,158,138,0.1)",
                             justifyContent: "center",
                         }}
                     >

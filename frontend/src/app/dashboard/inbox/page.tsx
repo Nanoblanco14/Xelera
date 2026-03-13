@@ -508,7 +508,7 @@ export default function InboxPage() {
         <div className="animate-in" style={{ height: "calc(100vh - 110px)" }}>
 
             {error && (
-                <div style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", borderRadius: 8, padding: "12px 16px", margin: "0 0 12px 0", color: "#DC2626", fontSize: 14 }}>
+                <div style={{ background: "rgba(239,68,68,0.08)", border: "0.5px solid rgba(239,68,68,0.2)", borderRadius: 8, padding: "12px 16px", margin: "0 0 12px 0", color: "#f87171", fontSize: 14 }}>
                     {error}
                 </div>
             )}
@@ -528,6 +528,7 @@ export default function InboxPage() {
                     <div style={{
                         width: "8px", height: "8px", borderRadius: "50%",
                         background: "#22c55e", boxShadow: "0 0 6px rgba(34,197,94,0.5)",
+                        animation: "pulseGlow 2s ease-in-out infinite",
                     }} />
                     En vivo
                 </div>
@@ -541,23 +542,25 @@ export default function InboxPage() {
                 height: "calc(100% - 70px)",
                 borderRadius: "14px",
                 overflow: "hidden",
-                border: "1px solid var(--border)",
+                border: "0.5px solid rgba(255,255,255,0.055)",
                 background: "var(--bg-card)",
+                boxShadow: "0 4px 24px rgba(0,0,0,0.2), 0 1px 4px rgba(0,0,0,0.15)",
             }}>
 
                 {/* ── Conversation List ── */}
                 <div style={{
-                    borderRight: "1px solid var(--border)",
+                    borderRight: "0.5px solid var(--border)",
                     display: "flex",
                     flexDirection: "column",
-                    background: "var(--bg-secondary)",
+                    background: "linear-gradient(180deg, #1a1a18 0%, #141413 100%)",
                     overflow: "hidden",
                     minHeight: 0,
                 }}>
                     {/* Search */}
                     <div style={{
                         padding: "12px",
-                        borderBottom: "1px solid var(--border)",
+                        borderBottom: "1px solid transparent",
+                        borderImage: "linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent) 1",
                     }}>
                         <div style={{ position: "relative" }}>
                             <Search size={14} style={{
@@ -570,15 +573,32 @@ export default function InboxPage() {
                                 placeholder="Buscar en conversaciones y mensajes..."
                                 value={searchQuery}
                                 onChange={(e) => handleSearchChange(e.target.value)}
-                                style={{ paddingLeft: "32px", fontSize: "0.8rem" }}
+                                style={{
+                                    paddingLeft: "32px",
+                                    fontSize: "0.8rem",
+                                    background: "rgba(255,255,255,0.03)",
+                                    backdropFilter: "blur(12px)",
+                                    border: "0.5px solid rgba(255,255,255,0.06)",
+                                    borderRadius: "10px",
+                                    transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
+                                }}
+                                onFocus={(e) => {
+                                    e.currentTarget.style.borderColor = "rgba(122,158,138,0.35)";
+                                    e.currentTarget.style.boxShadow = "0 0 0 3px rgba(122,158,138,0.08), 0 0 20px rgba(122,158,138,0.06)";
+                                }}
+                                onBlur={(e) => {
+                                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
+                                    e.currentTarget.style.boxShadow = "none";
+                                }}
                             />
                         </div>
                     </div>
 
                     {/* Filter pills */}
                     <div style={{
-                        padding: "6px 12px",
-                        borderBottom: "1px solid var(--border)",
+                        padding: "8px 12px",
+                        borderBottom: "1px solid transparent",
+                        borderImage: "linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent) 1",
                         display: "flex", gap: "4px",
                         overflowX: "auto",
                     }}>
@@ -592,9 +612,9 @@ export default function InboxPage() {
                                 style={{
                                     padding: "3px 10px", borderRadius: "100px",
                                     fontSize: "0.65rem", fontWeight: 600,
-                                    background: convoFilter === f.key ? "rgba(59,130,246,0.1)" : "transparent",
-                                    border: convoFilter === f.key ? "1px solid rgba(59,130,246,0.25)" : "1px solid transparent",
-                                    color: convoFilter === f.key ? "#60a5fa" : "var(--text-muted)",
+                                    background: convoFilter === f.key ? "rgba(122,158,138,0.1)" : "transparent",
+                                    border: convoFilter === f.key ? "0.5px solid rgba(122,158,138,0.25)" : "0.5px solid transparent",
+                                    color: convoFilter === f.key ? "#9ab8a8" : "var(--text-muted)",
                                     cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.15s ease",
                                 }}>
                                 {f.label} <span style={{ opacity: 0.5 }}>{f.count}</span>
@@ -606,7 +626,7 @@ export default function InboxPage() {
                     {searchLoading && (
                         <div style={{
                             padding: "6px 12px",
-                            borderBottom: "1px solid var(--border)",
+                            borderBottom: "0.5px solid var(--border)",
                             display: "flex", alignItems: "center", gap: "6px",
                             fontSize: "0.7rem", color: "var(--text-muted)",
                         }}>
@@ -617,7 +637,7 @@ export default function InboxPage() {
                     {isDeepSearch && !searchLoading && (
                         <div style={{
                             padding: "6px 12px",
-                            borderBottom: "1px solid var(--border)",
+                            borderBottom: "0.5px solid var(--border)",
                             display: "flex", alignItems: "center", justifyContent: "space-between",
                             fontSize: "0.7rem", color: "var(--text-muted)",
                         }}>
@@ -645,10 +665,11 @@ export default function InboxPage() {
                             </div>
                         ) : filtered.length === 0 ? (
                             <div style={{
-                                padding: "40px 20px", textAlign: "center",
+                                padding: "48px 20px", textAlign: "center",
                                 color: "var(--text-muted)",
+                                background: "radial-gradient(ellipse at center, rgba(122,158,138,0.03) 0%, transparent 70%)",
                             }}>
-                                <InboxIcon size={28} style={{ margin: "0 auto 12px", opacity: 0.3 }} />
+                                <InboxIcon size={28} style={{ margin: "0 auto 12px", opacity: 0.25 }} />
                                 <p style={{ fontSize: "0.82rem", fontWeight: 500 }}>
                                     {searchQuery ? "Sin resultados" : "No hay conversaciones aún"}
                                 </p>
@@ -668,29 +689,38 @@ export default function InboxPage() {
                                             display: "flex",
                                             alignItems: "flex-start",
                                             gap: "10px",
-                                            padding: "12px 14px",
+                                            padding: "10px 12px",
+                                            margin: "2px 6px",
+                                            borderRadius: "10px",
                                             background: isSelected
-                                                ? "rgba(59,130,246,0.08)"
+                                                ? "linear-gradient(90deg, rgba(122,158,138,0.12) 0%, rgba(122,158,138,0.04) 100%)"
                                                 : "transparent",
                                             border: "none",
-                                            borderBottom: "1px solid rgba(255,255,255,0.04)",
                                             borderLeft: isSelected
-                                                ? "3px solid #3b82f6"
+                                                ? "3px solid #7a9e8a"
                                                 : "3px solid transparent",
+                                            boxShadow: isSelected
+                                                ? "0 0 12px rgba(122,158,138,0.06), inset 0 0 0 0.5px rgba(122,158,138,0.12)"
+                                                : "none",
                                             cursor: "pointer",
                                             textAlign: "left",
-                                            transition: "all 0.15s ease",
+                                            transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+                                            position: "relative" as const,
                                         }}
                                         onMouseEnter={(e) => {
                                             if (!isSelected) {
                                                 (e.currentTarget as HTMLButtonElement).style.background =
-                                                    "rgba(255,255,255,0.03)";
+                                                    "rgba(255,255,255,0.04)";
+                                                (e.currentTarget as HTMLButtonElement).style.boxShadow =
+                                                    "inset 0 0 0 0.5px rgba(255,255,255,0.06)";
                                             }
                                         }}
                                         onMouseLeave={(e) => {
                                             if (!isSelected) {
                                                 (e.currentTarget as HTMLButtonElement).style.background =
                                                     "transparent";
+                                                (e.currentTarget as HTMLButtonElement).style.boxShadow =
+                                                    "none";
                                             }
                                         }}
                                     >
@@ -699,13 +729,16 @@ export default function InboxPage() {
                                             flexShrink: 0, width: "38px", height: "38px",
                                             borderRadius: "10px",
                                             background: isSelected
-                                                ? "rgba(59,130,246,0.15)"
-                                                : "rgba(255,255,255,0.05)",
-                                            border: "1px solid rgba(255,255,255,0.07)",
+                                                ? "linear-gradient(135deg, rgba(122,158,138,0.2) 0%, rgba(122,158,138,0.08) 100%)"
+                                                : "rgba(255,255,255,0.04)",
+                                            border: isSelected
+                                                ? "0.5px solid rgba(122,158,138,0.25)"
+                                                : "0.5px solid rgba(255,255,255,0.06)",
                                             display: "flex", alignItems: "center",
                                             justifyContent: "center",
-                                            color: isSelected ? "#60a5fa" : "var(--text-muted)",
+                                            color: isSelected ? "#9ab8a8" : "var(--text-muted)",
                                             fontSize: "0.75rem", fontWeight: 700,
+                                            transition: "all 0.2s ease",
                                         }}>
                                             {convo.name[0]?.toUpperCase() || "?"}
                                         </div>
@@ -759,17 +792,20 @@ export default function InboxPage() {
                                                 </div>
                                             ) : (
                                                 <div style={{
-                                                    fontSize: "0.73rem",
-                                                    color: "var(--text-muted)",
+                                                    fontSize: "0.72rem",
+                                                    color: "var(--text-dim)",
                                                     overflow: "hidden",
                                                     textOverflow: "ellipsis",
                                                     whiteSpace: "nowrap",
                                                     maxWidth: "240px",
+                                                    letterSpacing: "0.01em",
+                                                    lineHeight: 1.4,
                                                 }}>
                                                     {convo.last_message?.role === "assistant" && (
                                                         <Bot size={10} style={{
                                                             display: "inline", marginRight: "4px",
                                                             verticalAlign: "middle",
+                                                            opacity: 0.5,
                                                         }} />
                                                     )}
                                                     {convo.last_message?.content || "Sin mensajes"}
@@ -788,7 +824,7 @@ export default function InboxPage() {
                                                         fontWeight: 600,
                                                         background: "rgba(245,158,11,0.1)",
                                                         color: "#f59e0b",
-                                                        border: "1px solid rgba(245,158,11,0.2)",
+                                                        border: "0.5px solid rgba(245,158,11,0.2)",
                                                     }}>
                                                         Humano
                                                     </span>
@@ -802,7 +838,7 @@ export default function InboxPage() {
                                                         ? `${convo.stage_color}14`
                                                         : "rgba(255,255,255,0.04)",
                                                     color: convo.stage_color || "var(--text-muted)",
-                                                    border: `1px solid ${convo.stage_color ? convo.stage_color + "30" : "rgba(255,255,255,0.06)"}`,
+                                                    border: `0.5px solid ${convo.stage_color ? convo.stage_color + "30" : "rgba(255,255,255,0.06)"}`,
                                                 }}>
                                                     {convo.stage_name}
                                                 </span>
@@ -818,7 +854,9 @@ export default function InboxPage() {
                 {/* ── Chat Panel ── */}
                 <div style={{
                     display: "flex", flexDirection: "column",
-                    background: "var(--bg-primary)",
+                    background: "var(--bg-deep)",
+                    backgroundImage: "radial-gradient(rgba(255,255,255,0.02) 1px, transparent 1px)",
+                    backgroundSize: "24px 24px",
                     overflow: "hidden",
                     minHeight: 0,
                 }}>
@@ -827,32 +865,44 @@ export default function InboxPage() {
                         <div style={{
                             flex: 1, display: "flex",
                             alignItems: "center", justifyContent: "center",
-                            flexDirection: "column", gap: "12px",
+                            flexDirection: "column", gap: "16px",
                             color: "var(--text-muted)",
+                            background: "radial-gradient(ellipse at center, rgba(122,158,138,0.04) 0%, transparent 70%)",
                         }}>
                             <motion.div
                                 animate={{ scale: [1, 1.05, 1] }}
                                 transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                                 style={{
-                                    width: "56px", height: "56px", borderRadius: "16px",
-                                    background: "rgba(59,130,246,0.06)",
-                                    border: "1px solid rgba(59,130,246,0.1)",
+                                    width: "72px", height: "72px", borderRadius: "20px",
+                                    background: "linear-gradient(135deg, rgba(122,158,138,0.08) 0%, rgba(122,158,138,0.03) 100%)",
+                                    border: "0.5px solid rgba(122,158,138,0.1)",
                                     display: "flex", alignItems: "center", justifyContent: "center",
+                                    boxShadow: "0 0 40px rgba(122,158,138,0.06)",
                                 }}
                             >
-                                <MessageSquare size={26} style={{ opacity: 0.4, color: "#60a5fa" }} />
+                                <MessageSquare size={32} style={{ opacity: 0.35, color: "#9ab8a8" }} />
                             </motion.div>
-                            <p style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                            <p style={{
+                                fontSize: "1.1rem", fontWeight: 500,
+                                fontFamily: "'Playfair Display', serif",
+                                color: "var(--text-secondary)",
+                                letterSpacing: "-0.01em",
+                            }}>
                                 Selecciona una conversacion
                             </p>
-                            <p style={{ fontSize: "0.73rem", maxWidth: "260px", textAlign: "center", lineHeight: 1.5 }}>
+                            <p style={{ fontSize: "0.73rem", maxWidth: "280px", textAlign: "center", lineHeight: 1.6, color: "var(--text-dim)" }}>
                                 Elige un contacto de la lista para ver sus mensajes y gestionar la conversacion
                             </p>
                         </div>
                     ) : (
                         <>
                             {/* ── Chat header ── */}
-                            <div style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-secondary)" }}>
+                            <div style={{
+                                borderBottom: "1px solid transparent",
+                                borderImage: "linear-gradient(90deg, rgba(122,158,138,0.1), rgba(255,255,255,0.06), transparent) 1",
+                                background: "rgba(14,14,13,0.8)",
+                                backdropFilter: "blur(16px)",
+                            }}>
                               {/* Row 1: Main info */}
                               <div style={{
                                 padding: "12px 16px",
@@ -862,27 +912,31 @@ export default function InboxPage() {
                                     {/* Avatar with status dot */}
                                     <div style={{ position: "relative" }}>
                                         <div style={{
-                                            width: "38px", height: "38px",
-                                            borderRadius: "10px",
-                                            background: "rgba(59,130,246,0.1)",
-                                            border: "1px solid rgba(59,130,246,0.2)",
+                                            width: "40px", height: "40px",
+                                            borderRadius: "12px",
+                                            background: "linear-gradient(135deg, rgba(122,158,138,0.15) 0%, rgba(122,158,138,0.06) 100%)",
+                                            border: "0.5px solid rgba(122,158,138,0.2)",
                                             display: "flex", alignItems: "center", justifyContent: "center",
-                                            color: "#60a5fa", fontSize: "0.78rem", fontWeight: 700,
+                                            color: "#9ab8a8", fontSize: "0.82rem", fontWeight: 700,
+                                            boxShadow: "0 0 12px rgba(122,158,138,0.06)",
                                         }}>
                                             {selectedConvo?.name[0]?.toUpperCase() || "?"}
                                         </div>
                                         {/* Online/status dot */}
                                         <div style={{
                                             position: "absolute", bottom: "-2px", right: "-2px",
-                                            width: "10px", height: "10px", borderRadius: "50%",
+                                            width: "11px", height: "11px", borderRadius: "50%",
                                             background: selectedConvo?.is_bot_paused ? "#f59e0b" : "#22c55e",
-                                            border: "2px solid var(--bg-secondary)",
-                                            boxShadow: selectedConvo?.is_bot_paused ? "none" : "0 0 6px rgba(34,197,94,0.4)",
+                                            border: "2px solid var(--bg-deep)",
+                                            boxShadow: selectedConvo?.is_bot_paused
+                                                ? "0 0 6px rgba(245,158,11,0.3)"
+                                                : "0 0 8px rgba(34,197,94,0.4)",
+                                            animation: selectedConvo?.is_bot_paused ? "none" : "pulseGlow 2s ease-in-out infinite",
                                         }} />
                                     </div>
                                     <div>
                                         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                            <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                                            <span style={{ fontSize: "0.92rem", fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
                                                 {selectedConvo?.name || "Contacto"}
                                             </span>
                                             <span style={{
@@ -890,7 +944,7 @@ export default function InboxPage() {
                                                 fontSize: "0.58rem", fontWeight: 600,
                                                 background: selectedConvo?.is_bot_paused ? "rgba(245,158,11,0.1)" : "rgba(34,197,94,0.1)",
                                                 color: selectedConvo?.is_bot_paused ? "#f59e0b" : "#22c55e",
-                                                border: `1px solid ${selectedConvo?.is_bot_paused ? "rgba(245,158,11,0.2)" : "rgba(34,197,94,0.2)"}`,
+                                                border: `0.5px solid ${selectedConvo?.is_bot_paused ? "rgba(245,158,11,0.2)" : "rgba(34,197,94,0.2)"}`,
                                             }}>
                                                 {selectedConvo?.is_bot_paused ? "Humano" : "Bot activo"}
                                             </span>
@@ -924,11 +978,14 @@ export default function InboxPage() {
                                             padding: "7px 10px", borderRadius: "8px",
                                             fontSize: "0.72rem", fontWeight: 600,
                                             cursor: "pointer",
-                                            border: "none",
-                                            transition: "all 0.15s ease",
+                                            border: showNotes
+                                                ? "0.5px solid rgba(245,158,11,0.2)"
+                                                : "0.5px solid rgba(255,255,255,0.06)",
+                                            transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
                                             background: showNotes
                                                 ? "rgba(245,158,11,0.1)"
-                                                : "rgba(255,255,255,0.05)",
+                                                : "rgba(255,255,255,0.04)",
+                                            backdropFilter: "blur(8px)",
                                             color: showNotes ? "#f59e0b" : "var(--text-muted)",
                                             position: "relative" as const,
                                         }}
@@ -970,16 +1027,18 @@ export default function InboxPage() {
                                             padding: "7px 12px", borderRadius: "8px",
                                             fontSize: "0.72rem", fontWeight: 600,
                                             cursor: "pointer",
-                                            border: "none",
-                                            transition: "all 0.15s ease",
+                                            backdropFilter: "blur(8px)",
+                                            transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
                                             ...(selectedConvo?.is_bot_paused
                                                 ? {
                                                     background: "rgba(34,197,94,0.08)",
                                                     color: "#22c55e",
+                                                    border: "0.5px solid rgba(34,197,94,0.15)",
                                                 }
                                                 : {
                                                     background: "rgba(245,158,11,0.08)",
                                                     color: "#f59e0b",
+                                                    border: "0.5px solid rgba(245,158,11,0.15)",
                                                 }),
                                         }}
                                     >
@@ -997,11 +1056,12 @@ export default function InboxPage() {
                               </div>
                               {/* Row 2: Stats bar */}
                               <div style={{
-                                  padding: "5px 16px",
+                                  padding: "6px 16px",
                                   background: "rgba(255,255,255,0.015)",
-                                  borderTop: "1px solid rgba(255,255,255,0.03)",
+                                  borderTop: "0.5px solid rgba(255,255,255,0.03)",
                                   display: "flex", alignItems: "center", gap: "16px",
-                                  fontSize: "0.65rem", color: "var(--text-muted)",
+                                  fontSize: "0.63rem", color: "var(--text-dim)",
+                                  letterSpacing: "0.02em",
                               }}>
                                   <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                                       <Hash size={10} /> {messages.length} mensajes
@@ -1019,10 +1079,12 @@ export default function InboxPage() {
                             {selectedConvo?.is_bot_paused && (
                                 <div style={{
                                     padding: "8px 16px",
-                                    background: "rgba(245,158,11,0.06)",
-                                    borderBottom: "1px solid rgba(245,158,11,0.15)",
+                                    background: "linear-gradient(90deg, rgba(245,158,11,0.06) 0%, rgba(245,158,11,0.02) 100%)",
+                                    borderBottom: "1px solid transparent",
+                                    borderImage: "linear-gradient(90deg, rgba(245,158,11,0.15), transparent) 1",
                                     display: "flex", alignItems: "center", gap: "8px",
-                                    fontSize: "0.75rem", color: "#f59e0b",
+                                    fontSize: "0.74rem", color: "#f59e0b",
+                                    backdropFilter: "blur(8px)",
                                 }}>
                                     <AlertTriangle size={13} />
                                     Bot pausado — tú estás respondiendo como humano. Los mensajes del bot no se enviarán.
@@ -1032,8 +1094,10 @@ export default function InboxPage() {
                             {/* ── Notes panel ── */}
                             {showNotes && (
                                 <div style={{
-                                    borderBottom: "1px solid var(--border)",
-                                    background: "rgba(245,158,11,0.02)",
+                                    borderBottom: "1px solid transparent",
+                                    borderImage: "linear-gradient(90deg, rgba(245,158,11,0.1), rgba(255,255,255,0.04), transparent) 1",
+                                    background: "rgba(245,158,11,0.015)",
+                                    backdropFilter: "blur(12px)",
                                     maxHeight: "260px",
                                     display: "flex",
                                     flexDirection: "column",
@@ -1044,7 +1108,7 @@ export default function InboxPage() {
                                         display: "flex",
                                         alignItems: "center",
                                         justifyContent: "space-between",
-                                        borderBottom: "1px solid rgba(245,158,11,0.1)",
+                                        borderBottom: "0.5px solid rgba(245,158,11,0.1)",
                                     }}>
                                         <span style={{
                                             fontSize: "0.7rem",
@@ -1077,7 +1141,7 @@ export default function InboxPage() {
                                         display: "flex",
                                         gap: "6px",
                                         alignItems: "center",
-                                        borderBottom: "1px solid rgba(255,255,255,0.04)",
+                                        borderBottom: "0.5px solid rgba(255,255,255,0.04)",
                                     }}>
                                         <input
                                             className="input"
@@ -1096,7 +1160,7 @@ export default function InboxPage() {
                                                 background: newNoteText.trim()
                                                     ? "rgba(245,158,11,0.1)"
                                                     : "rgba(255,255,255,0.03)",
-                                                border: "1px solid " + (newNoteText.trim()
+                                                border: "0.5px solid " + (newNoteText.trim()
                                                     ? "rgba(245,158,11,0.2)"
                                                     : "rgba(255,255,255,0.06)"),
                                                 color: newNoteText.trim() ? "#f59e0b" : "var(--text-muted)",
@@ -1154,7 +1218,7 @@ export default function InboxPage() {
                                                             borderRadius: "8px",
                                                             marginBottom: "4px",
                                                             background: "rgba(245,158,11,0.04)",
-                                                            border: "1px solid rgba(245,158,11,0.08)",
+                                                            border: "0.5px solid rgba(245,158,11,0.08)",
                                                             display: "flex",
                                                             alignItems: "flex-start",
                                                             gap: "8px",
@@ -1213,9 +1277,9 @@ export default function InboxPage() {
                             <div style={{
                                 flex: 1, overflowY: "auto",
                                 minHeight: 0,
-                                padding: "16px",
+                                padding: "20px 24px",
                                 display: "flex", flexDirection: "column",
-                                gap: "4px",
+                                gap: "2px",
                             }}>
                                 {messagesLoading ? (
                                     <div className="flex items-center justify-center py-16">
@@ -1235,44 +1299,63 @@ export default function InboxPage() {
                                             {/* Date separator */}
                                             <div style={{
                                                 textAlign: "center",
-                                                margin: "12px 0 8px",
+                                                margin: "16px 0 10px",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: "12px",
                                             }}>
+                                                <div style={{ flex: 1, height: "0.5px", background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)" }} />
                                                 <span style={{
-                                                    fontSize: "0.65rem",
+                                                    fontSize: "0.62rem",
                                                     fontWeight: 600,
-                                                    color: "var(--text-muted)",
-                                                    background: "rgba(255,255,255,0.04)",
-                                                    padding: "3px 10px",
+                                                    color: "var(--text-dim)",
+                                                    background: "rgba(255,255,255,0.03)",
+                                                    backdropFilter: "blur(8px)",
+                                                    padding: "3px 12px",
                                                     borderRadius: "100px",
+                                                    border: "0.5px solid rgba(255,255,255,0.05)",
+                                                    letterSpacing: "0.04em",
+                                                    textTransform: "uppercase",
                                                 }}>
                                                     {group.date}
                                                 </span>
+                                                <div style={{ flex: 1, height: "0.5px", background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent)" }} />
                                             </div>
-                                            {group.messages.map((msg) => (
-                                                <div key={msg.id} style={{
+                                            {group.messages.map((msg, msgIdx) => (
+                                                <motion.div
+                                                    key={msg.id}
+                                                    initial={{ opacity: 0, y: 6, scale: 0.98 }}
+                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1], delay: msgIdx < 3 ? msgIdx * 0.03 : 0 }}
+                                                    style={{
                                                     display: "flex",
                                                     justifyContent: msg.role === "user" ? "flex-start" : "flex-end",
-                                                    marginBottom: "3px",
+                                                    marginBottom: "4px",
                                                 }}>
                                                     <div style={{
                                                         maxWidth: "70%",
-                                                        padding: "8px 11px 5px",
+                                                        padding: "9px 13px 6px",
                                                         borderRadius: msg.role === "user"
-                                                            ? "2px 12px 12px 12px"
-                                                            : "12px 2px 12px 12px",
+                                                            ? "4px 14px 14px 14px"
+                                                            : "14px 4px 14px 14px",
                                                         background: msg.role === "user"
-                                                            ? "rgba(255,255,255,0.06)"
-                                                            : "rgba(59,130,246,0.1)",
+                                                            ? "rgba(255,255,255,0.05)"
+                                                            : "linear-gradient(135deg, rgba(122,158,138,0.1) 0%, rgba(122,158,138,0.06) 100%)",
                                                         border: msg.role === "user"
-                                                            ? "1px solid rgba(255,255,255,0.08)"
-                                                            : "1px solid rgba(59,130,246,0.15)",
+                                                            ? "0.5px solid rgba(255,255,255,0.07)"
+                                                            : "0.5px solid rgba(122,158,138,0.14)",
+                                                        boxShadow: msg.role === "user"
+                                                            ? "0 1px 3px rgba(0,0,0,0.15)"
+                                                            : "0 1px 3px rgba(0,0,0,0.15), 0 0 8px rgba(122,158,138,0.04)",
+                                                        backdropFilter: "blur(8px)",
                                                     }}>
                                                         <div style={{
                                                             fontSize: "0.8rem",
-                                                            lineHeight: 1.5,
+                                                            lineHeight: 1.55,
                                                             color: "var(--text-primary)",
                                                             whiteSpace: "pre-wrap",
                                                             wordBreak: "break-word",
+                                                            letterSpacing: "0.005em",
                                                         }}>
                                                             {msg.content}
                                                         </div>
@@ -1280,17 +1363,17 @@ export default function InboxPage() {
                                                         <div style={{
                                                             display: "flex", alignItems: "center",
                                                             justifyContent: "flex-end", gap: "4px",
-                                                            marginTop: "2px",
+                                                            marginTop: "3px",
                                                         }}>
-                                                            <span style={{ fontSize: "0.56rem", color: "var(--text-muted)" }}>
+                                                            <span style={{ fontSize: "0.55rem", color: "var(--text-dim)", letterSpacing: "0.02em" }}>
                                                                 {formatTime(msg.created_at)}
                                                             </span>
                                                             {msg.role === "assistant" && (
-                                                                <CheckCheck size={12} style={{ color: "#60a5fa", opacity: 0.6 }} />
+                                                                <CheckCheck size={12} style={{ color: "#9ab8a8", opacity: 0.5 }} />
                                                             )}
                                                         </div>
                                                     </div>
-                                                </div>
+                                                </motion.div>
                                             ))}
                                         </React.Fragment>
                                     ))
@@ -1307,16 +1390,16 @@ export default function InboxPage() {
                                             <div style={{
                                                 padding: "10px 14px",
                                                 borderRadius: "12px 4px 12px 12px",
-                                                background: "rgba(59,130,246,0.08)",
-                                                border: "1px solid rgba(59,130,246,0.12)",
+                                                background: "rgba(122,158,138,0.08)",
+                                                border: "0.5px solid rgba(122,158,138,0.12)",
                                                 display: "flex", alignItems: "center", gap: "6px",
                                             }}>
-                                                <Bot size={11} style={{ color: "#60a5fa" }} />
+                                                <Bot size={11} style={{ color: "#9ab8a8" }} />
                                                 <div style={{ display: "flex", gap: "3px", alignItems: "center" }}>
                                                     {[0, 1, 2].map(i => (
                                                         <span key={i} style={{
                                                             width: "5px", height: "5px", borderRadius: "50%",
-                                                            background: "#60a5fa",
+                                                            background: "#9ab8a8",
                                                             animation: `typingBounce 1.2s ease-in-out ${i * 0.15}s infinite`,
                                                         }} />
                                                     ))}
@@ -1332,8 +1415,10 @@ export default function InboxPage() {
                             {selectedConvo?.is_bot_paused && showTemplates && (
                                 <div style={{
                                     padding: "10px 16px",
-                                    borderTop: "1px solid var(--border)",
-                                    background: "rgba(59,130,246,0.03)",
+                                    borderTop: "1px solid transparent",
+                                    borderImage: "linear-gradient(90deg, transparent, rgba(122,158,138,0.12), transparent) 1",
+                                    background: "rgba(122,158,138,0.02)",
+                                    backdropFilter: "blur(12px)",
                                     maxHeight: "200px",
                                     overflowY: "auto",
                                 }}>
@@ -1379,7 +1464,7 @@ export default function InboxPage() {
                                                         fontSize: "0.73rem",
                                                         fontWeight: 500,
                                                         background: "rgba(255,255,255,0.05)",
-                                                        border: "1px solid rgba(255,255,255,0.08)",
+                                                        border: "0.5px solid rgba(255,255,255,0.08)",
                                                         color: "var(--text-secondary)",
                                                         cursor: "pointer",
                                                         transition: "all 0.15s ease",
@@ -1390,8 +1475,8 @@ export default function InboxPage() {
                                                         textAlign: "left",
                                                     }}
                                                     onMouseEnter={(e) => {
-                                                        e.currentTarget.style.background = "rgba(59,130,246,0.1)";
-                                                        e.currentTarget.style.borderColor = "rgba(59,130,246,0.2)";
+                                                        e.currentTarget.style.background = "rgba(122,158,138,0.1)";
+                                                        e.currentTarget.style.borderColor = "rgba(122,158,138,0.2)";
                                                         e.currentTarget.style.color = "#93c5fd";
                                                     }}
                                                     onMouseLeave={(e) => {
@@ -1442,9 +1527,9 @@ export default function InboxPage() {
                                                     onClick={addTemplate}
                                                     disabled={!newTemplate.trim()}
                                                     style={{
-                                                        background: "rgba(59,130,246,0.1)",
-                                                        border: "1px solid rgba(59,130,246,0.2)",
-                                                        color: "#60a5fa",
+                                                        background: "rgba(122,158,138,0.1)",
+                                                        border: "0.5px solid rgba(122,158,138,0.2)",
+                                                        color: "#9ab8a8",
                                                         borderRadius: "6px",
                                                         padding: "4px 8px",
                                                         fontSize: "0.7rem",
@@ -1482,9 +1567,11 @@ export default function InboxPage() {
 
                             {/* ── Message input ── */}
                             <div style={{
-                                padding: "12px 16px",
-                                borderTop: "1px solid var(--border)",
-                                background: "var(--bg-secondary)",
+                                padding: "14px 20px",
+                                borderTop: "1px solid transparent",
+                                borderImage: "linear-gradient(90deg, transparent, rgba(122,158,138,0.15), rgba(255,255,255,0.06), transparent) 1",
+                                background: "rgba(14,14,13,0.85)",
+                                backdropFilter: "blur(16px)",
                             }}>
                                 <div style={{
                                     display: "flex", gap: "8px",
@@ -1497,12 +1584,12 @@ export default function InboxPage() {
                                             title="Respuestas rapidas"
                                             style={{
                                                 background: showTemplates
-                                                    ? "rgba(59,130,246,0.1)"
+                                                    ? "rgba(122,158,138,0.1)"
                                                     : "rgba(255,255,255,0.05)",
                                                 border: showTemplates
-                                                    ? "1px solid rgba(59,130,246,0.2)"
-                                                    : "1px solid rgba(255,255,255,0.08)",
-                                                color: showTemplates ? "#60a5fa" : "var(--text-muted)",
+                                                    ? "0.5px solid rgba(122,158,138,0.2)"
+                                                    : "0.5px solid rgba(255,255,255,0.08)",
+                                                color: showTemplates ? "#9ab8a8" : "var(--text-muted)",
                                                 borderRadius: "8px",
                                                 padding: "8px",
                                                 cursor: "pointer",
@@ -1525,8 +1612,8 @@ export default function InboxPage() {
                                                 ? "rgba(34,197,94,0.1)"
                                                 : "rgba(255,255,255,0.05)",
                                             border: showWaTemplates
-                                                ? "1px solid rgba(34,197,94,0.2)"
-                                                : "1px solid rgba(255,255,255,0.08)",
+                                                ? "0.5px solid rgba(34,197,94,0.2)"
+                                                : "0.5px solid rgba(255,255,255,0.08)",
                                             color: showWaTemplates ? "#22c55e" : "var(--text-muted)",
                                             borderRadius: "8px",
                                             padding: "8px",
@@ -1561,6 +1648,18 @@ export default function InboxPage() {
                                             flex: 1,
                                             fontSize: "0.82rem",
                                             opacity: selectedConvo?.is_bot_paused ? 1 : 0.5,
+                                            borderRadius: "10px",
+                                            background: "rgba(255,255,255,0.03)",
+                                            border: "0.5px solid rgba(255,255,255,0.06)",
+                                            transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
+                                        }}
+                                        onFocus={(e) => {
+                                            e.currentTarget.style.borderColor = "rgba(122,158,138,0.3)";
+                                            e.currentTarget.style.boxShadow = "0 0 0 3px rgba(122,158,138,0.06), 0 0 16px rgba(122,158,138,0.05)";
+                                        }}
+                                        onBlur={(e) => {
+                                            e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
+                                            e.currentTarget.style.boxShadow = "none";
                                         }}
                                     />
                                     <button
@@ -1578,6 +1677,13 @@ export default function InboxPage() {
                                                 !newMessage.trim() || !selectedConvo?.is_bot_paused
                                                     ? 0.4
                                                     : 1,
+                                            background: "linear-gradient(135deg, #7a9e8a 0%, #5d8270 100%)",
+                                            border: "0.5px solid rgba(122,158,138,0.3)",
+                                            borderRadius: "10px",
+                                            boxShadow: newMessage.trim() && selectedConvo?.is_bot_paused
+                                                ? "0 0 16px rgba(122,158,138,0.2), 0 2px 8px rgba(0,0,0,0.3)"
+                                                : "none",
+                                            transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
                                         }}
                                     >
                                         {sending ? (
@@ -1634,7 +1740,7 @@ export default function InboxPage() {
                             {/* Header */}
                             <div style={{
                                 padding: "16px 20px",
-                                borderBottom: "1px solid var(--border)",
+                                borderBottom: "0.5px solid var(--border)",
                                 display: "flex", alignItems: "center",
                                 justifyContent: "space-between",
                             }}>
@@ -1698,7 +1804,7 @@ export default function InboxPage() {
                                                         padding: "12px 14px",
                                                         borderRadius: "10px",
                                                         background: "rgba(255,255,255,0.03)",
-                                                        border: "1px solid rgba(255,255,255,0.06)",
+                                                        border: "0.5px solid rgba(255,255,255,0.06)",
                                                         cursor: "pointer",
                                                         textAlign: "left",
                                                         transition: "all 0.15s ease",
@@ -1732,14 +1838,14 @@ export default function InboxPage() {
                                                                 fontSize: "0.62rem", fontWeight: 600,
                                                                 padding: "2px 7px", borderRadius: "6px",
                                                                 background: tpl.category === "MARKETING"
-                                                                    ? "rgba(59,130,246,0.1)"
+                                                                    ? "rgba(122,158,138,0.1)"
                                                                     : "rgba(255,255,255,0.05)",
                                                                 color: tpl.category === "MARKETING"
-                                                                    ? "#60a5fa"
+                                                                    ? "#9ab8a8"
                                                                     : "var(--text-muted)",
                                                                 border: tpl.category === "MARKETING"
-                                                                    ? "1px solid rgba(59,130,246,0.2)"
-                                                                    : "1px solid rgba(255,255,255,0.08)",
+                                                                    ? "0.5px solid rgba(122,158,138,0.2)"
+                                                                    : "0.5px solid rgba(255,255,255,0.08)",
                                                                 textTransform: "uppercase",
                                                             }}>
                                                                 {tpl.category}
@@ -1808,7 +1914,7 @@ export default function InboxPage() {
                                                         padding: "2px 8px", borderRadius: "6px",
                                                         background: "rgba(34,197,94,0.1)",
                                                         color: "#22c55e",
-                                                        border: "1px solid rgba(34,197,94,0.2)",
+                                                        border: "0.5px solid rgba(34,197,94,0.2)",
                                                     }}>
                                                         APPROVED
                                                     </span>
@@ -1819,7 +1925,7 @@ export default function InboxPage() {
                                                     padding: "14px 16px",
                                                     borderRadius: "4px 14px 14px 14px",
                                                     background: "rgba(34,197,94,0.06)",
-                                                    border: "1px solid rgba(34,197,94,0.12)",
+                                                    border: "0.5px solid rgba(34,197,94,0.12)",
                                                 }}>
                                                     <div style={{
                                                         display: "flex", alignItems: "center", gap: "4px",
@@ -1884,7 +1990,7 @@ export default function InboxPage() {
                             {waSelectedTemplate && (
                                 <div style={{
                                     padding: "12px 20px",
-                                    borderTop: "1px solid var(--border)",
+                                    borderTop: "0.5px solid var(--border)",
                                     display: "flex", justifyContent: "flex-end", gap: "8px",
                                 }}>
                                     <button

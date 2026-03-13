@@ -44,7 +44,7 @@ export default function ProductStep({ industryId, data, onChange }: Props) {
                     style={{
                         width: "64px", height: "64px", borderRadius: "18px",
                         background: "rgba(16,185,129,0.1)",
-                        border: "1px solid rgba(16,185,129,0.15)",
+                        border: "0.5px solid rgba(16,185,129,0.15)",
                     }}
                 >
                     <Package size={32} style={{ color: "#34d399" }} />

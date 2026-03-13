@@ -58,7 +58,7 @@ interface AnalyticsData {
 }
 
 const FUNNEL_COLORS = [
-    "#3b82f6", "#22c55e", "#f59e0b", "#8b5cf6",
+    "#7a9e8a", "#22c55e", "#f59e0b", "#5d8270",
     "#ef4444", "#06b6d4", "#ec4899", "#14b8a6",
 ];
 
@@ -73,22 +73,17 @@ function KpiCard({
     accent?: string;
 }) {
     return (
-        <div style={{
-            background: "var(--bg-card)",
-            border: "1px solid var(--border)",
-            borderRadius: "16px",
-            padding: "22px 24px",
+        <div className="kpi-card" style={{
             display: "flex",
             flexDirection: "column",
             gap: "14px",
-            transition: "border-color 0.2s",
         }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <div style={{
                     width: "34px", height: "34px", borderRadius: "10px",
                     background: accent ? `${accent}18` : "rgba(255,255,255,0.05)",
-                    border: `1px solid ${accent ? `${accent}30` : "rgba(255,255,255,0.07)"}`,
-                    color: accent ?? "#a1a1aa",
+                    border: `0.5px solid ${accent ? `${accent}30` : "var(--border)"}`,
+                    color: accent ?? "var(--text-muted)",
                     display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
                 }}>
                     {icon}
@@ -100,11 +95,8 @@ function KpiCard({
                 }}>{label}</span>
             </div>
             <div>
-                <div style={{
-                    fontSize: "2rem", fontWeight: 800,
+                <div className="kpi-value" style={{
                     color: accent ?? "var(--text-primary)",
-                    lineHeight: 1,
-                    letterSpacing: "-0.02em",
                 }}>{value}</div>
                 <p style={{ fontSize: "0.73rem", color: "var(--text-muted)", marginTop: "6px" }}>{sub}</p>
             </div>
@@ -115,19 +107,14 @@ function KpiCard({
 /* ─── Chart Card wrapper ─────────────────────────────────────── */
 function ChartCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
     return (
-        <div style={{
-            background: "var(--bg-card)",
-            border: "1px solid var(--border)",
-            borderRadius: "16px",
-            padding: "24px",
-        }}>
+        <div className="glass-card" style={{ padding: "24px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "22px" }}>
                 <div style={{
                     width: "28px", height: "28px", borderRadius: "8px",
                     background: "rgba(255,255,255,0.05)",
-                    border: "1px solid rgba(255,255,255,0.07)",
+                    border: "0.5px solid var(--border)",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    color: "#a1a1aa",
+                    color: "var(--text-muted)",
                 }}>
                     {icon}
                 </div>
@@ -183,7 +170,7 @@ export default function AnalyticsPage() {
         <div className="animate-in" style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
 
             {error && (
-                <div style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", borderRadius: 8, padding: "12px 16px", margin: "0 0 8px 0", color: "#DC2626", fontSize: 14 }}>
+                <div style={{ background: "var(--danger-bg)", border: "0.5px solid rgba(199,90,90,0.15)", borderRadius: 8, padding: "12px 16px", margin: "0 0 8px 0", color: "var(--danger)", fontSize: 14 }}>
                     {error}
                 </div>
             )}
@@ -197,7 +184,7 @@ export default function AnalyticsPage() {
             </div>
 
             {/* ── KPI Grid ─────────────────────────────────────── */}
-            <div style={{
+            <div className="stagger-children" style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
                 gap: "16px",
@@ -220,19 +207,20 @@ export default function AnalyticsPage() {
                     label="Tasa de Conversión"
                     value={`${data.conversionRate}%`}
                     sub={`${data.citasAgendadas} de ${data.totalLeads} leads agendaron`}
-                    accent="#3b82f6"
+                    accent="#7a9e8a"
                 />
                 <KpiCard
                     icon={<MessageSquare size={16} />}
                     label="Mensajes Gestionados"
                     value={data.aiMessages}
                     sub="Respuestas enviadas por la IA"
-                    accent="#8b5cf6"
+                    accent="#5d8270"
                 />
             </div>
 
             {/* ── Charts Row ───────────────────────────────────── */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+            <div className="section-label">Distribución</div>
+            <div className="glass-panel" style={{ padding: "20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
 
                 {/* Donut — Pipeline distribution */}
                 <ChartCard title="Distribución del Pipeline" icon={<Zap size={14} />}>
@@ -247,6 +235,7 @@ export default function AnalyticsPage() {
             </div>
 
             {/* ── Trends Row: Leads Trend + Peak Hours ────────── */}
+            <div className="section-label">Tendencias</div>
             <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "16px" }}>
 
                 {/* Tendencia de Leads (30 dias) */}
@@ -262,6 +251,7 @@ export default function AnalyticsPage() {
             </div>
 
             {/* ── Funnel Visualization ────────────────────────────── */}
+            <div className="section-label">Embudo</div>
             {data.funnel.length > 0 && (
                 <ChartCard title="Embudo de Conversion" icon={<ArrowDownRight size={14} />}>
                     <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -299,7 +289,7 @@ export default function AnalyticsPage() {
                                             height: "32px",
                                             borderRadius: "8px",
                                             background: `linear-gradient(90deg, ${stageColor}30, ${stageColor}60)`,
-                                            border: `1px solid ${stageColor}40`,
+                                            border: `0.5px solid ${stageColor}40`,
                                             display: "flex",
                                             alignItems: "center",
                                             justifyContent: "center",
@@ -332,6 +322,7 @@ export default function AnalyticsPage() {
             )}
 
             {/* ── Source Breakdown + Insight Row ───────────────── */}
+            <div className="section-label">Fuentes e Insights</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
 
                 {/* Origen de leads */}
@@ -349,7 +340,7 @@ export default function AnalyticsPage() {
                                         gap: "12px",
                                         padding: "11px 14px", borderRadius: "10px",
                                         background: "rgba(255,255,255,0.02)",
-                                        border: "1px solid rgba(255,255,255,0.05)",
+                                        border: "0.5px solid rgba(255,255,255,0.05)",
                                     }}>
                                         <span style={{ color: "var(--text-muted)", display: "flex" }}>
                                             {isWhatsApp ? <MessageCircle size={14} /> : <FileText size={14} />}
@@ -360,7 +351,7 @@ export default function AnalyticsPage() {
                                                 <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-primary)" }}>{src.count} <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({pct}%)</span></span>
                                             </div>
                                             <div style={{ height: "4px", borderRadius: "100px", background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-                                                <div style={{ height: "100%", width: `${pct}%`, borderRadius: "100px", background: isWhatsApp ? "#22c55e" : "#3b82f6", transition: "width 0.6s ease" }} />
+                                                <div style={{ height: "100%", width: `${pct}%`, borderRadius: "100px", background: isWhatsApp ? "#22c55e" : "#7a9e8a", transition: "width 0.6s ease" }} />
                                             </div>
                                         </div>
                                     </div>
@@ -372,8 +363,8 @@ export default function AnalyticsPage() {
 
                 {/* AI Insight card */}
                 <div style={{
-                    background: "linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(139,92,246,0.08) 100%)",
-                    border: "1px solid rgba(99,102,241,0.2)",
+                    background: "linear-gradient(135deg, rgba(122,158,138,0.08) 0%, rgba(93,130,112,0.08) 100%)",
+                    border: "0.5px solid rgba(122,158,138,0.2)",
                     borderRadius: "16px",
                     padding: "24px",
                     display: "flex",
@@ -402,7 +393,7 @@ export default function AnalyticsPage() {
                                 padding: "12px 14px",
                                 borderRadius: "10px",
                                 background: "rgba(255,255,255,0.04)",
-                                border: "1px solid rgba(255,255,255,0.06)",
+                                border: "0.5px solid rgba(255,255,255,0.06)",
                             }}>
                                 <div style={{ fontSize: "1.3rem", fontWeight: 800, color: stat.color, letterSpacing: "-0.02em" }}>{stat.value}</div>
                                 <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", marginTop: "3px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>{stat.label}</div>

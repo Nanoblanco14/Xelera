@@ -39,8 +39,8 @@ interface StageHistoryEntry {
 
 /* ── Color palette for stage configuration ─── */
 const COLOR_PALETTE = [
-    "#3b82f6", "#f59e0b", "#7c3aed", "#10b981",
-    "#ef4444", "#06b6d4", "#ec4899", "#8b5cf6",
+    "#7a9e8a", "#f59e0b", "#5d8270", "#10b981",
+    "#ef4444", "#06b6d4", "#ec4899", "#5d8270",
     "#f97316", "#14b8a6", "#6366f1", "#84cc16",
 ];
 
@@ -58,14 +58,14 @@ function ConfirmModal({ open, title, message, confirmLabel, confirmColor, onConf
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }}
       onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
-      <div style={{ background: "#fff", borderRadius: 12, padding: 24, maxWidth: 420, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.15)" }}>
-        <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 600, color: "#1E293B" }}>{title}</h3>
-        <p style={{ margin: "0 0 20px", fontSize: 14, color: "#64748B", lineHeight: 1.5 }}>{message}</p>
+      <div style={{ background: "var(--bg-card)", borderRadius: 14, padding: 24, maxWidth: 420, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.4)", border: "0.5px solid rgba(255,255,255,0.07)" }}>
+        <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 600, color: "var(--text-primary)" }}>{title}</h3>
+        <p style={{ margin: "0 0 20px", fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.5 }}>{message}</p>
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <button onClick={onCancel} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff", cursor: "pointer", fontSize: 13, color: "#64748B" }}>
+          <button onClick={onCancel} style={{ padding: "8px 16px", borderRadius: 8, border: "0.5px solid rgba(255,255,255,0.07)", background: "var(--bg-secondary)", cursor: "pointer", fontSize: 13, color: "var(--text-secondary)" }}>
             Cancelar
           </button>
-          <button onClick={onConfirm} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: confirmColor || "#3B82F6", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 500 }}>
+          <button onClick={onConfirm} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: confirmColor || "#7a9e8a", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 500 }}>
             {confirmLabel || "Confirmar"}
           </button>
         </div>
@@ -85,11 +85,11 @@ function AlertModal({ open, title, message, onClose }: {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ background: "#fff", borderRadius: 12, padding: 24, maxWidth: 400, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.15)" }}>
-        <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 600, color: "#1E293B" }}>{title}</h3>
-        <p style={{ margin: "0 0 20px", fontSize: 14, color: "#64748B", lineHeight: 1.5 }}>{message}</p>
+      <div style={{ background: "var(--bg-card)", borderRadius: 14, padding: 24, maxWidth: 400, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.4)", border: "0.5px solid rgba(255,255,255,0.07)" }}>
+        <h3 style={{ margin: "0 0 8px", fontSize: 16, fontWeight: 600, color: "var(--text-primary)" }}>{title}</h3>
+        <p style={{ margin: "0 0 20px", fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.5 }}>{message}</p>
         <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <button onClick={onClose} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#3B82F6", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 500 }}>
+          <button onClick={onClose} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#7a9e8a", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 500 }}>
             Entendido
           </button>
         </div>
@@ -648,7 +648,7 @@ export default function PipelinePage() {
     };
 
     /* ── Stage color accents (dynamic from DB or fallback) ── */
-    const FALLBACK_COLORS = ["#3b82f6", "#f59e0b", "#7c3aed", "#10b981"];
+    const FALLBACK_COLORS = ["#7a9e8a", "#f59e0b", "#5d8270", "#10b981"];
     const getStageColor = (stage: PipelineStage, idx: number) => {
         const dot = stage.color || FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
         return {
@@ -851,7 +851,7 @@ export default function PipelinePage() {
     return (
         <div className="animate-in" style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 64px)" }}>
             {error && (
-                <div style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", borderRadius: 8, padding: "12px 16px", margin: "0 0 12px 0", color: "#DC2626", fontSize: 14 }}>
+                <div style={{ background: "rgba(239,68,68,0.08)", border: "0.5px solid rgba(239,68,68,0.2)", borderRadius: 8, padding: "12px 16px", margin: "0 0 12px 0", color: "#f87171", fontSize: 14 }}>
                     {error}
                 </div>
             )}
@@ -859,7 +859,7 @@ export default function PipelinePage() {
             <div style={{ flexShrink: 0, marginBottom: "16px" }}>
                 <div className="page-header" style={{ marginBottom: "16px" }}>
                     <div>
-                        <h1 className="page-title">Flujo de Ventas</h1>
+                        <h1 className="page-title" style={{ fontFamily: "'Playfair Display', serif" }}>Flujo de Ventas</h1>
                         <p className="page-subtitle">
                             Gestiona tus leads a través del embudo de ventas
                         </p>
@@ -890,12 +890,12 @@ export default function PipelinePage() {
                 </div>
 
                 {/* ── Metrics bar ──────────────────────── */}
-                <div style={{ display: "flex", gap: "12px", marginBottom: "14px", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: "10px", marginBottom: "14px", flexWrap: "wrap" }}>
                     {[
                         { label: "Total Leads", value: totalLeads, icon: <Users size={13} />, color: "#a1a1aa" },
                         { label: "Calificados", value: qualifiedLeads, icon: <CalendarCheck size={13} />, color: "#22c55e" },
-                        { label: "Conversión", value: `${conversionRate}%`, icon: <TrendingUp size={13} />, color: "#3b82f6" },
-                        { label: "Vía WhatsApp", value: whatsappLeads, icon: <MessageCircle size={13} />, color: "#25d366" },
+                        { label: "Conversion", value: `${conversionRate}%`, icon: <TrendingUp size={13} />, color: "#7a9e8a" },
+                        { label: "Via WhatsApp", value: whatsappLeads, icon: <MessageCircle size={13} />, color: "#25d366" },
                     ].map((metric) => (
                         <div
                             key={metric.label}
@@ -903,17 +903,48 @@ export default function PipelinePage() {
                                 display: "flex",
                                 alignItems: "center",
                                 gap: "8px",
-                                padding: "8px 14px",
+                                padding: "8px 16px",
                                 borderRadius: "10px",
-                                background: "var(--bg-card)",
-                                border: "1px solid var(--border)",
+                                background: "rgba(255,255,255,0.02)",
+                                border: "1px solid rgba(255,255,255,0.045)",
+                                backdropFilter: "blur(8px)",
+                                transition: "all 0.2s ease",
                             }}
                         >
-                            <span style={{ color: metric.color, display: "flex" }}>{metric.icon}</span>
+                            <span style={{ color: metric.color, display: "flex", opacity: 0.8 }}>{metric.icon}</span>
                             <span style={{ fontSize: "0.92rem", fontWeight: 700, color: metric.color }}>{metric.value}</span>
-                            <span style={{ fontSize: "0.7rem", fontWeight: 500, color: "var(--text-muted)" }}>{metric.label}</span>
+                            <span style={{ fontSize: "0.68rem", fontWeight: 500, color: "var(--text-muted)", letterSpacing: "0.01em" }}>{metric.label}</span>
                         </div>
                     ))}
+
+                    {/* Stage count summary badges */}
+                    <div style={{ display: "flex", gap: "6px", alignItems: "center", marginLeft: "auto" }}>
+                        {stages.map((stage, idx) => {
+                            const sc = getStageColor(stage, idx);
+                            return (
+                                <div
+                                    key={stage.id}
+                                    title={stage.name}
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "5px",
+                                        padding: "4px 10px",
+                                        borderRadius: "100px",
+                                        background: `${sc.dot}10`,
+                                        border: `1px solid ${sc.dot}20`,
+                                        fontSize: "0.62rem",
+                                        fontWeight: 600,
+                                        color: sc.dot,
+                                        whiteSpace: "nowrap",
+                                    }}
+                                >
+                                    <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: sc.dot, flexShrink: 0 }} />
+                                    {stage.leads?.length || 0}
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
 
                 {/* ── Search & Filter bar ──────────────── */}
@@ -932,7 +963,7 @@ export default function PipelinePage() {
                             placeholder="Buscar por nombre, teléfono o notas..."
                         />
                     </div>
-                    <div style={{ display: "flex", gap: "4px", padding: "3px", background: "var(--bg-card)", borderRadius: "10px", border: "1px solid var(--border)" }}>
+                    <div style={{ display: "flex", gap: "4px", padding: "3px", background: "rgba(255,255,255,0.02)", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.045)", backdropFilter: "blur(8px)" }}>
                         {([
                             { value: "all" as const, label: "Todos" },
                             { value: "whatsapp" as const, label: "WhatsApp" },
@@ -963,7 +994,7 @@ export default function PipelinePage() {
                             style={{
                                 padding: "5px 12px",
                                 borderRadius: "8px",
-                                border: "1px solid rgba(239,68,68,0.2)",
+                                border: "0.5px solid rgba(239,68,68,0.2)",
                                 background: "rgba(239,68,68,0.06)",
                                 color: "#f87171",
                                 cursor: "pointer",
@@ -983,13 +1014,15 @@ export default function PipelinePage() {
             {/* ── Kanban Board ────────────────────────── */}
             <DragDropContext onDragEnd={onDragEnd}>
                 <div
+                    className="pipeline-scroll"
                     style={{
                         display: "flex",
-                        gap: "16px",
+                        gap: "14px",
                         flex: 1,
                         overflowX: "auto",
                         overflowY: "hidden",
                         paddingBottom: "16px",
+                        paddingTop: "2px",
                     }}
                 >
                     {(isFiltering ? filteredStages : stages).map((stage, idx) => {
@@ -1005,49 +1038,57 @@ export default function PipelinePage() {
                                     flex: "1 0 320px",
                                     display: "flex",
                                     flexDirection: "column",
-                                    background: "var(--bg-secondary)",
-                                    borderRadius: "var(--radius-lg)",
-                                    border: "1px solid var(--border)",
+                                    background: `linear-gradient(180deg, ${color.dot}08 0%, var(--bg-deep) 80px, var(--bg-deep) 100%)`,
+                                    borderRadius: "14px",
+                                    border: "0.5px solid var(--border)",
+                                    borderTop: `2px solid ${color.dot}`,
                                     overflow: "hidden",
+                                    backdropFilter: "blur(12px)",
+                                    boxShadow: "0 4px 24px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.03)",
                                 }}
                             >
                                 {/* Column header */}
                                 <div
                                     style={{
-                                        padding: "16px 18px",
-                                        borderBottom: `2px solid ${color.border}`,
+                                        padding: "14px 18px",
+                                        borderBottom: `1px solid rgba(255,255,255,0.04)`,
                                         display: "flex",
                                         alignItems: "center",
                                         gap: "10px",
+                                        background: "rgba(255,255,255,0.015)",
                                     }}
                                 >
                                     <div
                                         style={{
-                                            width: "10px",
-                                            height: "10px",
+                                            width: "8px",
+                                            height: "8px",
                                             borderRadius: "50%",
                                             background: color.dot,
                                             flexShrink: 0,
+                                            boxShadow: `0 0 8px ${color.dot}55`,
                                         }}
                                     />
                                     <span
                                         style={{
-                                            fontSize: "0.85rem",
+                                            fontSize: "0.82rem",
                                             fontWeight: 600,
                                             color: "var(--text-primary)",
                                             flex: 1,
+                                            letterSpacing: "0.01em",
                                         }}
                                     >
                                         {stage.name}
                                     </span>
                                     <span
                                         style={{
-                                            fontSize: "0.7rem",
+                                            fontSize: "0.68rem",
                                             fontWeight: 700,
                                             color: color.dot,
-                                            background: color.bg,
+                                            background: `${color.dot}15`,
                                             padding: "3px 10px",
                                             borderRadius: "100px",
+                                            border: `1px solid ${color.dot}20`,
+                                            letterSpacing: "0.02em",
                                         }}
                                     >
                                         {leadCount}
@@ -1060,15 +1101,21 @@ export default function PipelinePage() {
                                         <div
                                             ref={provided.innerRef}
                                             {...provided.droppableProps}
+                                            className="pipeline-scroll"
                                             style={{
                                                 flex: 1,
                                                 overflowY: "auto",
                                                 padding: "10px",
                                                 minHeight: "120px",
-                                                transition: "background 0.2s ease",
+                                                transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
                                                 background: snapshot.isDraggingOver
-                                                    ? color.bg
+                                                    ? `${color.dot}0d`
                                                     : "transparent",
+                                                border: snapshot.isDraggingOver
+                                                    ? `1.5px dashed ${color.dot}40`
+                                                    : "1.5px dashed transparent",
+                                                borderRadius: "8px",
+                                                margin: "6px",
                                             }}
                                         >
                                             {(stage.leads || []).map(
@@ -1090,72 +1137,114 @@ export default function PipelinePage() {
                                                                     marginBottom: "10px",
                                                                 }}
                                                             >
-                                                                {/* ═══ ENHANCED LEAD CARD ═══ */}
+                                                                {/* ═══ PREMIUM LEAD CARD ═══ */}
                                                                 <div
-                                                                    className={`
-                                                                        rounded-xl border transition-all duration-200 cursor-pointer
-                                                                        ${snap.isDragging
-                                                                            ? "border-violet-500/50 bg-[var(--bg-card-hover)] shadow-[0_0_30px_rgba(124,58,237,0.15)]"
-                                                                            : "border-[var(--border)] bg-[var(--bg-card)] hover:border-violet-500/30 hover:bg-[var(--bg-card-hover)] hover:shadow-lg"
+                                                                    style={{
+                                                                        position: "relative",
+                                                                        borderRadius: "12px",
+                                                                        border: snap.isDragging
+                                                                            ? `1px solid ${color.dot}60`
+                                                                            : "1px solid rgba(255,255,255,0.055)",
+                                                                        background: snap.isDragging
+                                                                            ? "var(--bg-primary)"
+                                                                            : "var(--bg-primary)",
+                                                                        cursor: "pointer",
+                                                                        transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+                                                                        boxShadow: snap.isDragging
+                                                                            ? `0 20px 40px rgba(0,0,0,0.35), 0 0 20px ${color.dot}15`
+                                                                            : "0 2px 8px rgba(0,0,0,0.12)",
+                                                                        overflow: "hidden",
+                                                                        transform: snap.isDragging ? "scale(1.02)" : "none",
+                                                                    }}
+                                                                    onMouseEnter={(e) => {
+                                                                        if (!snap.isDragging) {
+                                                                            e.currentTarget.style.transform = "translateY(-2px)";
+                                                                            e.currentTarget.style.borderColor = `${color.dot}40`;
+                                                                            e.currentTarget.style.boxShadow = `0 8px 24px rgba(0,0,0,0.25), 0 0 12px ${color.dot}10`;
                                                                         }
-                                                                    `}
+                                                                    }}
+                                                                    onMouseLeave={(e) => {
+                                                                        if (!snap.isDragging) {
+                                                                            e.currentTarget.style.transform = "none";
+                                                                            e.currentTarget.style.borderColor = "rgba(255,255,255,0.055)";
+                                                                            e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.12)";
+                                                                        }
+                                                                    }}
                                                                 >
+                                                                    {/* Stage-colored left accent bar */}
+                                                                    <div style={{
+                                                                        position: "absolute",
+                                                                        left: 0,
+                                                                        top: "8px",
+                                                                        bottom: "8px",
+                                                                        width: "3px",
+                                                                        borderRadius: "0 3px 3px 0",
+                                                                        background: `linear-gradient(180deg, ${color.dot}, ${color.dot}60)`,
+                                                                    }} />
+
                                                                     {/* Row 1: Grip + Name + Source */}
-                                                                    <div className="flex items-center gap-2 px-3.5 pt-3 pb-1.5">
-                                                                        <GripVertical size={13} className="text-zinc-600 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity" />
-                                                                        <span className="font-semibold text-[0.82rem] text-[var(--text-primary)] truncate flex-1">
+                                                                    <div className="flex items-center gap-2" style={{ padding: "12px 14px 6px 16px" }}>
+                                                                        <GripVertical size={12} className="shrink-0" style={{ color: "var(--text-muted)", opacity: 0.3, transition: "opacity 0.2s" }} />
+                                                                        <span style={{ fontWeight: 600, fontSize: "0.82rem", color: "var(--text-primary)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                                                             {lead.name}
                                                                         </span>
                                                                         {getSourceBadge(lead)}
                                                                     </div>
 
                                                                     {/* Row 2: Phone + Status Badge */}
-                                                                    <div className="flex items-center justify-between px-3.5 pb-1">
+                                                                    <div className="flex items-center justify-between" style={{ padding: "0 14px 4px 16px" }}>
                                                                         {lead.phone ? (
-                                                                            <div className="flex items-center gap-1.5 text-[0.72rem] text-[var(--text-secondary)]">
-                                                                                <Phone size={11} className="text-zinc-500" />
+                                                                            <div className="flex items-center gap-1.5" style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
+                                                                                <Phone size={10} style={{ color: "var(--text-muted)", opacity: 0.6 }} />
                                                                                 <span>{lead.phone}</span>
                                                                             </div>
                                                                         ) : (
-                                                                            <span className="text-[0.72rem] text-zinc-600 italic">Sin teléfono</span>
+                                                                            <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontStyle: "italic" }}>Sin telefono</span>
                                                                         )}
                                                                         {getStatusBadge(lead)}
                                                                     </div>
 
                                                                     {/* Row 2.5: Live Chat Status */}
-                                                                    <div className="flex items-center gap-1.5 px-3.5 pb-2">
-                                                                        <Activity size={10} className="text-zinc-500 shrink-0" />
+                                                                    <div className="flex items-center gap-1.5" style={{ padding: "0 14px 8px 16px" }}>
+                                                                        <Activity size={9} style={{ color: "var(--text-muted)", opacity: 0.5, flexShrink: 0 }} />
                                                                         {getChatStatusBadge(lead)}
                                                                     </div>
 
                                                                     {/* Row 3: Data Grid */}
-                                                                    <div className="mx-3 mb-3 mt-1 rounded-lg bg-white/[0.03] border border-white/[0.04] grid grid-cols-2 divide-x divide-white/[0.04]">
-                                                                        <div className="px-3 py-2">
-                                                                            <div className="flex items-center gap-1 text-[0.62rem] uppercase tracking-wider text-zinc-500 mb-0.5">
-                                                                                <DollarSign size={10} />
+                                                                    <div style={{ margin: "0 10px 10px 10px", borderRadius: "8px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.035)", display: "grid", gridTemplateColumns: "1fr 1fr" }}>
+                                                                        <div style={{ padding: "8px 10px", borderRight: "1px solid rgba(255,255,255,0.035)" }}>
+                                                                            <div className="flex items-center gap-1" style={{ fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: "2px" }}>
+                                                                                <DollarSign size={9} />
                                                                                 Monto
                                                                             </div>
-                                                                            <div className="text-[0.78rem] font-medium text-[var(--text-primary)] truncate">
-                                                                                {lead.budget || "—"}
+                                                                            <div style={{ fontSize: "0.76rem", fontWeight: 500, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                                                                {lead.budget || "\u2014"}
                                                                             </div>
                                                                         </div>
-                                                                        <div className="px-3 py-2">
-                                                                            <div className="flex items-center gap-1 text-[0.62rem] uppercase tracking-wider text-zinc-500 mb-0.5">
-                                                                                <CalendarDays size={10} />
+                                                                        <div style={{ padding: "8px 10px" }}>
+                                                                            <div className="flex items-center gap-1" style={{ fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: "2px" }}>
+                                                                                <CalendarDays size={9} />
                                                                                 Fecha Cita
                                                                             </div>
-                                                                            <div className={`text-[0.78rem] font-medium truncate ${lead.appointment_date ? "text-emerald-400" : "text-[var(--text-primary)]"}`}>
-                                                                                {lead.appointment_date || "—"}
+                                                                            <div style={{ fontSize: "0.76rem", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: lead.appointment_date ? "#6ee7b7" : "var(--text-primary)" }}>
+                                                                                {lead.appointment_date || "\u2014"}
                                                                             </div>
                                                                         </div>
                                                                     </div>
 
-                                                                    {/* Row 4: Notes preview (optional) */}
-                                                                    {lead.notes && (
-                                                                        <div className="px-3.5 pb-2.5">
-                                                                            <p className="text-[0.7rem] text-zinc-500 truncate italic">
-                                                                                📝 {lead.notes}
-                                                                            </p>
+                                                                    {/* Row 4: Notes preview + timestamp */}
+                                                                    {(lead.notes || lead.created_at) && (
+                                                                        <div style={{ padding: "0 14px 10px 16px", display: "flex", flexDirection: "column", gap: "3px" }}>
+                                                                            {lead.notes && (
+                                                                                <p style={{ fontSize: "0.68rem", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontStyle: "italic", margin: 0 }}>
+                                                                                    {lead.notes}
+                                                                                </p>
+                                                                            )}
+                                                                            {lead.created_at && (
+                                                                                <span style={{ fontSize: "0.6rem", color: "var(--text-muted)", opacity: 0.5 }}>
+                                                                                    {new Date(lead.created_at).toLocaleDateString("es-CL", { day: "numeric", month: "short" })}
+                                                                                </span>
+                                                                            )}
                                                                         </div>
                                                                     )}
                                                                 </div>
@@ -1176,12 +1265,17 @@ export default function PipelinePage() {
                                                         justifyContent: "center",
                                                         padding: "32px 16px",
                                                         color: "var(--text-muted)",
-                                                        fontSize: "0.75rem",
-                                                        gap: "8px",
+                                                        fontSize: "0.73rem",
+                                                        gap: "6px",
+                                                        margin: "8px",
+                                                        borderRadius: "10px",
+                                                        border: "1.5px dashed rgba(255,255,255,0.06)",
+                                                        background: "rgba(255,255,255,0.01)",
                                                     }}
                                                 >
-                                                    <Users size={24} style={{ opacity: 0.3 }} />
-                                                    <span>Sin leads</span>
+                                                    <Users size={22} style={{ opacity: 0.15, color: color.dot }} />
+                                                    <span style={{ opacity: 0.5, fontWeight: 500 }}>Sin leads en esta etapa</span>
+                                                    <span style={{ opacity: 0.3, fontSize: "0.65rem" }}>Arrastra un lead aqui</span>
                                                 </div>
                                             )}
                                         </div>
@@ -1209,7 +1303,7 @@ export default function PipelinePage() {
                                         height: "36px",
                                         borderRadius: "10px",
                                         background: "rgba(255,255,255,0.05)",
-                                        border: "1px solid rgba(255,255,255,0.07)",
+                                        border: "0.5px solid rgba(255,255,255,0.07)",
                                         display: "flex",
                                         alignItems: "center",
                                         justifyContent: "center",
@@ -1359,13 +1453,13 @@ export default function PipelinePage() {
                     <div
                         className="modal-content"
                         onClick={(e) => e.stopPropagation()}
-                        style={{ maxWidth: "540px" }}
+                        style={{ maxWidth: "540px", background: "var(--bg-deep)", border: "1px solid rgba(255,255,255,0.06)", boxShadow: "0 24px 80px rgba(0,0,0,0.5), 0 0 1px rgba(255,255,255,0.1)" }}
                     >
                         {/* ── Header ────────────────────────────── */}
-                        <div className="modal-header" style={{ flexDirection: "column", gap: "12px", paddingBottom: "0" }}>
+                        <div className="modal-header" style={{ flexDirection: "column", gap: "12px", paddingBottom: "0", background: "rgba(255,255,255,0.015)", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
                                 <div className="flex items-center gap-3">
-                                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-blue-500 flex items-center justify-center">
+                                    <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "linear-gradient(135deg, #7a9e8a, #6482aa)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(122,158,138,0.2)" }}>
                                         <Edit3 size={18} color="white" />
                                     </div>
                                     <div>
@@ -1388,11 +1482,11 @@ export default function PipelinePage() {
                             {/* ── Tab Bar ──────────────────────────────── */}
                             <div style={{
                                 display: "flex",
-                                gap: "4px",
-                                padding: "4px",
-                                background: "rgba(255,255,255,0.04)",
+                                gap: "3px",
+                                padding: "3px",
+                                background: "rgba(255,255,255,0.025)",
                                 borderRadius: "10px",
-                                border: "1px solid rgba(255,255,255,0.06)",
+                                border: "1px solid rgba(255,255,255,0.04)",
                             }}>
                                 <button
                                     onClick={() => setActiveTab("details")}
@@ -1441,8 +1535,8 @@ export default function PipelinePage() {
                                         <span style={{
                                             fontSize: "0.6rem",
                                             fontWeight: 700,
-                                            background: "rgba(59,130,246,0.25)",
-                                            color: "#60a5fa",
+                                            background: "rgba(122,158,138,0.25)",
+                                            color: "#9ab8a8",
                                             padding: "1px 6px",
                                             borderRadius: "100px",
                                         }}>
@@ -1527,7 +1621,7 @@ export default function PipelinePage() {
                                             justifyContent: "space-between",
                                             padding: "12px 16px",
                                             borderRadius: "12px",
-                                            border: `1px solid ${botPaused ? "rgba(239,68,68,0.3)" : "rgba(34,197,94,0.3)"}`,
+                                            border: `0.5px solid ${botPaused ? "rgba(239,68,68,0.3)" : "rgba(34,197,94,0.3)"}`,
                                             background: botPaused ? "rgba(239,68,68,0.07)" : "rgba(34,197,94,0.07)",
                                             cursor: pauseLoading ? "not-allowed" : "pointer",
                                             transition: "all 0.3s ease",
@@ -1563,7 +1657,7 @@ export default function PipelinePage() {
                                             height: "24px",
                                             borderRadius: "100px",
                                             background: botPaused ? "rgba(239,68,68,0.4)" : "rgba(34,197,94,0.4)",
-                                            border: `1px solid ${botPaused ? "rgba(239,68,68,0.5)" : "rgba(34,197,94,0.5)"}`,
+                                            border: `0.5px solid ${botPaused ? "rgba(239,68,68,0.5)" : "rgba(34,197,94,0.5)"}`,
                                             position: "relative",
                                             flexShrink: 0,
                                             transition: "all 0.3s ease",
@@ -1716,7 +1810,7 @@ export default function PipelinePage() {
                                             gap: "6px",
                                             padding: "8px 14px",
                                             borderRadius: "10px",
-                                            border: "1px solid rgba(239,68,68,0.35)",
+                                            border: "0.5px solid rgba(239,68,68,0.35)",
                                             background: "rgba(239,68,68,0.08)",
                                             color: deleting ? "var(--text-muted)" : "#f87171",
                                             cursor: deleting ? "not-allowed" : "pointer",
@@ -1779,8 +1873,8 @@ export default function PipelinePage() {
                                     alignItems: "center",
                                     gap: "8px",
                                     padding: "8px 20px",
-                                    background: "rgba(124,58,237,0.08)",
-                                    borderBottom: "1px solid rgba(124,58,237,0.15)",
+                                    background: "rgba(122,158,138,0.08)",
+                                    borderBottom: "0.5px solid rgba(122,158,138,0.15)",
                                 }}>
                                     <span style={{ fontSize: "0.68rem", color: "#a78bfa", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>
                                         👁️ Modo Espía — Historial de conversación
@@ -1836,8 +1930,8 @@ export default function PipelinePage() {
                                                         maxWidth: "78%",
                                                         padding: "9px 13px",
                                                         borderRadius: isUser ? "4px 16px 16px 16px" : "16px 4px 16px 16px",
-                                                        background: isUser ? "rgba(255,255,255,0.07)" : "rgba(59,130,246,0.75)",
-                                                        border: isUser ? "1px solid rgba(255,255,255,0.08)" : "none",
+                                                        background: isUser ? "rgba(255,255,255,0.07)" : "rgba(122,158,138,0.75)",
+                                                        border: isUser ? "0.5px solid rgba(255,255,255,0.08)" : "none",
                                                         fontSize: "0.82rem",
                                                         lineHeight: 1.5,
                                                         color: isUser ? "var(--text-primary)" : "#fff",
@@ -1872,7 +1966,7 @@ export default function PipelinePage() {
                                 {/* Add note input */}
                                 <div style={{
                                     padding: "12px 20px",
-                                    borderBottom: "1px solid var(--border)",
+                                    borderBottom: "0.5px solid var(--border)",
                                     display: "flex",
                                     gap: "8px",
                                     alignItems: "flex-end",
@@ -1959,7 +2053,7 @@ export default function PipelinePage() {
                                                         padding: "10px 14px",
                                                         borderRadius: "10px",
                                                         background: "rgba(245,158,11,0.04)",
-                                                        border: "1px solid rgba(245,158,11,0.1)",
+                                                        border: "0.5px solid rgba(245,158,11,0.1)",
                                                         position: "relative",
                                                     }}
                                                     className="group"
@@ -2079,16 +2173,17 @@ export default function PipelinePage() {
                                                             width: "10px",
                                                             height: "10px",
                                                             borderRadius: "50%",
-                                                            background: isAI ? "#3b82f6" : "#10b981",
-                                                            border: `2px solid ${isAI ? "rgba(59,130,246,0.3)" : "rgba(16,185,129,0.3)"}`,
+                                                            background: isAI ? "#7a9e8a" : "#10b981",
+                                                            border: `2px solid ${isAI ? "rgba(122,158,138,0.3)" : "rgba(16,185,129,0.3)"}`,
                                                             flexShrink: 0,
                                                             marginTop: "4px",
+                                                            boxShadow: `0 0 8px ${isAI ? "rgba(122,158,138,0.3)" : "rgba(16,185,129,0.3)"}`,
                                                         }} />
                                                         {!isLast && (
                                                             <div style={{
-                                                                width: "2px",
+                                                                width: "1.5px",
                                                                 flex: 1,
-                                                                background: "var(--border)",
+                                                                background: "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))",
                                                                 minHeight: "20px",
                                                             }} />
                                                         )}
@@ -2124,8 +2219,8 @@ export default function PipelinePage() {
                                                                 fontSize: "0.75rem",
                                                                 fontWeight: 600,
                                                                 color: "var(--text-primary)",
-                                                                background: isAI ? "rgba(59,130,246,0.1)" : "rgba(16,185,129,0.1)",
-                                                                border: `1px solid ${isAI ? "rgba(59,130,246,0.2)" : "rgba(16,185,129,0.2)"}`,
+                                                                background: isAI ? "rgba(122,158,138,0.1)" : "rgba(16,185,129,0.1)",
+                                                                border: `0.5px solid ${isAI ? "rgba(122,158,138,0.2)" : "rgba(16,185,129,0.2)"}`,
                                                                 padding: "2px 8px",
                                                                 borderRadius: "4px",
                                                             }}>
@@ -2156,7 +2251,7 @@ export default function PipelinePage() {
                                                         }}>
                                                             <span style={{
                                                                 fontSize: "0.6rem",
-                                                                color: isAI ? "#3b82f6" : "#10b981",
+                                                                color: isAI ? "#7a9e8a" : "#10b981",
                                                                 fontWeight: 600,
                                                                 textTransform: "uppercase",
                                                                 letterSpacing: "0.5px",
@@ -2228,7 +2323,7 @@ export default function PipelinePage() {
                                         padding: "10px 14px",
                                         borderRadius: "var(--radius)",
                                         background: "var(--bg-card)",
-                                        border: "1px solid var(--border)",
+                                        border: "0.5px solid var(--border)",
                                     }}
                                 >
                                     {/* Position number */}
@@ -2364,8 +2459,8 @@ export default function PipelinePage() {
                                 marginTop: "8px",
                                 padding: "10px 14px",
                                 borderRadius: "var(--radius)",
-                                background: "rgba(124,58,237,0.06)",
-                                border: "1px dashed rgba(124,58,237,0.2)",
+                                background: "rgba(122,158,138,0.06)",
+                                border: "1px dashed rgba(122,158,138,0.2)",
                             }}>
                                 <Plus size={16} style={{ color: "var(--accent-light)", flexShrink: 0 }} />
                                 <input

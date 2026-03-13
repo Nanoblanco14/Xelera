@@ -100,7 +100,7 @@ TONO: Cálida, empática, como una amiga que trabaja en el mejor salón. Usa emo
             { name: "Consultas", color: "#6366f1", position: 0 },
             { name: "Cita Agendada", color: "#10b981", position: 1 },
             { name: "No Asistió", color: "#f59e0b", position: 2 },
-            { name: "Completado", color: "#3b82f6", position: 3 },
+            { name: "Completado", color: "#7a9e8a", position: 3 },
         ],
         industryFields: [
             {
@@ -172,7 +172,7 @@ TONO: Exclusivo y confiable pero cercano. Como un asesor premium que te hace sen
         stages: [
             { name: "Nuevo Lead", color: "#6366f1", position: 0 },
             { name: "Calificado", color: "#10b981", position: 1 },
-            { name: "Visita Agendada", color: "#3b82f6", position: 2 },
+            { name: "Visita Agendada", color: "#7a9e8a", position: 2 },
             { name: "Propuesta Enviada", color: "#f59e0b", position: 3 },
             { name: "Descartado", color: "#ef4444", position: 4 },
         ],
@@ -264,7 +264,7 @@ TONO: Entusiasta pero honesto. Cercano, como un amigo con buen gusto que te ayud
             { name: "Interesado", color: "#6366f1", position: 0 },
             { name: "Cotización Enviada", color: "#f59e0b", position: 1 },
             { name: "Pedido Confirmado", color: "#10b981", position: 2 },
-            { name: "Entregado", color: "#3b82f6", position: 3 },
+            { name: "Entregado", color: "#7a9e8a", position: 3 },
             { name: "Cancelado", color: "#ef4444", position: 4 },
         ],
         industryFields: [

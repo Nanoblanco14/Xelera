@@ -566,7 +566,7 @@ export default function CatalogPage() {
     return (
         <div className="animate-in">
             {error && (
-                <div style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", borderRadius: 8, padding: "12px 16px", margin: "0 0 12px 0", color: "#DC2626", fontSize: 14 }}>
+                <div style={{ background: "rgba(239,68,68,0.08)", border: "0.5px solid rgba(239,68,68,0.2)", borderRadius: 8, padding: "12px 16px", margin: "0 0 12px 0", color: "#f87171", fontSize: 14 }}>
                     {error}
                 </div>
             )}
@@ -579,7 +579,8 @@ export default function CatalogPage() {
                     </p>
                 </div>
                 <div style={{ display: "flex", gap: "8px" }}>
-                    <button onClick={() => setShowImport(true)} className="btn-secondary flex items-center gap-2" style={{ fontSize: "0.82rem" }}>
+                    <button onClick={() => setShowImport(true)} className="btn-secondary flex items-center gap-2"
+                        style={{ fontSize: "0.82rem", backdropFilter: "blur(8px)", borderColor: "rgba(122,158,138,0.15)" }}>
                         <Upload size={15} /> Importar
                     </button>
                     <button onClick={openCreate} className="btn-primary">
@@ -592,16 +593,12 @@ export default function CatalogPage() {
             {items.length > 0 && (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "14px", marginBottom: "24px" }}>
                     {[
-                        { label: "Total", value: stats.total, icon: Package, color: "#3b82f6", bg: "rgba(59,130,246,0.08)" },
+                        { label: "Total", value: stats.total, icon: Package, color: "#7a9e8a", bg: "rgba(122,158,138,0.08)" },
                         { label: "Activos", value: stats.active, icon: Eye, color: "#22c55e", bg: "rgba(34,197,94,0.08)" },
                         { label: "Inactivos", value: stats.inactive, icon: EyeOff, color: "#f59e0b", bg: "rgba(245,158,11,0.08)" },
                         { label: "Archivados", value: stats.archived, icon: Archive, color: "#52525b", bg: "rgba(82,82,91,0.12)" },
                     ].map(kpi => (
-                        <div key={kpi.label} style={{
-                            background: "var(--bg-card)", border: "1px solid var(--border)",
-                            borderRadius: "14px", padding: "16px 20px",
-                            display: "flex", alignItems: "center", gap: "14px",
-                        }}>
+                        <div key={kpi.label} className="kpi-card">
                             <div style={{
                                 width: "36px", height: "36px", borderRadius: "10px",
                                 background: kpi.bg, display: "flex", alignItems: "center", justifyContent: "center",
@@ -609,7 +606,7 @@ export default function CatalogPage() {
                                 <kpi.icon size={17} style={{ color: kpi.color }} />
                             </div>
                             <div>
-                                <div style={{ fontSize: "1.4rem", fontWeight: 700, color: "var(--text-primary)", lineHeight: 1.1 }}>{kpi.value}</div>
+                                <div className="kpi-value font-display dashboard-stat" style={{ color: "var(--text-primary)" }}>{kpi.value}</div>
                                 <div style={{ fontSize: "0.65rem", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{kpi.label}</div>
                             </div>
                         </div>
@@ -619,10 +616,10 @@ export default function CatalogPage() {
 
             {/* ── Toolbar ──────────────────────────── */}
             {items.length > 0 && (
-                <div style={{
+                <div className="glass-panel" style={{
                     display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px",
                     marginBottom: "20px", padding: "14px 18px",
-                    background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "14px",
+                    borderRadius: "14px",
                 }}>
                     {/* Search */}
                     <div style={{ position: "relative", flex: "1 1 200px", maxWidth: "300px" }}>
@@ -640,14 +637,7 @@ export default function CatalogPage() {
                             const labels: Record<string, string> = { all: "Todos", active: "Activos", inactive: "Inactivos", archived: "Archivados" };
                             return (
                                 <button key={val} onClick={() => setStatusFilter(val)}
-                                    style={{
-                                        padding: "4px 11px", borderRadius: "100px",
-                                        fontSize: "0.68rem", fontWeight: 600,
-                                        background: statusFilter === val ? "rgba(59,130,246,0.1)" : "transparent",
-                                        border: statusFilter === val ? "1px solid rgba(59,130,246,0.25)" : "1px solid transparent",
-                                        color: statusFilter === val ? "#60a5fa" : "var(--text-muted)",
-                                        cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.15s ease",
-                                    }}>
+                                    className={`filter-pill${statusFilter === val ? " active" : ""}`}>
                                     {labels[val]} <span style={{ opacity: 0.5 }}>{count}</span>
                                 </button>
                             );
@@ -665,23 +655,25 @@ export default function CatalogPage() {
                     </button>
 
                     {/* View toggle */}
-                    <div style={{ display: "flex", border: "1px solid var(--border)", borderRadius: "8px", overflow: "hidden" }}>
+                    <div style={{ display: "flex", border: "0.5px solid var(--border)", borderRadius: "10px", overflow: "hidden", background: "rgba(0,0,0,0.15)" }}>
                         <button onClick={() => setViewMode("grid")} style={{
-                            padding: "6px 10px", background: viewMode === "grid" ? "rgba(59,130,246,0.1)" : "transparent",
+                            padding: "6px 12px", background: viewMode === "grid" ? "rgba(122,158,138,0.12)" : "transparent",
                             border: "none", cursor: "pointer", display: "flex", alignItems: "center",
-                            color: viewMode === "grid" ? "#60a5fa" : "var(--text-muted)",
+                            color: viewMode === "grid" ? "var(--accent-light)" : "var(--text-muted)",
+                            transition: "all 0.15s ease",
                         }}><LayoutGrid size={15} /></button>
                         <button onClick={() => setViewMode("table")} style={{
-                            padding: "6px 10px", background: viewMode === "table" ? "rgba(59,130,246,0.1)" : "transparent",
-                            border: "none", borderLeft: "1px solid var(--border)", cursor: "pointer",
+                            padding: "6px 12px", background: viewMode === "table" ? "rgba(122,158,138,0.12)" : "transparent",
+                            border: "none", borderLeft: "0.5px solid var(--border)", cursor: "pointer",
                             display: "flex", alignItems: "center",
-                            color: viewMode === "table" ? "#60a5fa" : "var(--text-muted)",
+                            color: viewMode === "table" ? "var(--accent-light)" : "var(--text-muted)",
+                            transition: "all 0.15s ease",
                         }}><List size={15} /></button>
                     </div>
 
                     {/* CSV Export */}
                     <button onClick={handleExportCSV}
-                        className="btn-secondary" style={{ padding: "6px 12px", fontSize: "0.7rem", gap: "4px" }}>
+                        className="btn-secondary" style={{ padding: "6px 12px", fontSize: "0.7rem", gap: "4px", backdropFilter: "blur(4px)" }}>
                         <Download size={13} /> CSV
                     </button>
 
@@ -689,9 +681,9 @@ export default function CatalogPage() {
                     <button onClick={() => { setBulkMode(!bulkMode); setSelectedIds(new Set()); }}
                         className="btn-secondary" style={{
                             padding: "6px 12px", fontSize: "0.7rem", gap: "4px",
-                            background: bulkMode ? "rgba(59,130,246,0.1)" : undefined,
-                            borderColor: bulkMode ? "rgba(59,130,246,0.25)" : undefined,
-                            color: bulkMode ? "#60a5fa" : undefined,
+                            background: bulkMode ? "rgba(122,158,138,0.1)" : undefined,
+                            borderColor: bulkMode ? "rgba(122,158,138,0.25)" : undefined,
+                            color: bulkMode ? "#9ab8a8" : undefined,
                         }}>
                         <CheckSquare size={13} /> Seleccionar
                     </button>
@@ -703,30 +695,34 @@ export default function CatalogPage() {
                 {bulkMode && selectedIds.size > 0 && (
                     <motion.div
                         initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}
+                        className="glass-panel"
                         style={{
                             display: "flex", alignItems: "center", gap: "10px",
-                            padding: "10px 18px", marginBottom: "16px",
-                            background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.2)",
-                            borderRadius: "12px",
+                            padding: "12px 20px", marginBottom: "16px",
+                            background: "rgba(122,158,138,0.04)",
+                            border: "0.5px solid rgba(122,158,138,0.2)",
+                            borderRadius: "14px",
+                            backdropFilter: "blur(12px)",
+                            boxShadow: "0 0 20px rgba(122,158,138,0.04)",
                         }}>
-                        <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "#60a5fa" }}>
+                        <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "#9ab8a8" }}>
                             {selectedIds.size} seleccionado{selectedIds.size > 1 ? "s" : ""}
                         </span>
                         <div style={{ flex: 1 }} />
                         <button onClick={() => handleBulkStatusChange("active")}
-                            style={{ padding: "5px 12px", borderRadius: "8px", fontSize: "0.7rem", fontWeight: 600, background: "rgba(34,197,94,0.1)", color: "#22c55e", border: "1px solid rgba(34,197,94,0.2)", cursor: "pointer" }}>
+                            style={{ padding: "5px 12px", borderRadius: "8px", fontSize: "0.7rem", fontWeight: 600, background: "rgba(34,197,94,0.1)", color: "#22c55e", border: "0.5px solid rgba(34,197,94,0.2)", cursor: "pointer" }}>
                             <Eye size={12} style={{ display: "inline", verticalAlign: "-2px", marginRight: "4px" }} />Activar
                         </button>
                         <button onClick={() => handleBulkStatusChange("inactive")}
-                            style={{ padding: "5px 12px", borderRadius: "8px", fontSize: "0.7rem", fontWeight: 600, background: "rgba(245,158,11,0.1)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.2)", cursor: "pointer" }}>
+                            style={{ padding: "5px 12px", borderRadius: "8px", fontSize: "0.7rem", fontWeight: 600, background: "rgba(245,158,11,0.1)", color: "#f59e0b", border: "0.5px solid rgba(245,158,11,0.2)", cursor: "pointer" }}>
                             <EyeOff size={12} style={{ display: "inline", verticalAlign: "-2px", marginRight: "4px" }} />Desactivar
                         </button>
                         <button onClick={() => handleBulkStatusChange("archived")}
-                            style={{ padding: "5px 12px", borderRadius: "8px", fontSize: "0.7rem", fontWeight: 600, background: "rgba(82,82,91,0.12)", color: "var(--text-secondary)", border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer" }}>
+                            style={{ padding: "5px 12px", borderRadius: "8px", fontSize: "0.7rem", fontWeight: 600, background: "rgba(82,82,91,0.12)", color: "var(--text-secondary)", border: "0.5px solid rgba(255,255,255,0.08)", cursor: "pointer" }}>
                             <Archive size={12} style={{ display: "inline", verticalAlign: "-2px", marginRight: "4px" }} />Archivar
                         </button>
                         <button onClick={handleBulkDelete}
-                            style={{ padding: "5px 12px", borderRadius: "8px", fontSize: "0.7rem", fontWeight: 600, background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.2)", cursor: "pointer" }}>
+                            style={{ padding: "5px 12px", borderRadius: "8px", fontSize: "0.7rem", fontWeight: 600, background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "0.5px solid rgba(239,68,68,0.2)", cursor: "pointer" }}>
                             <Trash2 size={12} style={{ display: "inline", verticalAlign: "-2px", marginRight: "4px" }} />Eliminar
                         </button>
                     </motion.div>
@@ -742,16 +738,16 @@ export default function CatalogPage() {
 
             {/* ── Empty state ──────────────────────── */}
             {!loading && items.length === 0 && (
-                <div className="glass-card p-0 overflow-hidden">
+                <div className="empty-state glass-card p-0 overflow-hidden">
                     <div className="flex flex-col items-center justify-center py-20 px-8">
                         <motion.div
                             animate={{ y: [0, -6, 0] }}
                             transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                             className="flex items-center justify-center w-20 h-20 rounded-3xl mb-6"
-                            style={{ background: "rgba(59,130,246,0.08)", border: "1px dashed var(--border-active)" }}>
-                            <Package size={36} style={{ color: "var(--accent-light)", opacity: 0.7 }} />
+                            style={{ background: "rgba(122,158,138,0.1)", border: "1px dashed rgba(122,158,138,0.25)", boxShadow: "0 0 30px rgba(122,158,138,0.08)" }}>
+                            <Package size={36} style={{ color: "var(--accent-light)", opacity: 0.8, filter: "drop-shadow(0 0 8px rgba(122,158,138,0.3))" }} />
                         </motion.div>
-                        <h3 className="text-lg font-bold mb-2" style={{ color: "var(--text-primary)" }}>
+                        <h3 className="text-lg mb-2 font-display" style={{ color: "var(--text-primary)", fontWeight: 600, fontFamily: "'Playfair Display', serif" }}>
                             Sin {itemLabel.toLowerCase()}s todavia
                         </h3>
                         <p className="text-sm mb-6 text-center max-w-sm" style={{ color: "var(--text-secondary)" }}>
@@ -769,20 +765,19 @@ export default function CatalogPage() {
             {!loading && filtered.length > 0 && viewMode === "grid" && (
                 <div className="grid-products">
                     <AnimatePresence mode="popLayout">
-                        {filtered.map((p) => {
+                        {filtered.map((p, idx) => {
                             const imgFile = p.product_files?.find(f => f.file_type === "image");
                             const hasEmbedding = !!p.embedding;
                             const st = statusS(p.status || "active");
                             return (
                                 <motion.div key={p.id}
                                     layout
-                                    initial={{ opacity: 0, y: 12 }}
+                                    initial={{ opacity: 0, y: 16 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, scale: 0.95 }}
-                                    transition={{ duration: 0.2 }}
-                                    whileHover={{ y: -3 }}
-                                    className="glass-card overflow-hidden cursor-pointer"
-                                    style={{ position: "relative" }}
+                                    transition={{ duration: 0.3, delay: idx * 0.04 }}
+                                    className="glass-card card-hover-lift overflow-hidden cursor-pointer animate-in"
+                                    style={{ position: "relative", animationDelay: `${idx * 40}ms` }}
                                     onClick={() => setViewItem(p)}>
 
                                     {/* Bulk checkbox */}
@@ -790,7 +785,7 @@ export default function CatalogPage() {
                                         <div onClick={e => { e.stopPropagation(); toggleSelect(p.id); }}
                                             style={{ position: "absolute", top: "10px", left: "10px", zIndex: 3, cursor: "pointer" }}>
                                             {selectedIds.has(p.id) ?
-                                                <CheckSquare size={20} style={{ color: "#3b82f6" }} /> :
+                                                <CheckSquare size={20} style={{ color: "#7a9e8a" }} /> :
                                                 <Square size={20} style={{ color: "var(--text-muted)" }} />}
                                         </div>
                                     )}
@@ -828,9 +823,9 @@ export default function CatalogPage() {
 
                                     {/* Content */}
                                     <div className="p-5">
-                                        <h3 className="font-semibold text-sm mb-1 truncate" style={{ color: "var(--text-primary)" }}>{p.name}</h3>
+                                        <h3 className="text-sm mb-1 truncate" style={{ color: "var(--text-primary)", fontWeight: 700, letterSpacing: "-0.01em" }}>{p.name}</h3>
                                         {p.attributes?.precio && (
-                                            <p className="text-base font-bold mb-1" style={{ color: "var(--accent-light)" }}>
+                                            <p className="text-base mb-1 font-display" style={{ color: "var(--accent-light)", fontFamily: "'Playfair Display', serif", fontWeight: 600 }}>
                                                 {fmtPrice(p.attributes.precio, p.attributes?.moneda)}
                                             </p>
                                         )}
@@ -841,14 +836,14 @@ export default function CatalogPage() {
                                             <div className="flex flex-wrap gap-1.5 mb-3">
                                                 {Object.entries(p.attributes).filter(([k]) => k !== "precio" && k !== "moneda").slice(0, 3).map(([k, v]) => (
                                                     <span key={k} className="text-[0.65rem] px-2 py-0.5 rounded-full"
-                                                        style={{ background: "rgba(255,255,255,0.05)", color: "var(--text-secondary)", border: "1px solid rgba(255,255,255,0.07)" }}>
-                                                        {k}: {v}
+                                                        style={{ background: "rgba(122,158,138,0.06)", color: "var(--text-secondary)", border: "0.5px solid rgba(122,158,138,0.1)" }}>
+                                                        <span style={{ color: "var(--text-muted)", fontWeight: 500 }}>{k}:</span> {v}
                                                     </span>
                                                 ))}
                                             </div>
                                         )}
                                         <div className="flex items-center justify-between pt-3"
-                                            style={{ borderTop: "1px solid var(--border)" }}>
+                                            style={{ borderTop: "0.5px solid var(--border)" }}>
                                             <span className="text-[0.65rem]" style={{ color: "var(--text-muted)" }}>
                                                 {fmtDate(p.created_at)}
                                             </span>
@@ -876,7 +871,7 @@ export default function CatalogPage() {
                 <div className="glass-card" style={{ overflow: "hidden", padding: 0 }}>
                     <table style={{ width: "100%", borderCollapse: "collapse" }}>
                         <thead>
-                            <tr style={{ borderBottom: "1px solid var(--border)" }}>
+                            <tr style={{ borderBottom: "0.5px solid var(--border)" }}>
                                 {bulkMode && (
                                     <th className="table-header-cell" style={{ width: "40px", paddingLeft: "16px" }}>
                                         <button onClick={() => {
@@ -884,7 +879,7 @@ export default function CatalogPage() {
                                             else setSelectedIds(new Set(filtered.map(p => p.id)));
                                         }} style={{ background: "none", border: "none", cursor: "pointer", display: "flex" }}>
                                             {selectedIds.size === filtered.length ?
-                                                <CheckSquare size={16} style={{ color: "#3b82f6" }} /> :
+                                                <CheckSquare size={16} style={{ color: "#7a9e8a" }} /> :
                                                 <Square size={16} style={{ color: "var(--text-muted)" }} />}
                                         </button>
                                     </th>
@@ -918,7 +913,7 @@ export default function CatalogPage() {
                                             {bulkMode && (
                                                 <td className="table-cell" style={{ paddingLeft: "16px" }} onClick={e => { e.stopPropagation(); toggleSelect(p.id); }}>
                                                     {selectedIds.has(p.id) ?
-                                                        <CheckSquare size={16} style={{ color: "#3b82f6" }} /> :
+                                                        <CheckSquare size={16} style={{ color: "#7a9e8a" }} /> :
                                                         <Square size={16} style={{ color: "var(--text-muted)" }} />}
                                                 </td>
                                             )}
@@ -931,7 +926,7 @@ export default function CatalogPage() {
                                                     <span style={{ fontWeight: 600 }}>{p.name}</span>
                                                 </div>
                                             </td>
-                                            <td className="table-cell" style={{ color: p.attributes?.precio ? "var(--accent-light)" : "var(--text-muted)" }}>
+                                            <td className="table-cell" style={{ color: p.attributes?.precio ? "var(--accent-light)" : "var(--text-muted)", fontFamily: p.attributes?.precio ? "'Playfair Display', serif" : "inherit", fontWeight: p.attributes?.precio ? 600 : 400 }}>
                                                 {p.attributes?.precio ? fmtPrice(p.attributes.precio, p.attributes?.moneda) : "—"}
                                             </td>
                                             <td className="table-cell">
@@ -950,16 +945,22 @@ export default function CatalogPage() {
                                                 {fmtDate(p.created_at)}
                                             </td>
                                             <td className="table-cell" style={{ textAlign: "right", paddingRight: "16px" }}>
-                                                <div style={{ display: "flex", gap: "4px", justifyContent: "flex-end" }}>
+                                                <div style={{ display: "flex", gap: "4px", justifyContent: "flex-end", opacity: 0.6, transition: "opacity 0.15s ease" }}
+                                                    onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.opacity = "1"; }}
+                                                    onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.opacity = "0.6"; }}>
                                                     <button onClick={e => { e.stopPropagation(); openEdit(p); }}
                                                         style={{
-                                                            padding: "5px 8px", borderRadius: "6px", background: "rgba(255,255,255,0.04)",
-                                                            border: "1px solid var(--border)", cursor: "pointer", display: "flex", color: "var(--text-secondary)",
+                                                            padding: "6px 10px", borderRadius: "8px",
+                                                            background: "rgba(122,158,138,0.06)", backdropFilter: "blur(4px)",
+                                                            border: "0.5px solid rgba(122,158,138,0.12)", cursor: "pointer", display: "flex", color: "var(--accent-light)",
+                                                            transition: "all 0.15s ease",
                                                         }}><Edit3 size={13} /></button>
                                                     <button onClick={e => { e.stopPropagation(); handleDelete(p.id); }}
                                                         style={{
-                                                            padding: "5px 8px", borderRadius: "6px", background: "rgba(239,68,68,0.08)",
-                                                            border: "1px solid rgba(239,68,68,0.15)", cursor: "pointer", display: "flex", color: "#ef4444",
+                                                            padding: "6px 10px", borderRadius: "8px",
+                                                            background: "rgba(239,68,68,0.06)", backdropFilter: "blur(4px)",
+                                                            border: "0.5px solid rgba(239,68,68,0.12)", cursor: "pointer", display: "flex", color: "#f87171",
+                                                            transition: "all 0.15s ease",
                                                         }}><Trash2 size={13} /></button>
                                                 </div>
                                             </td>
@@ -974,9 +975,9 @@ export default function CatalogPage() {
 
             {/* ── No results ─────────────────────────── */}
             {!loading && items.length > 0 && filtered.length === 0 && (
-                <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--text-muted)" }}>
-                    <Search size={32} style={{ margin: "0 auto 12px", opacity: 0.3 }} />
-                    <p style={{ fontSize: "0.88rem" }}>Sin resultados para esta busqueda o filtro</p>
+                <div className="glass-card" style={{ textAlign: "center", padding: "60px 20px", color: "var(--text-muted)" }}>
+                    <Search size={32} style={{ margin: "0 auto 12px", opacity: 0.3, filter: "drop-shadow(0 0 6px rgba(122,158,138,0.2))" }} />
+                    <p style={{ fontSize: "0.88rem", fontWeight: 500 }}>Sin resultados para esta busqueda o filtro</p>
                 </div>
             )}
 
@@ -1001,7 +1002,7 @@ export default function CatalogPage() {
                         {/* Hero image / placeholder */}
                         <div style={{
                             height: vImg ? "220px" : "120px",
-                            background: vImg ? "transparent" : "linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(139,92,246,0.08) 100%)",
+                            background: vImg ? "transparent" : "linear-gradient(135deg, rgba(122,158,138,0.08) 0%, rgba(93,130,112,0.08) 100%)",
                             position: "relative", overflow: "hidden",
                         }}>
                             {vImg ? (
@@ -1022,7 +1023,7 @@ export default function CatalogPage() {
                                 position: "absolute", top: "12px", right: "12px", zIndex: 3,
                                 width: "32px", height: "32px", borderRadius: "10px",
                                 background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)",
-                                border: "1px solid rgba(255,255,255,0.1)",
+                                border: "0.5px solid rgba(255,255,255,0.1)",
                                 color: "#fff", cursor: "pointer",
                                 display: "flex", alignItems: "center", justifyContent: "center",
                             }}>
@@ -1035,7 +1036,7 @@ export default function CatalogPage() {
                                     fontSize: "0.65rem", fontWeight: 700,
                                     background: vSt.bg, color: vSt.color,
                                     backdropFilter: "blur(8px)",
-                                    border: `1px solid ${vSt.color}22`,
+                                    border: `0.5px solid ${vSt.color}22`,
                                 }}>{vSt.label}</span>
                                 {vHasEmb && (
                                     <span style={{
@@ -1043,7 +1044,7 @@ export default function CatalogPage() {
                                         fontSize: "0.65rem", fontWeight: 700,
                                         background: "rgba(34,197,94,0.1)", color: "#22c55e",
                                         backdropFilter: "blur(8px)",
-                                        border: "1px solid rgba(34,197,94,0.15)",
+                                        border: "0.5px solid rgba(34,197,94,0.15)",
                                     }}>✓ IA Ready</span>
                                 )}
                             </div>
@@ -1053,14 +1054,15 @@ export default function CatalogPage() {
                         <div style={{ padding: "20px 24px 24px" }}>
                             {/* Title + Price */}
                             <div style={{ marginBottom: "16px" }}>
-                                <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: "6px" }}>
+                                <h2 style={{ fontSize: "1.3rem", fontWeight: 600, color: "var(--text-primary)", marginBottom: "6px", fontFamily: "'Playfair Display', serif", letterSpacing: "-0.01em" }}>
                                     {viewItem.name}
                                 </h2>
                                 <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
                                     {viewItem.attributes?.precio && (
                                         <span style={{
-                                            fontSize: "1.1rem", fontWeight: 800,
+                                            fontSize: "1.15rem", fontWeight: 700,
                                             color: "var(--accent-light)",
+                                            fontFamily: "'Playfair Display', serif",
                                         }}>
                                             {fmtPrice(viewItem.attributes.precio, viewItem.attributes?.moneda)}
                                         </span>
@@ -1069,9 +1071,9 @@ export default function CatalogPage() {
                                         <span style={{
                                             padding: "2px 8px", borderRadius: "6px",
                                             fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.5px",
-                                            background: viewItem.attributes?.moneda === "UF" ? "rgba(167,139,250,0.1)" : "rgba(59,130,246,0.1)",
-                                            color: viewItem.attributes?.moneda === "UF" ? "#a78bfa" : "#60a5fa",
-                                            border: `1px solid ${viewItem.attributes?.moneda === "UF" ? "rgba(167,139,250,0.15)" : "rgba(59,130,246,0.15)"}`,
+                                            background: viewItem.attributes?.moneda === "UF" ? "rgba(167,139,250,0.1)" : "rgba(122,158,138,0.1)",
+                                            color: viewItem.attributes?.moneda === "UF" ? "#a78bfa" : "#9ab8a8",
+                                            border: `0.5px solid ${viewItem.attributes?.moneda === "UF" ? "rgba(167,139,250,0.15)" : "rgba(122,158,138,0.15)"}`,
                                         }}>
                                             {viewItem.attributes?.moneda || "CLP"}
                                         </span>
@@ -1082,7 +1084,7 @@ export default function CatalogPage() {
                                             fontSize: "0.6rem", fontWeight: 700,
                                             background: `${dispColor}15`,
                                             color: dispColor || "var(--text-muted)",
-                                            border: `1px solid ${dispColor}25`,
+                                            border: `0.5px solid ${dispColor}25`,
                                         }}>
                                             {vDisp}
                                         </span>
@@ -1112,10 +1114,8 @@ export default function CatalogPage() {
                                         gap: "8px",
                                     }}>
                                         {vAttrs.map(([k, v]) => (
-                                            <div key={k} style={{
+                                            <div key={k} className="glass-panel" style={{
                                                 padding: "10px 14px", borderRadius: "12px",
-                                                background: "rgba(255,255,255,0.02)",
-                                                border: "1px solid var(--border)",
                                             }}>
                                                 <p style={{
                                                     fontSize: "0.62rem", fontWeight: 600, color: "var(--text-muted)",
@@ -1142,7 +1142,7 @@ export default function CatalogPage() {
                                             <a key={f.id} href={f.file_url} target="_blank" rel="noreferrer"
                                                 style={{
                                                     width: "80px", height: "80px", borderRadius: "12px",
-                                                    overflow: "hidden", border: "1px solid var(--border)",
+                                                    overflow: "hidden", border: "0.5px solid var(--border)",
                                                     display: "flex", alignItems: "center", justifyContent: "center",
                                                     background: "var(--bg-secondary)", textDecoration: "none",
                                                     transition: "all 0.15s ease",
@@ -1167,7 +1167,7 @@ export default function CatalogPage() {
                             {/* Footer info */}
                             <div style={{
                                 display: "flex", alignItems: "center", justifyContent: "space-between",
-                                paddingTop: "16px", borderTop: "1px solid var(--border)",
+                                paddingTop: "16px", borderTop: "0.5px solid var(--border)",
                             }}>
                                 <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>
                                     Creado el {fmtDate(viewItem.created_at)}
@@ -1180,7 +1180,7 @@ export default function CatalogPage() {
                                     }}
                                         style={{
                                             padding: "8px 14px", borderRadius: "10px", fontSize: "0.78rem", fontWeight: 600,
-                                            background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.12)",
+                                            background: "rgba(239,68,68,0.06)", border: "0.5px solid rgba(239,68,68,0.12)",
                                             color: "#f87171", cursor: "pointer",
                                             display: "flex", alignItems: "center", gap: "6px",
                                             transition: "all 0.15s ease",
@@ -1190,8 +1190,8 @@ export default function CatalogPage() {
                                     <button onClick={() => { setViewItem(null); openEdit(viewItem); }}
                                         style={{
                                             padding: "8px 18px", borderRadius: "10px", fontSize: "0.78rem", fontWeight: 600,
-                                            background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.2)",
-                                            color: "#60a5fa", cursor: "pointer",
+                                            background: "rgba(122,158,138,0.1)", border: "0.5px solid rgba(122,158,138,0.2)",
+                                            color: "#9ab8a8", cursor: "pointer",
                                             display: "flex", alignItems: "center", gap: "6px",
                                             transition: "all 0.15s ease",
                                         }}>
@@ -1210,7 +1210,7 @@ export default function CatalogPage() {
                 <div className="modal-overlay animate-in" onClick={() => setShowModal(false)}>
                     <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: "640px" }}>
                         <div className="modal-header mb-2">
-                            <h2 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>
+                            <h2 className="text-lg" style={{ color: "var(--text-primary)", fontFamily: "'Playfair Display', serif", fontWeight: 600 }}>
                                 {editItem ? `Editar ${itemLabel}` : itemNew}
                             </h2>
                             <button onClick={() => setShowModal(false)}
@@ -1223,7 +1223,7 @@ export default function CatalogPage() {
                         <div className="modal-body space-y-5">
                             {formError && (
                                 <div className="p-3 rounded-lg text-sm"
-                                    style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", color: "#f87171" }}>
+                                    style={{ background: "rgba(239,68,68,0.1)", border: "0.5px solid rgba(239,68,68,0.25)", color: "#f87171" }}>
                                     {formError}
                                 </div>
                             )}
@@ -1237,15 +1237,15 @@ export default function CatalogPage() {
                                 <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                                     <div style={{
                                         display: "flex", borderRadius: "8px", overflow: "hidden",
-                                        border: "1px solid var(--border)", flexShrink: 0,
+                                        border: "0.5px solid var(--border)", flexShrink: 0,
                                     }}>
                                         {(["CLP", "UF"] as const).map(c => (
                                             <button key={c} type="button" onClick={() => setCurrency(c)}
                                                 style={{
                                                     padding: "8px 12px", fontSize: "0.78rem", fontWeight: 700,
                                                     border: "none", cursor: "pointer",
-                                                    background: currency === c ? (c === "CLP" ? "rgba(59,130,246,0.12)" : "rgba(167,139,250,0.12)") : "transparent",
-                                                    color: currency === c ? (c === "CLP" ? "#60a5fa" : "#a78bfa") : "var(--text-muted)",
+                                                    background: currency === c ? (c === "CLP" ? "rgba(122,158,138,0.12)" : "rgba(167,139,250,0.12)") : "transparent",
+                                                    color: currency === c ? (c === "CLP" ? "#9ab8a8" : "#a78bfa") : "var(--text-muted)",
                                                     transition: "all 0.15s ease",
                                                 }}>
                                                 {c === "CLP" ? "CLP" : "UF"}
@@ -1268,8 +1268,8 @@ export default function CatalogPage() {
                                     rows={3} style={{ minHeight: "80px" }} />
                             </div>
                             {industryFields.length > 0 && (
-                                <div>
-                                    <label className="form-label mb-3 block">Campos de {template.label}</label>
+                                <div className="glass-panel" style={{ padding: "16px 18px", borderRadius: "14px" }}>
+                                    <label className="form-label mb-3 block" style={{ fontSize: "0.68rem", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, color: "var(--text-muted)" }}>Campos de {template.label}</label>
                                     <div style={{ display: "grid", gridTemplateColumns: industryFields.length > 1 ? "1fr 1fr" : "1fr", gap: "12px" }}>
                                         {industryFields.map(field => (
                                             <div key={field.key} className="form-group" style={{ marginBottom: 0 }}>
@@ -1324,8 +1324,8 @@ export default function CatalogPage() {
                             </div>
                             <div>
                                 <label className="form-label">Archivos</label>
-                                <div className="flex flex-col items-center justify-center p-6 rounded-xl transition-colors cursor-pointer"
-                                    style={{ border: "2px dashed var(--border)", background: "var(--bg-card)" }}
+                                <div className="flex flex-col items-center justify-center p-6 rounded-xl transition-colors cursor-pointer glass-panel"
+                                    style={{ border: "2px dashed rgba(122,158,138,0.15)", background: "rgba(122,158,138,0.02)" }}
                                     onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = "var(--accent)"; }}
                                     onDragLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; }}
                                     onDrop={e => { e.currentTarget.style.borderColor = "var(--border)"; handleDrop(e); }}
@@ -1343,7 +1343,7 @@ export default function CatalogPage() {
                                         <span className="text-[0.65rem] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Archivos existentes</span>
                                         {existingFiles.map(f => (
                                             <div key={f.id} className="flex items-center gap-2 p-2 rounded-lg"
-                                                style={{ background: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
+                                                style={{ background: "var(--bg-secondary)", border: "0.5px solid var(--border)" }}>
                                                 {f.file_type === "image" ? <ImageIcon size={14} style={{ color: "var(--info)" }} /> : <FileText size={14} style={{ color: "var(--warning)" }} />}
                                                 <span className="text-xs flex-1 truncate" style={{ color: "var(--text-primary)" }}>{f.file_name}</span>
                                                 <span className="text-[0.6rem]" style={{ color: "var(--text-muted)" }}>{fmtSize(f.file_size)}</span>
@@ -1361,7 +1361,7 @@ export default function CatalogPage() {
                                         <span className="text-[0.65rem] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Por subir</span>
                                         {pendingFiles.map((f, i) => (
                                             <div key={i} className="flex items-center gap-2 p-2 rounded-lg"
-                                                style={{ background: "var(--bg-secondary)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                                                style={{ background: "var(--bg-secondary)", border: "0.5px solid rgba(255,255,255,0.06)" }}>
                                                 {f.type.startsWith("image/") ? <ImageIcon size={14} style={{ color: "var(--info)" }} /> : <FileText size={14} style={{ color: "var(--warning)" }} />}
                                                 <span className="text-xs flex-1 truncate" style={{ color: "var(--text-primary)" }}>{f.name}</span>
                                                 <span className="text-[0.6rem]" style={{ color: "var(--text-muted)" }}>{fmtSize(f.size)}</span>
@@ -1406,7 +1406,7 @@ export default function CatalogPage() {
                             {/* Header */}
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
                                 <div>
-                                    <h2 style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
+                                    <h2 style={{ fontSize: "1.1rem", fontWeight: 600, color: "var(--text-primary)", margin: 0, fontFamily: "'Playfair Display', serif" }}>
                                         Importar {itemLabel}s
                                     </h2>
                                     <p style={{ fontSize: "0.76rem", color: "var(--text-muted)", margin: "4px 0 0" }}>
@@ -1429,8 +1429,8 @@ export default function CatalogPage() {
                                         flex: 1, padding: "8px 16px", borderRadius: "8px",
                                         fontSize: "0.8rem", fontWeight: 600, border: "none", cursor: "pointer",
                                         display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
-                                        background: importTab === "csv" ? "rgba(59,130,246,0.1)" : "transparent",
-                                        color: importTab === "csv" ? "#60a5fa" : "var(--text-secondary)",
+                                        background: importTab === "csv" ? "rgba(122,158,138,0.1)" : "transparent",
+                                        color: importTab === "csv" ? "#9ab8a8" : "var(--text-secondary)",
                                         transition: "all 0.2s ease",
                                     }}
                                 >
@@ -1458,26 +1458,25 @@ export default function CatalogPage() {
                                     {csvStep === 1 && (
                                         <div>
                                             {/* Guide box */}
-                                            <div style={{
-                                                padding: "14px 16px", borderRadius: "10px",
-                                                background: "rgba(59,130,246,0.03)", border: "1px solid rgba(59,130,246,0.1)",
+                                            <div className="glass-panel" style={{
+                                                padding: "14px 16px", borderRadius: "12px",
                                                 marginBottom: "16px",
                                             }}>
-                                                <p style={{ fontSize: "0.78rem", fontWeight: 600, color: "#60a5fa", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
+                                                <p style={{ fontSize: "0.78rem", fontWeight: 600, color: "#9ab8a8", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
                                                     <Sparkles size={13} /> ¿Cómo organizar tu archivo?
                                                 </p>
                                                 <div style={{ fontSize: "0.74rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>
                                                     <p style={{ margin: "0 0 4px" }}>• Cada <strong style={{ color: "var(--text-primary)" }}>fila</strong> = un {itemLabel.toLowerCase()}</p>
                                                     <p style={{ margin: "0 0 4px" }}>• Cada <strong style={{ color: "var(--text-primary)" }}>columna</strong> = un dato (Nombre, Precio, Habitaciones, etc.)</p>
                                                     <p style={{ margin: "0 0 4px" }}>• La primera fila debe tener los <strong style={{ color: "var(--text-primary)" }}>nombres de las columnas</strong></p>
-                                                    <p style={{ margin: "0 0 4px" }}>• El precio puede ser en <strong style={{ color: "#60a5fa" }}>CLP</strong> o <strong style={{ color: "#a78bfa" }}>UF</strong> (agrega una columna &quot;Moneda&quot;)</p>
+                                                    <p style={{ margin: "0 0 4px" }}>• El precio puede ser en <strong style={{ color: "#9ab8a8" }}>CLP</strong> o <strong style={{ color: "#a78bfa" }}>UF</strong> (agrega una columna &quot;Moneda&quot;)</p>
                                                 </div>
                                                 <button onClick={handleDownloadTemplate}
                                                     style={{
                                                         marginTop: "10px", padding: "6px 14px", borderRadius: "8px",
                                                         fontSize: "0.74rem", fontWeight: 600, cursor: "pointer",
-                                                        background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.15)",
-                                                        color: "#60a5fa", display: "flex", alignItems: "center", gap: "6px",
+                                                        background: "rgba(122,158,138,0.08)", border: "0.5px solid rgba(122,158,138,0.15)",
+                                                        color: "#9ab8a8", display: "flex", alignItems: "center", gap: "6px",
                                                     }}>
                                                     <Download size={13} /> Descargar plantilla de ejemplo (.csv)
                                                 </button>
@@ -1495,7 +1494,7 @@ export default function CatalogPage() {
                                             />
                                             <div
                                                 onClick={() => importFileRef.current?.click()}
-                                                onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = "#60a5fa"; }}
+                                                onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = "#9ab8a8"; }}
                                                 onDragLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; }}
                                                 onDrop={e => {
                                                     e.preventDefault();
@@ -1528,7 +1527,7 @@ export default function CatalogPage() {
                                             {formError && (
                                                 <div style={{
                                                     marginTop: "12px", padding: "10px 14px", borderRadius: "10px",
-                                                    background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.12)",
+                                                    background: "rgba(239,68,68,0.05)", border: "0.5px solid rgba(239,68,68,0.12)",
                                                     color: "#f87171", fontSize: "0.8rem",
                                                     display: "flex", alignItems: "center", gap: "8px",
                                                 }}>
@@ -1543,10 +1542,10 @@ export default function CatalogPage() {
                                         <div>
                                             <div style={{
                                                 padding: "10px 14px", borderRadius: "10px",
-                                                background: "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.1)",
+                                                background: "rgba(122,158,138,0.04)", border: "0.5px solid rgba(122,158,138,0.1)",
                                                 marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px",
                                             }}>
-                                                <Sparkles size={14} style={{ color: "#60a5fa" }} />
+                                                <Sparkles size={14} style={{ color: "#9ab8a8" }} />
                                                 <p style={{ fontSize: "0.76rem", color: "var(--text-secondary)", margin: 0 }}>
                                                     <strong>{csvTotal}</strong> filas encontradas en <strong>{csvFile?.name}</strong>. Mapea cada columna al campo correspondiente.
                                                 </p>
@@ -1557,7 +1556,7 @@ export default function CatalogPage() {
                                                 {csvHeaders.map(h => (
                                                     <div key={h} style={{
                                                         display: "flex", alignItems: "center", gap: "12px",
-                                                        padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.04)",
+                                                        padding: "8px 0", borderBottom: "0.5px solid rgba(255,255,255,0.04)",
                                                     }}>
                                                         <span style={{
                                                             flex: 1, fontSize: "0.82rem", fontWeight: 600,
@@ -1593,8 +1592,8 @@ export default function CatalogPage() {
                                                                     {csvHeaders.filter(h => csvMapping[h] !== "ignore").map(h => (
                                                                         <th key={h} style={{
                                                                             padding: "6px 8px", textAlign: "left",
-                                                                            color: "#60a5fa", fontWeight: 600,
-                                                                            borderBottom: "1px solid var(--border)",
+                                                                            color: "#9ab8a8", fontWeight: 600,
+                                                                            borderBottom: "0.5px solid var(--border)",
                                                                         }}>
                                                                             {getMappingOptions().find(o => o.value === csvMapping[h])?.label || h}
                                                                         </th>
@@ -1607,7 +1606,7 @@ export default function CatalogPage() {
                                                                         {csvHeaders.filter(h => csvMapping[h] !== "ignore").map(h => (
                                                                             <td key={h} style={{
                                                                                 padding: "6px 8px", color: "var(--text-secondary)",
-                                                                                borderBottom: "1px solid rgba(255,255,255,0.03)",
+                                                                                borderBottom: "0.5px solid rgba(255,255,255,0.03)",
                                                                                 maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                                                                             }}>
                                                                                 {row[h] || "—"}
@@ -1624,7 +1623,7 @@ export default function CatalogPage() {
                                             {formError && (
                                                 <div style={{
                                                     marginBottom: "12px", padding: "10px 14px", borderRadius: "10px",
-                                                    background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.12)",
+                                                    background: "rgba(239,68,68,0.05)", border: "0.5px solid rgba(239,68,68,0.12)",
                                                     color: "#f87171", fontSize: "0.8rem",
                                                 }}>
                                                     {formError}
@@ -1675,7 +1674,7 @@ export default function CatalogPage() {
                                             {csvResult.errors.length > 0 && (
                                                 <div style={{
                                                     textAlign: "left", padding: "10px 14px", borderRadius: "10px",
-                                                    background: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.1)",
+                                                    background: "rgba(239,68,68,0.04)", border: "0.5px solid rgba(239,68,68,0.1)",
                                                     marginBottom: "16px", maxHeight: "120px", overflowY: "auto",
                                                 }}>
                                                     {csvResult.errors.map((e, i) => (
@@ -1699,7 +1698,7 @@ export default function CatalogPage() {
                                         <div>
                                             <div style={{
                                                 padding: "12px 14px", borderRadius: "10px",
-                                                background: "rgba(167,139,250,0.04)", border: "1px solid rgba(167,139,250,0.1)",
+                                                background: "rgba(167,139,250,0.04)", border: "0.5px solid rgba(167,139,250,0.1)",
                                                 marginBottom: "16px", display: "flex", alignItems: "flex-start", gap: "8px",
                                             }}>
                                                 <Sparkles size={14} style={{ color: "#a78bfa", marginTop: "1px", flexShrink: 0 }} />
@@ -1725,7 +1724,7 @@ export default function CatalogPage() {
                                                     style={{
                                                         fontSize: "0.82rem", whiteSpace: "nowrap",
                                                         opacity: scrapeLoading || !scrapeUrl.trim() ? 0.5 : 1,
-                                                        background: "linear-gradient(135deg, #a78bfa, #7c3aed)",
+                                                        background: "linear-gradient(135deg, #a78bfa, #5d8270)",
                                                     }}
                                                 >
                                                     {scrapeLoading ? <Loader2 size={14} className="animate-spin" /> : <Globe size={14} />}
@@ -1736,7 +1735,7 @@ export default function CatalogPage() {
                                             {scrapeError && (
                                                 <div style={{
                                                     padding: "10px 14px", borderRadius: "10px",
-                                                    background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.12)",
+                                                    background: "rgba(239,68,68,0.05)", border: "0.5px solid rgba(239,68,68,0.12)",
                                                     color: "#f87171", fontSize: "0.8rem",
                                                     display: "flex", alignItems: "center", gap: "8px",
                                                 }}>
@@ -1751,7 +1750,7 @@ export default function CatalogPage() {
                                         <div>
                                             <div style={{
                                                 padding: "10px 14px", borderRadius: "10px",
-                                                background: "rgba(34,197,94,0.04)", border: "1px solid rgba(34,197,94,0.1)",
+                                                background: "rgba(34,197,94,0.04)", border: "0.5px solid rgba(34,197,94,0.1)",
                                                 marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px",
                                             }}>
                                                 <CheckCircle size={14} style={{ color: "#22c55e" }} />
@@ -1765,7 +1764,7 @@ export default function CatalogPage() {
                                                     <div key={i} style={{
                                                         padding: "12px 14px", borderRadius: "10px",
                                                         background: p.selected ? "var(--bg-card)" : "rgba(255,255,255,0.01)",
-                                                        border: `1px solid ${p.selected ? "rgba(34,197,94,0.15)" : "var(--border)"}`,
+                                                        border: `0.5px solid ${p.selected ? "rgba(34,197,94,0.15)" : "var(--border)"}`,
                                                         opacity: p.selected ? 1 : 0.5,
                                                         cursor: "pointer",
                                                         transition: "all 0.2s ease",
@@ -1805,7 +1804,7 @@ export default function CatalogPage() {
                                                                                 padding: "1px 6px", borderRadius: "4px",
                                                                                 fontSize: "0.65rem", fontWeight: 600,
                                                                                 background: "rgba(255,255,255,0.04)",
-                                                                                border: "1px solid rgba(255,255,255,0.06)",
+                                                                                border: "0.5px solid rgba(255,255,255,0.06)",
                                                                                 color: "var(--text-muted)",
                                                                             }}>
                                                                                 {k}: {v}
@@ -1863,7 +1862,7 @@ export default function CatalogPage() {
                                             {scrapeResult.errors.length > 0 && (
                                                 <div style={{
                                                     textAlign: "left", padding: "10px 14px", borderRadius: "10px",
-                                                    background: "rgba(239,68,68,0.04)", border: "1px solid rgba(239,68,68,0.1)",
+                                                    background: "rgba(239,68,68,0.04)", border: "0.5px solid rgba(239,68,68,0.1)",
                                                     marginBottom: "16px", maxHeight: "120px", overflowY: "auto",
                                                 }}>
                                                     {scrapeResult.errors.map((e, i) => (

@@ -4,6 +4,8 @@
 
 // ── Core Multi-Tenancy ─────────────────────────────────────
 
+export type PlanTier = "free" | "pro" | "business";
+
 export interface Organization {
     id: string;
     name: string;
@@ -13,6 +15,7 @@ export interface Organization {
     whatsapp_provider: 'twilio' | 'meta';
     whatsapp_credentials: Record<string, string>;
     settings: Record<string, unknown>;
+    plan: PlanTier;
     created_at: string;
     updated_at: string;
 }

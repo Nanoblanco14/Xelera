@@ -40,14 +40,14 @@ export default function IndustryStep({ selected, onSelect }: Props) {
                             style={{
                                 padding: "28px",
                                 background: isSelected
-                                    ? "linear-gradient(135deg, rgba(59,130,246,0.12) 0%, rgba(139,92,246,0.08) 100%)"
+                                    ? "linear-gradient(135deg, rgba(122,158,138,0.12) 0%, rgba(93,130,112,0.08) 100%)"
                                     : "rgba(255,255,255,0.03)",
                                 border: isSelected
-                                    ? "1.5px solid rgba(59,130,246,0.5)"
+                                    ? "1.5px solid rgba(122,158,138,0.5)"
                                     : "1.5px solid rgba(255,255,255,0.06)",
                                 cursor: "pointer",
                                 boxShadow: isSelected
-                                    ? "0 4px 24px rgba(59,130,246,0.15), inset 0 1px 0 rgba(255,255,255,0.05)"
+                                    ? "0 4px 24px rgba(122,158,138,0.15), inset 0 1px 0 rgba(255,255,255,0.05)"
                                     : "inset 0 1px 0 rgba(255,255,255,0.03)",
                             }}
                         >
@@ -60,8 +60,8 @@ export default function IndustryStep({ selected, onSelect }: Props) {
                                         className="flex items-center justify-center"
                                         style={{
                                             width: "28px", height: "28px", borderRadius: "50%",
-                                            background: "linear-gradient(135deg, #3b82f6, #8b5cf6)",
-                                            boxShadow: "0 2px 8px rgba(59,130,246,0.4)",
+                                            background: "linear-gradient(135deg, #7a9e8a, #5d8270)",
+                                            boxShadow: "0 2px 8px rgba(122,158,138,0.4)",
                                         }}
                                     >
                                         <Check size={16} color="white" strokeWidth={2.5} />

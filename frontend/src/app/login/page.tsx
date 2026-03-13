@@ -74,7 +74,7 @@ export default function LoginPage() {
                 }} />
                 <div className="float" style={{
                     position: "absolute", width: "300px", height: "300px", borderRadius: "50%",
-                    background: "radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%)",
+                    background: "radial-gradient(circle, rgba(122,158,138,0.08) 0%, transparent 70%)",
                     bottom: "-50px", left: "-50px", animationDelay: "2s",
                 }} />
             </div>
@@ -107,7 +107,7 @@ export default function LoginPage() {
                 {signupSuccess ? (
                     <div style={{
                         padding: "16px", background: "rgba(34,197,94,0.1)",
-                        border: "1px solid rgba(34,197,94,0.3)", borderRadius: "var(--radius)",
+                        border: "0.5px solid rgba(34,197,94,0.3)", borderRadius: "var(--radius)",
                         color: "#4ade80", fontSize: "0.85rem", lineHeight: 1.6,
                         textAlign: "center",
                     }}>
@@ -122,7 +122,7 @@ export default function LoginPage() {
                         {error && (
                             <div style={{
                                 padding: "12px 16px", background: "rgba(239,68,68,0.1)",
-                                border: "1px solid rgba(239,68,68,0.3)", borderRadius: "var(--radius)",
+                                border: "0.5px solid rgba(239,68,68,0.3)", borderRadius: "var(--radius)",
                                 color: "#f87171", fontSize: "0.8rem", marginBottom: "20px",
                             }}>
                                 {error}

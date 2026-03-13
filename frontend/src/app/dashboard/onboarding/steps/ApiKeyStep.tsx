@@ -18,7 +18,7 @@ export default function ApiKeyStep({ apiKey, onChange }: Props) {
                     style={{
                         width: "64px", height: "64px", borderRadius: "18px",
                         background: "rgba(245,158,11,0.1)",
-                        border: "1px solid rgba(245,158,11,0.15)",
+                        border: "0.5px solid rgba(245,158,11,0.15)",
                     }}
                 >
                     <Key size={32} style={{ color: "#fbbf24" }} />
@@ -64,8 +64,8 @@ export default function ApiKeyStep({ apiKey, onChange }: Props) {
                     style={{
                         padding: "20px",
                         borderRadius: "14px",
-                        background: "rgba(59,130,246,0.04)",
-                        border: "1px solid rgba(59,130,246,0.1)",
+                        background: "rgba(122,158,138,0.04)",
+                        border: "0.5px solid rgba(122,158,138,0.1)",
                     }}
                 >
                     <p className="text-sm font-medium mb-3" style={{ color: "#e0e0e8" }}>
@@ -83,11 +83,11 @@ export default function ApiKeyStep({ apiKey, onChange }: Props) {
                         className="inline-flex items-center gap-2 mt-4 font-medium transition-colors"
                         style={{
                             fontSize: "0.85rem",
-                            color: "#60a5fa",
+                            color: "#9ab8a8",
                             padding: "8px 16px",
                             borderRadius: "10px",
-                            background: "rgba(59,130,246,0.08)",
-                            border: "1px solid rgba(59,130,246,0.15)",
+                            background: "rgba(122,158,138,0.08)",
+                            border: "0.5px solid rgba(122,158,138,0.15)",
                             textDecoration: "none",
                         }}
                     >

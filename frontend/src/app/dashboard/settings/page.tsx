@@ -10,6 +10,7 @@ import {
     BusinessHoursSection,
     AppointmentConfigSection,
     BlockedDatesSection,
+    AutoTemplateSection,
 } from "@/components/settings";
 import type { ConnectionStatus } from "@/lib/hooks/useWhatsAppConnection";
 
@@ -39,7 +40,7 @@ function GroupHeader({ label }: { label: string }) {
                 style={{
                     flex: 1,
                     height: "1px",
-                    background: "rgba(255,255,255,0.06)",
+                    background: "var(--border)",
                 }}
             />
         </div>
@@ -178,6 +179,15 @@ export default function SettingsPage() {
                     }
                 />
                 <BlockedDatesSection orgId={organization.id} />
+
+                {/* ── Automatizacion ────────────────────────── */}
+                <GroupHeader label="Automatizacion" />
+                <AutoTemplateSection
+                    orgId={organization.id}
+                    orgSettings={
+                        (organization.settings as Record<string, unknown>) || {}
+                    }
+                />
             </div>
         </div>
     );

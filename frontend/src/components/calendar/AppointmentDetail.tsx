@@ -102,7 +102,7 @@ export default function AppointmentDetail({
                                                 gap: 14,
                                                 padding: "14px 16px",
                                                 borderRadius: 12,
-                                                border: "1px solid var(--border)",
+                                                border: "0.5px solid var(--border)",
                                                 background: "rgba(255,255,255,0.02)",
                                                 flexWrap: "wrap",
                                             }}
@@ -147,7 +147,7 @@ export default function AppointmentDetail({
                                                     background: "rgba(255,255,255,0.04)",
                                                     padding: "4px 10px",
                                                     borderRadius: 6,
-                                                    border: "1px solid var(--border)",
+                                                    border: "0.5px solid var(--border)",
                                                 }}>
                                                     {apt.product_name}
                                                 </div>
@@ -175,7 +175,7 @@ export default function AppointmentDetail({
                                                         style={{
                                                             fontSize: 11, fontWeight: 600,
                                                             padding: "5px 10px", borderRadius: 6,
-                                                            border: "1px solid rgba(16,185,129,0.3)",
+                                                            border: "0.5px solid rgba(16,185,129,0.3)",
                                                             background: "rgba(16,185,129,0.08)",
                                                             color: "#10b981",
                                                             cursor: "pointer",
@@ -191,7 +191,7 @@ export default function AppointmentDetail({
                                                         style={{
                                                             fontSize: 11, fontWeight: 600,
                                                             padding: "5px 10px", borderRadius: 6,
-                                                            border: "1px solid rgba(245,158,11,0.3)",
+                                                            border: "0.5px solid rgba(245,158,11,0.3)",
                                                             background: "rgba(245,158,11,0.08)",
                                                             color: "#f59e0b",
                                                             cursor: "pointer",
@@ -207,7 +207,7 @@ export default function AppointmentDetail({
                                                         style={{
                                                             fontSize: 11, fontWeight: 600,
                                                             padding: "5px 10px", borderRadius: 6,
-                                                            border: "1px solid rgba(239,68,68,0.3)",
+                                                            border: "0.5px solid rgba(239,68,68,0.3)",
                                                             background: "rgba(239,68,68,0.08)",
                                                             color: "#ef4444",
                                                             cursor: "pointer",

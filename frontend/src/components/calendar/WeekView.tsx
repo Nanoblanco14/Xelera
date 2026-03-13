@@ -41,7 +41,7 @@ export default function WeekView({
                                 textAlign: "center",
                                 padding: "8px 4px",
                                 borderRadius: 8,
-                                background: isToday ? "rgba(59,130,246,0.08)" : "transparent",
+                                background: isToday ? "rgba(122,158,138,0.08)" : "transparent",
                             }}>
                                 <div style={{
                                     fontSize: 11,
@@ -55,7 +55,7 @@ export default function WeekView({
                                 <div style={{
                                     fontSize: 18,
                                     fontWeight: isToday ? 700 : 500,
-                                    color: isToday ? "#3b82f6" : "var(--text-primary)",
+                                    color: isToday ? "var(--accent)" : "var(--text-primary)",
                                     marginTop: 2,
                                 }}>
                                     {d.getDate()}
@@ -75,7 +75,7 @@ export default function WeekView({
                                 gridTemplateColumns: "60px repeat(7, 1fr)",
                                 gap: 1,
                                 minHeight: 56,
-                                borderTop: "1px solid var(--border)",
+                                borderTop: "0.5px solid var(--border)",
                             }}
                         >
                             <div style={{
@@ -100,7 +100,7 @@ export default function WeekView({
                                         key={di}
                                         style={{
                                             position: "relative",
-                                            borderLeft: "1px solid var(--border)",
+                                            borderLeft: "0.5px solid var(--border)",
                                             minHeight: 56,
                                         }}
                                     >

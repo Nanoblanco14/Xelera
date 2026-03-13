@@ -63,8 +63,8 @@ const inputStyle: React.CSSProperties = {
 
 const inputFocusStyle: React.CSSProperties = {
     ...inputStyle,
-    borderColor: "rgba(59,130,246,0.4)",
-    boxShadow: "0 0 0 3px rgba(59,130,246,0.08)",
+    borderColor: "rgba(122,158,138,0.4)",
+    boxShadow: "0 0 0 3px rgba(122,158,138,0.08)",
 };
 
 const labelStyle: React.CSSProperties = {
@@ -187,7 +187,7 @@ export default function WhatsAppStep({ data, onChange, webhookUrl, orgId }: Prop
                             padding: "20px 24px",
                             borderRadius: "16px",
                             background: "rgba(34,197,94,0.04)",
-                            border: "1px solid rgba(34,197,94,0.12)",
+                            border: "0.5px solid rgba(34,197,94,0.12)",
                             marginBottom: "16px",
                         }}
                     >
@@ -197,7 +197,7 @@ export default function WhatsAppStep({ data, onChange, webhookUrl, orgId }: Prop
                                 style={{
                                     width: "48px", height: "48px", borderRadius: "14px",
                                     background: "rgba(37,211,102,0.1)",
-                                    border: "1px solid rgba(37,211,102,0.15)",
+                                    border: "0.5px solid rgba(37,211,102,0.15)",
                                 }}
                             >
                                 <Phone size={22} style={{ color: "#25d366" }} />
@@ -240,8 +240,8 @@ export default function WhatsAppStep({ data, onChange, webhookUrl, orgId }: Prop
                             marginTop: "16px",
                             padding: "14px 18px",
                             borderRadius: "12px",
-                            background: "rgba(59,130,246,0.04)",
-                            border: "1px solid rgba(59,130,246,0.1)",
+                            background: "rgba(122,158,138,0.04)",
+                            border: "0.5px solid rgba(122,158,138,0.1)",
                             color: "rgba(255,255,255,0.45)",
                             fontSize: "0.82rem",
                             lineHeight: 1.6,
@@ -272,11 +272,11 @@ export default function WhatsAppStep({ data, onChange, webhookUrl, orgId }: Prop
                         className="inline-flex items-center justify-center mb-4"
                         style={{
                             width: "64px", height: "64px", borderRadius: "18px",
-                            background: "rgba(59,130,246,0.1)",
-                            border: "1px solid rgba(59,130,246,0.15)",
+                            background: "rgba(122,158,138,0.1)",
+                            border: "0.5px solid rgba(122,158,138,0.15)",
                         }}
                     >
-                        <Loader2 size={30} className="animate-spin" style={{ color: "#3b82f6" }} />
+                        <Loader2 size={30} className="animate-spin" style={{ color: "#7a9e8a" }} />
                     </div>
                     <h2 className="text-2xl font-bold mb-2" style={{ color: "#f0f0f5" }}>
                         Conectando WhatsApp
@@ -291,7 +291,7 @@ export default function WhatsAppStep({ data, onChange, webhookUrl, orgId }: Prop
                         padding: "24px",
                         borderRadius: "16px",
                         background: "rgba(255,255,255,0.02)",
-                        border: "1px solid rgba(255,255,255,0.06)",
+                        border: "0.5px solid rgba(255,255,255,0.06)",
                     }}
                 >
                     {wa.manualSteps.map((step, i) => {
@@ -309,7 +309,7 @@ export default function WhatsAppStep({ data, onChange, webhookUrl, orgId }: Prop
                                 className="flex items-center gap-3"
                                 style={{
                                     padding: "14px 0",
-                                    borderBottom: i < wa.manualSteps.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
+                                    borderBottom: i < wa.manualSteps.length - 1 ? "0.5px solid rgba(255,255,255,0.04)" : "none",
                                 }}
                             >
                                 {/* Icon */}
@@ -323,7 +323,7 @@ export default function WhatsAppStep({ data, onChange, webhookUrl, orgId }: Prop
                                             <CheckCircle size={20} style={{ color: "#22c55e" }} />
                                         </motion.div>
                                     )}
-                                    {isCurrent && <Loader2 size={20} className="animate-spin" style={{ color: "#3b82f6" }} />}
+                                    {isCurrent && <Loader2 size={20} className="animate-spin" style={{ color: "#7a9e8a" }} />}
                                     {isFailed && <AlertCircle size={20} style={{ color: "#ef4444" }} />}
                                     {isPending && <CircleDot size={20} style={{ color: "rgba(255,255,255,0.15)" }} />}
                                 </div>
@@ -361,7 +361,7 @@ export default function WhatsAppStep({ data, onChange, webhookUrl, orgId }: Prop
                             padding: "14px 18px",
                             borderRadius: "12px",
                             background: "rgba(239,68,68,0.06)",
-                            border: "1px solid rgba(239,68,68,0.15)",
+                            border: "0.5px solid rgba(239,68,68,0.15)",
                             color: "#f87171",
                             fontSize: "0.85rem",
                         }}
@@ -385,7 +385,7 @@ export default function WhatsAppStep({ data, onChange, webhookUrl, orgId }: Prop
                         style={{
                             width: "64px", height: "64px", borderRadius: "18px",
                             background: "rgba(37,211,102,0.1)",
-                            border: "1px solid rgba(37,211,102,0.15)",
+                            border: "0.5px solid rgba(37,211,102,0.15)",
                         }}
                     >
                         <MessageCircle size={32} style={{ color: "#25d366" }} />
@@ -411,9 +411,9 @@ export default function WhatsAppStep({ data, onChange, webhookUrl, orgId }: Prop
                     />
                     <ModeCard
                         icon={<BookOpen size={28} />}
-                        iconColor="#3b82f6"
-                        iconBg="rgba(59,130,246,0.1)"
-                        iconBorder="rgba(59,130,246,0.15)"
+                        iconColor="#7a9e8a"
+                        iconBg="rgba(122,158,138,0.1)"
+                        iconBorder="rgba(122,158,138,0.15)"
                         title="Configurar desde cero"
                         description="Necesito instrucciones paso a paso para configurar Meta Cloud API"
                         onClick={() => { setMode("guided"); setGuidedSub(0); }}
@@ -448,15 +448,15 @@ export default function WhatsAppStep({ data, onChange, webhookUrl, orgId }: Prop
                                     width: "28px", height: "28px", borderRadius: "50%",
                                     display: "flex", alignItems: "center", justifyContent: "center",
                                     fontSize: "0.75rem", fontWeight: 700,
-                                    background: s < guidedSub ? "linear-gradient(135deg, #3b82f6, #8b5cf6)" : s === guidedSub ? "rgba(59,130,246,0.15)" : "rgba(255,255,255,0.03)",
-                                    border: s === guidedSub ? "2px solid #3b82f6" : s < guidedSub ? "2px solid transparent" : "2px solid rgba(255,255,255,0.08)",
+                                    background: s < guidedSub ? "linear-gradient(135deg, #7a9e8a, #5d8270)" : s === guidedSub ? "rgba(122,158,138,0.15)" : "rgba(255,255,255,0.03)",
+                                    border: s === guidedSub ? "2px solid #7a9e8a" : s < guidedSub ? "2px solid transparent" : "2px solid rgba(255,255,255,0.08)",
                                     color: s <= guidedSub ? "white" : "rgba(255,255,255,0.25)",
                                 }}
                             >
                                 {s < guidedSub ? <CheckCircle size={14} /> : s + 1}
                             </div>
                             {s < 2 && (
-                                <div style={{ flex: 1, height: "2px", margin: "0 6px", borderRadius: "2px", background: s < guidedSub ? "linear-gradient(90deg, #3b82f6, #8b5cf6)" : "rgba(255,255,255,0.06)" }} />
+                                <div style={{ flex: 1, height: "2px", margin: "0 6px", borderRadius: "2px", background: s < guidedSub ? "linear-gradient(90deg, #7a9e8a, #5d8270)" : "rgba(255,255,255,0.06)" }} />
                             )}
                         </div>
                     ))}
@@ -543,7 +543,7 @@ export default function WhatsAppStep({ data, onChange, webhookUrl, orgId }: Prop
                                 />
                                 {/* Error from previous attempt */}
                                 {wa.error && (
-                                    <div style={{ marginTop: "12px", padding: "12px 16px", borderRadius: "10px", background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", color: "#f87171", fontSize: "0.83rem" }}>
+                                    <div style={{ marginTop: "12px", padding: "12px 16px", borderRadius: "10px", background: "rgba(239,68,68,0.06)", border: "0.5px solid rgba(239,68,68,0.15)", color: "#f87171", fontSize: "0.83rem" }}>
                                         {wa.error}
                                     </div>
                                 )}
@@ -588,7 +588,7 @@ export default function WhatsAppStep({ data, onChange, webhookUrl, orgId }: Prop
                             className="flex items-center gap-2 text-sm transition-colors"
                             style={{
                                 padding: "10px 20px", borderRadius: "10px",
-                                background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+                                background: "rgba(255,255,255,0.04)", border: "0.5px solid rgba(255,255,255,0.08)",
                                 color: guidedSub === 0 ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.55)",
                                 cursor: guidedSub === 0 ? "not-allowed" : "pointer",
                             }}
@@ -600,8 +600,8 @@ export default function WhatsAppStep({ data, onChange, webhookUrl, orgId }: Prop
                             className="flex items-center gap-2 text-sm font-medium transition-colors"
                             style={{
                                 padding: "10px 20px", borderRadius: "10px",
-                                background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.2)",
-                                color: "#60a5fa", cursor: "pointer",
+                                background: "rgba(122,158,138,0.1)", border: "0.5px solid rgba(122,158,138,0.2)",
+                                color: "#9ab8a8", cursor: "pointer",
                             }}
                         >
                             Siguiente <ArrowRight size={14} />
@@ -644,7 +644,7 @@ export default function WhatsAppStep({ data, onChange, webhookUrl, orgId }: Prop
 
             {/* Error from previous attempt */}
             {wa.error && (
-                <div style={{ marginTop: "12px", padding: "12px 16px", borderRadius: "10px", background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", color: "#f87171", fontSize: "0.83rem" }}>
+                <div style={{ marginTop: "12px", padding: "12px 16px", borderRadius: "10px", background: "rgba(239,68,68,0.06)", border: "0.5px solid rgba(239,68,68,0.15)", color: "#f87171", fontSize: "0.83rem" }}>
                     {wa.error}
                 </div>
             )}
@@ -685,7 +685,7 @@ export default function WhatsAppStep({ data, onChange, webhookUrl, orgId }: Prop
                     padding: "14px 18px",
                     borderRadius: "12px",
                     background: "rgba(245,158,11,0.04)",
-                    border: "1px solid rgba(245,158,11,0.1)",
+                    border: "0.5px solid rgba(245,158,11,0.1)",
                     color: "rgba(255,255,255,0.4)",
                     fontSize: "0.82rem",
                 }}
@@ -729,7 +729,7 @@ function ModeCard({ icon, iconColor, iconBg, iconBorder, title, description, onC
                 style={{
                     width: "56px", height: "56px", borderRadius: "16px",
                     background: iconBg,
-                    border: `1px solid ${iconBorder}`,
+                    border: `0.5px solid ${iconBorder}`,
                     color: iconColor,
                 }}
             >
@@ -847,7 +847,7 @@ function QualityBadge({ rating }: { rating: string }) {
                 letterSpacing: "0.05em",
                 textTransform: "uppercase",
                 background: c.bg,
-                border: `1px solid ${c.border}`,
+                border: `0.5px solid ${c.border}`,
                 color: c.text,
             }}
         >
@@ -868,7 +868,7 @@ function GuidedStep({ number, title, content }: { number: number; title: string;
                     padding: "20px 24px",
                     borderRadius: "14px",
                     background: "rgba(255,255,255,0.02)",
-                    border: "1px solid rgba(255,255,255,0.06)",
+                    border: "0.5px solid rgba(255,255,255,0.06)",
                 }}
             >
                 {content}
@@ -886,11 +886,11 @@ function CredentialGuide({ icon, name, where, example }: {
                 padding: "14px 16px",
                 borderRadius: "10px",
                 background: "rgba(255,255,255,0.02)",
-                border: "1px solid rgba(255,255,255,0.05)",
+                border: "0.5px solid rgba(255,255,255,0.05)",
             }}
         >
             <div className="flex items-center gap-2 mb-1">
-                <span style={{ color: "#60a5fa" }}>{icon}</span>
+                <span style={{ color: "#9ab8a8" }}>{icon}</span>
                 <span className="font-semibold text-sm" style={{ color: "#f0f0f5" }}>{name}</span>
             </div>
             <p style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.8rem", lineHeight: 1.5, marginBottom: "4px" }}>

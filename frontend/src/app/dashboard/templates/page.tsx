@@ -10,6 +10,7 @@ import {
     AlignLeft, Hash, MousePointerClick, ExternalLink,
 } from "lucide-react";
 import { useOrg } from "@/lib/org-context";
+import { TEMPLATE_PRESET_GROUPS, type TemplatePreset } from "@/lib/whatsapp-template-presets";
 
 // ═══════════════════════════════════════════════════════════════
 //  Types
@@ -59,7 +60,7 @@ const CATEGORY_INFO = {
         label: "Marketing",
         desc: "Promociones, ofertas, novedades. Ideal para atraer clientes.",
         icon: <Megaphone size={16} />,
-        color: "#60a5fa",
+        color: "#9ab8a8",
     },
     UTILITY: {
         label: "Utilidad",
@@ -110,6 +111,42 @@ export default function TemplatesPage() {
 
     // Guide
     const [showGuide, setShowGuide] = useState(false);
+
+    // Presets
+    const [showPresets, setShowPresets] = useState(true);
+    const [presetIndustry, setPresetIndustry] = useState<string>(() => {
+        // Auto-detect from org settings if available
+        return "real_estate";
+    });
+
+    // Auto-detect industry from org settings
+    useEffect(() => {
+        if (organization?.settings?.industry_template) {
+            const orgIndustry = organization.settings.industry_template as string;
+            const match = TEMPLATE_PRESET_GROUPS.find(g => g.id === orgIndustry);
+            if (match) setPresetIndustry(match.id);
+        }
+    }, [organization]);
+
+    // Load preset into editor
+    const loadPreset = (preset: TemplatePreset) => {
+        setEdName(preset.name);
+        setEdCategory(preset.category);
+        setEdLanguage(preset.language);
+        setEdHeader(preset.headerText || "");
+        setEdBody(preset.body);
+        setEdFooter(preset.footer || "");
+        setEdButtons(
+            (preset.buttons || []).map(b => ({
+                type: b.type as "QUICK_REPLY" | "URL",
+                text: b.text,
+                url: b.url || "",
+            }))
+        );
+        setEditorStep(2); // Skip to content step since basics are pre-filled
+        setEdResult(null);
+        setShowEditor(true);
+    };
 
     // ── Fetch templates ──
     const fetchTemplates = useCallback(async (showSync = false) => {
@@ -339,28 +376,28 @@ export default function TemplatesPage() {
         return (
             <div className="animate-in" style={{ maxWidth: "900px" }}>
                 {/* Editor Header */}
-                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }}>
-                    <button
-                        onClick={resetEditor}
-                        className="btn-secondary"
-                        style={{ padding: "8px", borderRadius: "10px" }}
-                    >
-                        <ArrowLeft size={16} />
-                    </button>
-                    <div>
-                        <h1 className="page-title" style={{ marginBottom: "2px" }}>Crear Template</h1>
-                        <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", margin: 0 }}>
-                            Crea un nuevo template y envíalo a revisión de Meta
-                        </p>
+                <div className="page-header" style={{ marginBottom: "24px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <button
+                            onClick={resetEditor}
+                            className="btn-secondary"
+                            style={{ padding: "8px", borderRadius: "10px" }}
+                        >
+                            <ArrowLeft size={16} />
+                        </button>
+                        <div>
+                            <h1 className="page-title">Crear Template</h1>
+                            <p className="page-subtitle">
+                                Crea un nuevo template y envíalo a revisión de Meta
+                            </p>
+                        </div>
                     </div>
                 </div>
 
                 {/* Step Indicator */}
-                <div style={{
+                <div className="glass-panel" style={{
                     display: "flex", gap: "8px", marginBottom: "24px",
-                    padding: "4px", borderRadius: "12px",
-                    background: "rgba(255,255,255,0.02)",
-                    border: "1px solid var(--border)",
+                    padding: "5px", borderRadius: "14px",
                 }}>
                     {[
                         { n: 1, label: "Datos básicos" },
@@ -379,7 +416,7 @@ export default function TemplatesPage() {
                                 borderRadius: "10px",
                                 display: "flex", alignItems: "center", gap: "8px",
                                 cursor: "pointer",
-                                background: editorStep === step.n ? "rgba(59,130,246,0.1)" : "transparent",
+                                background: editorStep === step.n ? "rgba(122,158,138,0.1)" : "transparent",
                                 transition: "all 0.2s ease",
                             }}
                         >
@@ -387,7 +424,7 @@ export default function TemplatesPage() {
                                 width: "24px", height: "24px", borderRadius: "50%",
                                 display: "flex", alignItems: "center", justifyContent: "center",
                                 fontSize: "0.72rem", fontWeight: 700,
-                                background: editorStep >= step.n ? "var(--gradient-1)" : "rgba(255,255,255,0.06)",
+                                background: editorStep >= step.n ? "var(--gradient-accent)" : "rgba(255,255,255,0.06)",
                                 color: editorStep >= step.n ? "white" : "var(--text-muted)",
                                 transition: "all 0.2s ease",
                             }}>
@@ -395,7 +432,7 @@ export default function TemplatesPage() {
                             </span>
                             <span style={{
                                 fontSize: "0.8rem", fontWeight: 600,
-                                color: editorStep === step.n ? "#60a5fa" : "var(--text-secondary)",
+                                color: editorStep === step.n ? "#9ab8a8" : "var(--text-secondary)",
                             }}>
                                 {step.label}
                             </span>
@@ -411,9 +448,9 @@ export default function TemplatesPage() {
                             <motion.div
                                 initial={{ opacity: 0, x: -12 }}
                                 animate={{ opacity: 1, x: 0 }}
+                                className="glass-card"
                                 style={{
                                     padding: "24px", borderRadius: "14px",
-                                    background: "var(--bg-card)", border: "1px solid var(--border)",
                                 }}
                             >
                                 <h3 style={{ fontSize: "0.95rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: "20px" }}>
@@ -512,9 +549,9 @@ export default function TemplatesPage() {
                             <motion.div
                                 initial={{ opacity: 0, x: -12 }}
                                 animate={{ opacity: 1, x: 0 }}
+                                className="glass-card"
                                 style={{
                                     padding: "24px", borderRadius: "14px",
-                                    background: "var(--bg-card)", border: "1px solid var(--border)",
                                 }}
                             >
                                 <h3 style={{ fontSize: "0.95rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: "4px" }}>
@@ -567,9 +604,9 @@ export default function TemplatesPage() {
                                                     style={{
                                                         padding: "2px 8px", borderRadius: "6px",
                                                         fontSize: "0.7rem", fontWeight: 600,
-                                                        background: "rgba(59,130,246,0.08)",
-                                                        border: "1px solid rgba(59,130,246,0.15)",
-                                                        color: "#60a5fa", cursor: "pointer",
+                                                        background: "rgba(122,158,138,0.08)",
+                                                        border: "0.5px solid rgba(122,158,138,0.15)",
+                                                        color: "#9ab8a8", cursor: "pointer",
                                                     }}
                                                     title={`Insertar variable {{${n}}}`}
                                                 >
@@ -641,7 +678,7 @@ export default function TemplatesPage() {
                                                 style={{
                                                     padding: "6px", borderRadius: "6px",
                                                     background: "rgba(239,68,68,0.06)",
-                                                    border: "1px solid rgba(239,68,68,0.1)",
+                                                    border: "0.5px solid rgba(239,68,68,0.1)",
                                                     color: "#ef4444", cursor: "pointer", flexShrink: 0,
                                                 }}
                                             >
@@ -697,9 +734,9 @@ export default function TemplatesPage() {
                             <motion.div
                                 initial={{ opacity: 0, x: -12 }}
                                 animate={{ opacity: 1, x: 0 }}
+                                className="glass-card"
                                 style={{
                                     padding: "24px", borderRadius: "14px",
-                                    background: "var(--bg-card)", border: "1px solid var(--border)",
                                 }}
                             >
                                 <h3 style={{ fontSize: "0.95rem", fontWeight: 700, color: "var(--text-primary)", marginBottom: "4px" }}>
@@ -720,7 +757,7 @@ export default function TemplatesPage() {
                                         <div key={item.label} style={{
                                             padding: "10px 14px", borderRadius: "8px",
                                             background: "rgba(255,255,255,0.02)",
-                                            border: "1px solid rgba(255,255,255,0.04)",
+                                            border: "0.5px solid rgba(255,255,255,0.04)",
                                         }}>
                                             <div style={{ fontSize: "0.66rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", marginBottom: "2px" }}>
                                                 {item.label}
@@ -736,7 +773,7 @@ export default function TemplatesPage() {
                                 <div style={{
                                     padding: "12px 14px", borderRadius: "10px",
                                     background: "rgba(245,158,11,0.04)",
-                                    border: "1px solid rgba(245,158,11,0.1)",
+                                    border: "0.5px solid rgba(245,158,11,0.1)",
                                     marginBottom: "16px",
                                 }}>
                                     <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
@@ -759,7 +796,7 @@ export default function TemplatesPage() {
                                         padding: "12px 14px", borderRadius: "10px", marginBottom: "14px",
                                         display: "flex", alignItems: "flex-start", gap: "8px",
                                         background: edResult.success ? "rgba(34,197,94,0.06)" : "rgba(239,68,68,0.06)",
-                                        border: `1px solid ${edResult.success ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)"}`,
+                                        border: `0.5px solid ${edResult.success ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)"}`,
                                         color: edResult.success ? "#22c55e" : "#f87171",
                                         fontSize: "0.82rem",
                                     }}>
@@ -816,10 +853,9 @@ export default function TemplatesPage() {
                     </div>
 
                     {/* Right: Live Preview */}
-                    <div style={{
+                    <div className="glass-card" style={{
                         position: "sticky", top: "80px",
                         padding: "20px", borderRadius: "14px",
-                        background: "var(--bg-card)", border: "1px solid var(--border)",
                     }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
                             <MessageCircle size={15} style={{ color: "#25d366" }} />
@@ -832,7 +868,7 @@ export default function TemplatesPage() {
                         <div style={{
                             borderRadius: "16px",
                             background: "rgba(37,211,102,0.03)",
-                            border: "1px solid rgba(37,211,102,0.1)",
+                            border: "0.5px solid rgba(37,211,102,0.1)",
                             padding: "16px",
                             minHeight: "200px",
                         }}>
@@ -840,7 +876,7 @@ export default function TemplatesPage() {
                                 padding: "12px 14px",
                                 borderRadius: "2px 12px 12px 12px",
                                 background: "rgba(255,255,255,0.06)",
-                                border: "1px solid rgba(255,255,255,0.06)",
+                                border: "0.5px solid rgba(255,255,255,0.06)",
                             }}>
                                 {edHeader && (
                                     <p style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--text-primary)", margin: "0 0 6px" }}>
@@ -866,9 +902,9 @@ export default function TemplatesPage() {
                                             <div key={i} style={{
                                                 textAlign: "center", padding: "7px",
                                                 borderRadius: "8px",
-                                                background: "rgba(59,130,246,0.06)",
-                                                border: "1px solid rgba(59,130,246,0.1)",
-                                                color: "#60a5fa", fontSize: "0.76rem", fontWeight: 600,
+                                                background: "rgba(122,158,138,0.06)",
+                                                border: "0.5px solid rgba(122,158,138,0.1)",
+                                                color: "#9ab8a8", fontSize: "0.76rem", fontWeight: 600,
                                             }}>
                                                 {btn.text} {btn.type === "URL" && <ExternalLink size={10} style={{ display: "inline", verticalAlign: "middle" }} />}
                                             </div>
@@ -899,10 +935,10 @@ export default function TemplatesPage() {
     return (
         <div className="animate-in" style={{ maxWidth: "1100px" }}>
             {/* Header */}
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "16px", marginBottom: "24px" }}>
+            <div className="page-header" style={{ flexWrap: "wrap", gap: "16px" }}>
                 <div>
-                    <h1 className="page-title" style={{ marginBottom: "4px" }}>Plantillas WhatsApp</h1>
-                    <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", margin: 0 }}>
+                    <h1 className="page-title">Plantillas WhatsApp</h1>
+                    <p className="page-subtitle">
                         Gestiona y envía templates aprobados por Meta a tus leads
                     </p>
                 </div>
@@ -944,19 +980,17 @@ export default function TemplatesPage() {
                         transition={{ duration: 0.3 }}
                         style={{ overflow: "hidden", marginBottom: "20px" }}
                     >
-                        <div style={{
+                        <div className="glass-card" style={{
                             borderRadius: "14px",
-                            border: "1px solid rgba(59,130,246,0.15)",
-                            background: "rgba(59,130,246,0.03)",
                             padding: "24px",
                         }}>
                             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
                                 <div style={{
                                     width: "32px", height: "32px", borderRadius: "8px",
-                                    background: "rgba(59,130,246,0.1)", display: "flex",
+                                    background: "rgba(122,158,138,0.1)", display: "flex",
                                     alignItems: "center", justifyContent: "center",
                                 }}>
-                                    <Lightbulb size={16} style={{ color: "#60a5fa" }} />
+                                    <Lightbulb size={16} style={{ color: "#9ab8a8" }} />
                                 </div>
                                 <h3 style={{ fontSize: "0.95rem", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
                                     Guía rápida de Templates
@@ -981,12 +1015,12 @@ export default function TemplatesPage() {
                                     <div key={step.n} style={{
                                         padding: "14px", borderRadius: "10px",
                                         background: "rgba(255,255,255,0.03)",
-                                        border: "1px solid rgba(255,255,255,0.05)",
+                                        border: "0.5px solid rgba(255,255,255,0.05)",
                                     }}>
                                         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
                                             <span style={{
                                                 width: "20px", height: "20px", borderRadius: "50%",
-                                                background: "var(--gradient-1)", display: "flex",
+                                                background: "var(--gradient-accent)", display: "flex",
                                                 alignItems: "center", justifyContent: "center",
                                                 fontSize: "0.68rem", fontWeight: 700, color: "white",
                                             }}>{step.n}</span>
@@ -1006,16 +1040,15 @@ export default function TemplatesPage() {
             </AnimatePresence>
 
             {/* KPIs */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px", marginBottom: "20px" }}>
+            <div className="stagger-children" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px", marginBottom: "20px" }}>
                 {[
-                    { label: "Total", value: counts.total, color: "#60a5fa", icon: <FileText size={14} /> },
+                    { label: "Total", value: counts.total, color: "#9ab8a8", icon: <FileText size={14} /> },
                     { label: "Aprobados", value: counts.approved, color: "#22c55e", icon: <CheckCircle size={14} /> },
                     { label: "Pendientes", value: counts.pending, color: "#f59e0b", icon: <Clock size={14} /> },
                     { label: "Rechazados", value: counts.rejected, color: "#ef4444", icon: <XCircle size={14} /> },
                 ].map(kpi => (
-                    <div key={kpi.label} style={{
-                        padding: "14px 16px", borderRadius: "12px",
-                        background: "var(--bg-card)", border: "1px solid var(--border)",
+                    <div key={kpi.label} className="kpi-card" style={{
+                        padding: "14px 16px",
                         display: "flex", alignItems: "center", gap: "12px",
                     }}>
                         <div style={{
@@ -1027,14 +1060,157 @@ export default function TemplatesPage() {
                             {kpi.icon}
                         </div>
                         <div>
-                            <div style={{ fontSize: "1.25rem", fontWeight: 700, color: kpi.color, lineHeight: 1 }}>{kpi.value}</div>
-                            <div style={{ fontSize: "0.68rem", color: "var(--text-muted)", fontWeight: 500, marginTop: "2px" }}>{kpi.label}</div>
+                            <div className="dashboard-stat" style={{ fontSize: "1.25rem", fontWeight: 700, color: kpi.color, lineHeight: 1 }}>{kpi.value}</div>
+                            <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", fontWeight: 600, marginTop: "3px", textTransform: "uppercase" as const, letterSpacing: "0.06em" }}>{kpi.label}</div>
                         </div>
                     </div>
                 ))}
             </div>
 
+            {/* ═══ Predefined Templates Section ═══ */}
+            <div className="glass-card" style={{
+                borderRadius: "14px", marginBottom: "20px", overflow: "hidden",
+            }}>
+                {/* Header with toggle */}
+                <button
+                    onClick={() => setShowPresets(!showPresets)}
+                    style={{
+                        width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+                        padding: "16px 20px", background: "none", border: "none", cursor: "pointer",
+                        color: "var(--text-primary)",
+                    }}
+                >
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <div style={{
+                            width: "32px", height: "32px", borderRadius: "8px",
+                            background: "rgba(122,158,138,0.1)", display: "flex",
+                            alignItems: "center", justifyContent: "center",
+                        }}>
+                            <Sparkles size={16} style={{ color: "var(--accent, #7a9e8a)" }} />
+                        </div>
+                        <div style={{ textAlign: "left" }}>
+                            <div style={{ fontSize: "0.88rem", fontWeight: 600 }}>Plantillas predefinidas</div>
+                            <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "2px" }}>
+                                7 templates listos por industria — úsalos como punto de partida
+                            </div>
+                        </div>
+                    </div>
+                    <ArrowRight size={16} style={{
+                        color: "var(--text-muted)",
+                        transform: showPresets ? "rotate(90deg)" : "rotate(0deg)",
+                        transition: "transform 0.2s ease",
+                    }} />
+                </button>
+
+                {showPresets && (
+                    <div style={{ padding: "0 20px 20px" }}>
+                        {/* Industry tabs */}
+                        <div style={{ display: "flex", gap: "6px", marginBottom: "16px" }}>
+                            {TEMPLATE_PRESET_GROUPS.map(group => (
+                                <button
+                                    key={group.id}
+                                    onClick={() => setPresetIndustry(group.id)}
+                                    className={`filter-pill${presetIndustry === group.id ? " active" : ""}`}
+                                    style={{
+                                        padding: "7px 16px",
+                                        display: "flex", alignItems: "center", gap: "6px",
+                                        fontSize: "0.78rem", fontWeight: 600,
+                                    }}
+                                >
+                                    <span>{group.emoji}</span> {group.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Preset cards grid */}
+                        <div style={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                            gap: "10px",
+                        }}>
+                            {TEMPLATE_PRESET_GROUPS
+                                .find(g => g.id === presetIndustry)
+                                ?.presets.map(preset => (
+                                    <div
+                                        key={preset.id}
+                                        className="glass-card card-hover-lift"
+                                        style={{
+                                            padding: "16px",
+                                            display: "flex", flexDirection: "column", gap: "10px",
+                                            cursor: "default",
+                                        }}
+                                    >
+                                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                            <span style={{
+                                                fontSize: "0.82rem", fontWeight: 600,
+                                                color: "var(--text-primary)", flex: 1,
+                                            }}>
+                                                {preset.name.replace(/_/g, " ")}
+                                            </span>
+                                            <span style={{
+                                                fontSize: "0.62rem", fontWeight: 600,
+                                                padding: "2px 8px", borderRadius: "10px",
+                                                letterSpacing: "0.05em",
+                                                background: preset.category === "MARKETING"
+                                                    ? "rgba(154,184,168,0.1)" : "rgba(167,139,250,0.1)",
+                                                color: preset.category === "MARKETING"
+                                                    ? "#9ab8a8" : "#a78bfa",
+                                                textTransform: "uppercase",
+                                            }}>
+                                                {preset.category === "MARKETING" ? "Marketing" : "Utilidad"}
+                                            </span>
+                                        </div>
+                                        <p style={{
+                                            fontSize: "0.72rem", color: "var(--text-muted)",
+                                            lineHeight: 1.5, margin: 0,
+                                        }}>
+                                            {preset.description}
+                                        </p>
+                                        <p style={{
+                                            fontSize: "0.7rem", color: "var(--text-secondary)",
+                                            lineHeight: 1.5, margin: 0,
+                                            display: "-webkit-box",
+                                            WebkitLineClamp: 2,
+                                            WebkitBoxOrient: "vertical",
+                                            overflow: "hidden",
+                                            opacity: 0.7,
+                                            fontStyle: "italic",
+                                        }}>
+                                            {preset.body.substring(0, 120)}...
+                                        </p>
+                                        <button
+                                            onClick={() => loadPreset(preset)}
+                                            style={{
+                                                padding: "6px 14px", borderRadius: "8px",
+                                                border: "0.5px solid rgba(122,158,138,0.2)",
+                                                background: "rgba(122,158,138,0.06)",
+                                                color: "var(--accent, #7a9e8a)",
+                                                fontSize: "0.72rem", fontWeight: 600,
+                                                cursor: "pointer",
+                                                transition: "all 0.2s ease",
+                                                alignSelf: "flex-start",
+                                                display: "flex", alignItems: "center", gap: "6px",
+                                            }}
+                                            onMouseEnter={e => {
+                                                e.currentTarget.style.background = "rgba(122,158,138,0.12)";
+                                                e.currentTarget.style.borderColor = "rgba(122,158,138,0.35)";
+                                            }}
+                                            onMouseLeave={e => {
+                                                e.currentTarget.style.background = "rgba(122,158,138,0.06)";
+                                                e.currentTarget.style.borderColor = "rgba(122,158,138,0.2)";
+                                            }}
+                                        >
+                                            <Plus size={12} /> Usar plantilla
+                                        </button>
+                                    </div>
+                                ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+
             {/* Search + Filter */}
+            <div className="section-label" style={{ marginTop: "4px" }}>Mis Templates</div>
             <div style={{ display: "flex", gap: "10px", marginBottom: "16px", alignItems: "center", flexWrap: "wrap" }}>
                 <div style={{ position: "relative", flex: 1, minWidth: "200px", maxWidth: "300px" }}>
                     <Search size={14} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
@@ -1051,16 +1227,9 @@ export default function TemplatesPage() {
                         <button
                             key={s}
                             onClick={() => setStatusFilter(s)}
-                            className="filter-pill"
-                            style={{
-                                ...(statusFilter === s ? {
-                                    background: "rgba(59,130,246,0.1)",
-                                    borderColor: "rgba(59,130,246,0.25)",
-                                    color: "#60a5fa",
-                                } : {}),
-                            }}
+                            className={`filter-pill${statusFilter === s ? " active" : ""}`}
                         >
-                            {s === "all" ? "Todos" : s === "APPROVED" ? "✓ Aprobados" : s === "PENDING" ? "⏳ Pendientes" : "✕ Rechazados"}
+                            {s === "all" ? "Todos" : s === "APPROVED" ? "Aprobados" : s === "PENDING" ? "Pendientes" : "Rechazados"}
                         </button>
                     ))}
                 </div>
@@ -1070,7 +1239,7 @@ export default function TemplatesPage() {
             {error && (
                 <div style={{
                     padding: "12px 16px", borderRadius: "12px",
-                    background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.12)",
+                    background: "rgba(239,68,68,0.05)", border: "0.5px solid rgba(239,68,68,0.12)",
                     color: "#f87171", fontSize: "0.82rem", marginBottom: "16px",
                     display: "flex", alignItems: "center", gap: "8px",
                 }}>
@@ -1102,19 +1271,12 @@ export default function TemplatesPage() {
                                     exit={{ opacity: 0, x: -10 }}
                                     transition={{ delay: i * 0.03, duration: 0.25 }}
                                     onClick={() => openTemplate(t)}
+                                    className="glass-card"
                                     style={{
                                         padding: "16px 20px", borderRadius: "12px",
-                                        background: "var(--bg-card)", border: "1px solid var(--border)",
                                         display: "flex", alignItems: "center", gap: "16px",
-                                        cursor: "pointer", transition: "all 0.2s ease",
-                                    }}
-                                    onMouseEnter={e => {
-                                        e.currentTarget.style.background = "rgba(255,255,255,0.03)";
-                                        e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
-                                    }}
-                                    onMouseLeave={e => {
-                                        e.currentTarget.style.background = "var(--bg-card)";
-                                        e.currentTarget.style.borderColor = "var(--border)";
+                                        cursor: "pointer",
+                                        borderLeft: `2px solid ${isApproved ? "var(--accent-sage)" : t.status === "PENDING" ? "var(--accent-warm)" : "var(--danger)"}`,
                                     }}
                                 >
                                     <div style={{
@@ -1165,7 +1327,7 @@ export default function TemplatesPage() {
                                                 style={{
                                                     padding: "6px 14px", borderRadius: "8px",
                                                     background: "rgba(37,211,102,0.1)",
-                                                    border: "1px solid rgba(37,211,102,0.2)",
+                                                    border: "0.5px solid rgba(37,211,102,0.2)",
                                                     color: "#25d366", fontSize: "0.76rem", fontWeight: 600,
                                                     cursor: "pointer", display: "flex", alignItems: "center",
                                                     gap: "6px", transition: "all 0.2s ease", whiteSpace: "nowrap",
@@ -1188,18 +1350,17 @@ export default function TemplatesPage() {
 
             {/* Empty state */}
             {!loading && filtered.length === 0 && !error && (
-                <div style={{
+                <div className="glass-card" style={{
                     textAlign: "center", padding: "60px 20px",
-                    borderRadius: "14px", background: "var(--bg-card)",
-                    border: "1px solid var(--border)",
+                    borderRadius: "14px",
                 }}>
                     <div style={{
                         width: "56px", height: "56px", borderRadius: "14px",
-                        background: "rgba(59,130,246,0.06)", display: "flex",
+                        background: "rgba(122,158,138,0.06)", display: "flex",
                         alignItems: "center", justifyContent: "center",
                         margin: "0 auto 16px",
                     }}>
-                        <FileText size={24} style={{ color: "#60a5fa" }} />
+                        <FileText size={24} style={{ color: "#9ab8a8" }} />
                     </div>
                     <p style={{ color: "var(--text-primary)", fontSize: "0.92rem", fontWeight: 600, marginBottom: "4px" }}>
                         {templates.length === 0 ? "No hay templates todavía" : "Sin resultados"}
@@ -1248,7 +1409,7 @@ export default function TemplatesPage() {
                                             padding: "2px 8px", borderRadius: "100px",
                                             fontSize: "0.62rem", fontWeight: 600,
                                             background: "rgba(255,255,255,0.04)",
-                                            border: "1px solid rgba(255,255,255,0.06)",
+                                            border: "0.5px solid rgba(255,255,255,0.06)",
                                             color: "var(--text-muted)",
                                         }}>
                                             {selectedTemplate.language}
@@ -1266,7 +1427,7 @@ export default function TemplatesPage() {
                                         style={{
                                             padding: "6px", borderRadius: "6px", cursor: "pointer",
                                             background: "rgba(239,68,68,0.06)",
-                                            border: "1px solid rgba(239,68,68,0.1)",
+                                            border: "0.5px solid rgba(239,68,68,0.1)",
                                             color: "#ef4444",
                                             opacity: deleting ? 0.4 : 1,
                                         }}
@@ -1294,8 +1455,8 @@ export default function TemplatesPage() {
                                         flex: 1, padding: "8px 16px", borderRadius: "8px",
                                         fontSize: "0.8rem", fontWeight: 600, border: "none", cursor: "pointer",
                                         display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
-                                        background: activeTab === "preview" ? "rgba(59,130,246,0.1)" : "transparent",
-                                        color: activeTab === "preview" ? "#60a5fa" : "var(--text-secondary)",
+                                        background: activeTab === "preview" ? "rgba(122,158,138,0.1)" : "transparent",
+                                        color: activeTab === "preview" ? "#9ab8a8" : "var(--text-secondary)",
                                         transition: "all 0.2s ease",
                                     }}
                                 >
@@ -1324,7 +1485,7 @@ export default function TemplatesPage() {
                                     <div style={{
                                         padding: "20px", borderRadius: "14px",
                                         background: "rgba(37,211,102,0.03)",
-                                        border: "1px solid rgba(37,211,102,0.1)",
+                                        border: "0.5px solid rgba(37,211,102,0.1)",
                                     }}>
                                         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
                                             <MessageCircle size={15} style={{ color: "#25d366" }} />
@@ -1335,7 +1496,7 @@ export default function TemplatesPage() {
                                         <div style={{
                                             padding: "14px 16px", borderRadius: "2px 14px 14px 14px",
                                             background: "rgba(255,255,255,0.06)",
-                                            border: "1px solid rgba(255,255,255,0.06)",
+                                            border: "0.5px solid rgba(255,255,255,0.06)",
                                         }}>
                                             {selectedTemplate.components.map((c, i) => (
                                                 <div key={i}>
@@ -1353,9 +1514,9 @@ export default function TemplatesPage() {
                                                             {c.buttons.map((btn, bi) => (
                                                                 <div key={bi} style={{
                                                                     textAlign: "center", padding: "8px", borderRadius: "8px",
-                                                                    background: "rgba(59,130,246,0.06)",
-                                                                    border: "1px solid rgba(59,130,246,0.1)",
-                                                                    color: "#60a5fa", fontSize: "0.78rem", fontWeight: 600,
+                                                                    background: "rgba(122,158,138,0.06)",
+                                                                    border: "0.5px solid rgba(122,158,138,0.1)",
+                                                                    color: "#9ab8a8", fontSize: "0.78rem", fontWeight: 600,
                                                                 }}>{btn.text}</div>
                                                             ))}
                                                         </div>
@@ -1368,7 +1529,7 @@ export default function TemplatesPage() {
                                         <div style={{
                                             marginTop: "14px", padding: "12px 14px", borderRadius: "10px",
                                             background: "rgba(245,158,11,0.04)",
-                                            border: "1px solid rgba(245,158,11,0.1)",
+                                            border: "0.5px solid rgba(245,158,11,0.1)",
                                             display: "flex", alignItems: "flex-start", gap: "8px",
                                         }}>
                                             <Info size={14} style={{ color: "#f59e0b", marginTop: "1px", flexShrink: 0 }} />
@@ -1396,7 +1557,7 @@ export default function TemplatesPage() {
                                     <div style={{
                                         padding: "12px 14px", borderRadius: "10px",
                                         background: "rgba(37,211,102,0.04)",
-                                        border: "1px solid rgba(37,211,102,0.1)",
+                                        border: "0.5px solid rgba(37,211,102,0.1)",
                                         marginBottom: "16px",
                                         display: "flex", alignItems: "flex-start", gap: "8px",
                                     }}>
@@ -1452,7 +1613,7 @@ export default function TemplatesPage() {
                                     <div style={{
                                         padding: "14px 16px", borderRadius: "10px",
                                         background: "rgba(255,255,255,0.02)",
-                                        border: "1px solid rgba(255,255,255,0.05)",
+                                        border: "0.5px solid rgba(255,255,255,0.05)",
                                         marginBottom: "16px",
                                     }}>
                                         <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
@@ -1471,7 +1632,7 @@ export default function TemplatesPage() {
                                             padding: "10px 14px", borderRadius: "10px", marginBottom: "12px",
                                             fontSize: "0.82rem", display: "flex", alignItems: "center", gap: "8px",
                                             background: sendResult.success ? "rgba(34,197,94,0.06)" : "rgba(239,68,68,0.06)",
-                                            border: `1px solid ${sendResult.success ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)"}`,
+                                            border: `0.5px solid ${sendResult.success ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)"}`,
                                             color: sendResult.success ? "#22c55e" : "#f87171",
                                         }}>
                                             {sendResult.success ? <CheckCheck size={15} /> : <AlertCircle size={15} />}
@@ -1529,7 +1690,7 @@ function StatusBadge({ status }: { status: string }) {
             display: "inline-flex", alignItems: "center", gap: "4px",
             padding: "2px 8px", borderRadius: "100px",
             fontSize: "0.62rem", fontWeight: 700,
-            background: c.bg, border: `1px solid ${c.border}`, color: c.color,
+            background: c.bg, border: `0.5px solid ${c.border}`, color: c.color,
         }}>
             {c.icon} {c.label}
         </span>
@@ -1543,9 +1704,9 @@ function CategoryBadge({ category }: { category: string }) {
             display: "inline-flex", alignItems: "center", gap: "4px",
             padding: "2px 8px", borderRadius: "100px",
             fontSize: "0.62rem", fontWeight: 600,
-            background: isMarketing ? "rgba(59,130,246,0.08)" : "rgba(255,255,255,0.04)",
-            border: `1px solid ${isMarketing ? "rgba(59,130,246,0.18)" : "rgba(255,255,255,0.06)"}`,
-            color: isMarketing ? "#60a5fa" : "var(--text-muted)",
+            background: isMarketing ? "rgba(122,158,138,0.08)" : "rgba(255,255,255,0.04)",
+            border: `0.5px solid ${isMarketing ? "rgba(122,158,138,0.18)" : "rgba(255,255,255,0.06)"}`,
+            color: isMarketing ? "#9ab8a8" : "var(--text-muted)",
         }}>
             {isMarketing ? <Megaphone size={10} /> : <Wrench size={10} />}
             {isMarketing ? "Marketing" : "Utilidad"}

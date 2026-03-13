@@ -136,7 +136,7 @@ export default function OnboardingPage() {
             {/* Background ambient glow */}
             <div style={{
                 position: "absolute", inset: 0, pointerEvents: "none",
-                background: "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(59,130,246,0.08) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 50% 100%, rgba(139,92,246,0.05) 0%, transparent 50%)",
+                background: "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(122,158,138,0.08) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 50% 100%, rgba(93,130,112,0.05) 0%, transparent 50%)",
             }} />
 
             {/* ══════════════════════════════════════════════
@@ -145,7 +145,7 @@ export default function OnboardingPage() {
             <header
                 className="relative z-10"
                 style={{
-                    borderBottom: "1px solid rgba(255,255,255,0.06)",
+                    borderBottom: "0.5px solid rgba(255,255,255,0.06)",
                     background: "rgba(10,14,26,0.8)",
                     backdropFilter: "blur(20px)",
                 }}
@@ -158,8 +158,8 @@ export default function OnboardingPage() {
                                 className="flex items-center justify-center"
                                 style={{
                                     width: "42px", height: "42px", borderRadius: "12px",
-                                    background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
-                                    boxShadow: "0 4px 16px rgba(59,130,246,0.35)",
+                                    background: "linear-gradient(135deg, #7a9e8a 0%, #5d8270 100%)",
+                                    boxShadow: "0 4px 16px rgba(122,158,138,0.35)",
                                 }}
                             >
                                 <Zap size={20} color="white" />
@@ -184,7 +184,7 @@ export default function OnboardingPage() {
                                     borderRadius: "10px",
                                     color: "rgba(255,255,255,0.5)",
                                     background: "rgba(255,255,255,0.04)",
-                                    border: "1px solid rgba(255,255,255,0.08)",
+                                    border: "0.5px solid rgba(255,255,255,0.08)",
                                     cursor: "pointer",
                                 }}
                                 onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.color = "rgba(255,255,255,0.7)"; }}
@@ -216,19 +216,19 @@ export default function OnboardingPage() {
                                             style={{
                                                 width: "40px", height: "40px", borderRadius: "50%",
                                                 background: isDone
-                                                    ? "linear-gradient(135deg, #3b82f6, #8b5cf6)"
+                                                    ? "linear-gradient(135deg, #7a9e8a, #5d8270)"
                                                     : isCurrent
-                                                        ? "rgba(59,130,246,0.15)"
+                                                        ? "rgba(122,158,138,0.15)"
                                                         : "rgba(255,255,255,0.03)",
                                                 border: isCurrent
-                                                    ? "2px solid #3b82f6"
+                                                    ? "2px solid #7a9e8a"
                                                     : isDone
                                                         ? "2px solid transparent"
                                                         : "2px solid rgba(255,255,255,0.08)",
                                                 boxShadow: isCurrent
-                                                    ? "0 0 0 4px rgba(59,130,246,0.12), 0 2px 8px rgba(59,130,246,0.2)"
+                                                    ? "0 0 0 4px rgba(122,158,138,0.12), 0 2px 8px rgba(122,158,138,0.2)"
                                                     : isDone
-                                                        ? "0 2px 8px rgba(59,130,246,0.25)"
+                                                        ? "0 2px 8px rgba(122,158,138,0.25)"
                                                         : "none",
                                                 transition: "all 0.3s ease",
                                             }}
@@ -266,7 +266,7 @@ export default function OnboardingPage() {
                                                 style={{
                                                     height: "2px", borderRadius: "2px",
                                                     background: isDone
-                                                        ? "linear-gradient(90deg, #3b82f6, #8b5cf6)"
+                                                        ? "linear-gradient(90deg, #7a9e8a, #5d8270)"
                                                         : "rgba(255,255,255,0.06)",
                                                     transition: "background 0.5s ease",
                                                 }}
@@ -314,7 +314,7 @@ export default function OnboardingPage() {
                             style={{
                                 padding: "12px 20px", borderRadius: "12px",
                                 background: "rgba(239,68,68,0.08)",
-                                border: "1px solid rgba(239,68,68,0.2)",
+                                border: "0.5px solid rgba(239,68,68,0.2)",
                                 color: "#f87171", fontSize: "0.85rem", textAlign: "center",
                             }}
                         >
@@ -331,7 +331,7 @@ export default function OnboardingPage() {
                 <footer
                     className="relative z-10"
                     style={{
-                        borderTop: "1px solid rgba(255,255,255,0.06)",
+                        borderTop: "0.5px solid rgba(255,255,255,0.06)",
                         background: "rgba(10,14,26,0.85)",
                         backdropFilter: "blur(20px)",
                         padding: "20px 32px",
@@ -347,7 +347,7 @@ export default function OnboardingPage() {
                                 style={{
                                     padding: "12px 24px", borderRadius: "12px", fontSize: "0.9rem",
                                     background: "rgba(255,255,255,0.04)",
-                                    border: "1px solid rgba(255,255,255,0.1)",
+                                    border: "0.5px solid rgba(255,255,255,0.1)",
                                     color: "rgba(255,255,255,0.6)",
                                     cursor: "pointer",
                                 }}
@@ -376,13 +376,13 @@ export default function OnboardingPage() {
                             style={{
                                 padding: "12px 32px", borderRadius: "12px", fontSize: "0.9rem",
                                 background: canProceed
-                                    ? "linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%)"
+                                    ? "linear-gradient(135deg, #7a9e8a 0%, #5d8270 100%)"
                                     : "rgba(255,255,255,0.04)",
-                                border: canProceed ? "none" : "1px solid rgba(255,255,255,0.08)",
+                                border: canProceed ? "none" : "0.5px solid rgba(255,255,255,0.08)",
                                 color: canProceed ? "white" : "rgba(255,255,255,0.2)",
                                 cursor: canProceed ? "pointer" : "not-allowed",
                                 boxShadow: canProceed
-                                    ? "0 4px 20px rgba(59,130,246,0.35), 0 0 0 1px rgba(59,130,246,0.2)"
+                                    ? "0 4px 20px rgba(122,158,138,0.35), 0 0 0 1px rgba(122,158,138,0.2)"
                                     : "none",
                             }}
                         >

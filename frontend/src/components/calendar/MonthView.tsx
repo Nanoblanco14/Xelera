@@ -72,12 +72,12 @@ export default function MonthView({
                                 borderRadius: 10,
                                 cursor: "pointer",
                                 border: isToday
-                                    ? "2px solid #3b82f6"
+                                    ? "2px solid var(--accent)"
                                     : isSelected
-                                        ? "2px solid rgba(59,130,246,0.4)"
-                                        : "1px solid transparent",
+                                        ? "2px solid rgba(122,158,138,0.4)"
+                                        : "0.5px solid transparent",
                                 background: isSelected
-                                    ? "rgba(59,130,246,0.06)"
+                                    ? "rgba(122,158,138,0.06)"
                                     : "transparent",
                                 transition: "all 0.15s",
                                 position: "relative",
@@ -89,7 +89,7 @@ export default function MonthView({
                                 color: !inMonth
                                     ? "var(--text-muted)"
                                     : isToday
-                                        ? "#3b82f6"
+                                        ? "var(--accent)"
                                         : "var(--text-primary)",
                                 marginBottom: 4,
                             }}>

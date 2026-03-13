@@ -30,10 +30,10 @@ export default function CalendarHeader({
     return (
         <>
             {/* ── Title + View Toggle + New Button ─────────────── */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28, flexWrap: "wrap", gap: 16 }}>
+            <div className="page-header" style={{ marginBottom: 28, flexWrap: "wrap", gap: 16 }}>
                 <div>
                     <h1 className="page-title" style={{ margin: 0 }}>Calendario de Citas</h1>
-                    <p style={{ color: "var(--text-secondary)", margin: "4px 0 0", fontSize: 14 }}>
+                    <p className="page-subtitle" style={{ margin: "6px 0 0" }}>
                         Gestiona las citas de tus clientes
                     </p>
                 </div>
@@ -41,24 +41,21 @@ export default function CalendarHeader({
                     {/* View toggle */}
                     <div style={{
                         display: "flex",
+                        gap: 4,
+                        padding: "3px",
                         background: "var(--bg-card)",
-                        border: "1px solid var(--border)",
-                        borderRadius: 10,
-                        overflow: "hidden",
+                        border: "0.5px solid var(--border)",
+                        borderRadius: 100,
                     }}>
                         {(["month", "week"] as const).map((v) => (
                             <button
                                 key={v}
                                 onClick={() => onViewChange(v)}
+                                className={`filter-pill${view === v ? " active" : ""}`}
                                 style={{
-                                    padding: "8px 16px",
+                                    padding: "7px 18px",
                                     fontSize: 13,
-                                    fontWeight: 500,
-                                    border: "none",
-                                    cursor: "pointer",
-                                    background: view === v ? "var(--gradient-1)" : "transparent",
-                                    color: view === v ? "#fff" : "var(--text-secondary)",
-                                    transition: "all 0.2s",
+                                    fontWeight: 600,
                                 }}
                             >
                                 {v === "month" ? "Mes" : "Semana"}

@@ -98,7 +98,7 @@ export default function AppointmentModal({
                         onClick={(e) => e.stopPropagation()}
                         style={{
                             background: "var(--bg-card)",
-                            border: "1px solid var(--border)",
+                            border: "0.5px solid var(--border)",
                             borderRadius: 16,
                             padding: 28,
                             width: "100%",
@@ -162,10 +162,10 @@ export default function AppointmentModal({
                                             display: "flex", alignItems: "center", gap: 10,
                                             padding: "10px 14px",
                                             borderRadius: 10,
-                                            border: "1px solid var(--border)",
-                                            background: "rgba(59,130,246,0.06)",
+                                            border: "0.5px solid var(--border)",
+                                            background: "rgba(122,158,138,0.06)",
                                         }}>
-                                            <User size={16} style={{ color: "#3b82f6" }} />
+                                            <User size={16} style={{ color: "#7a9e8a" }} />
                                             <div style={{ flex: 1 }}>
                                                 <div style={{ fontSize: 14, fontWeight: 500, color: "var(--text-primary)" }}>
                                                     {selectedLead.name}
@@ -211,7 +211,7 @@ export default function AppointmentModal({
                                                     right: 0,
                                                     marginTop: 4,
                                                     background: "var(--bg-card)",
-                                                    border: "1px solid var(--border)",
+                                                    border: "0.5px solid var(--border)",
                                                     borderRadius: 10,
                                                     maxHeight: 200,
                                                     overflowY: "auto",
@@ -224,11 +224,11 @@ export default function AppointmentModal({
                                                             style={{
                                                                 padding: "10px 14px",
                                                                 cursor: "pointer",
-                                                                borderBottom: "1px solid var(--border)",
+                                                                borderBottom: "0.5px solid var(--border)",
                                                                 transition: "background 0.15s",
                                                             }}
                                                             onMouseEnter={(e) =>
-                                                                (e.currentTarget.style.background = "rgba(59,130,246,0.06)")
+                                                                (e.currentTarget.style.background = "rgba(122,158,138,0.06)")
                                                             }
                                                             onMouseLeave={(e) =>
                                                                 (e.currentTarget.style.background = "transparent")
@@ -252,7 +252,7 @@ export default function AppointmentModal({
                                                     right: 0,
                                                     marginTop: 4,
                                                     background: "var(--bg-card)",
-                                                    border: "1px solid var(--border)",
+                                                    border: "0.5px solid var(--border)",
                                                     borderRadius: 10,
                                                     padding: "12px 14px",
                                                     fontSize: 13,
@@ -335,13 +335,13 @@ export default function AppointmentModal({
                                                                 padding: "8px 14px",
                                                                 borderRadius: 8,
                                                                 border: isSelected
-                                                                    ? "2px solid #3b82f6"
-                                                                    : "1px solid var(--border)",
+                                                                    ? "2px solid #7a9e8a"
+                                                                    : "0.5px solid var(--border)",
                                                                 background: isSelected
-                                                                    ? "rgba(59,130,246,0.12)"
+                                                                    ? "rgba(122,158,138,0.12)"
                                                                     : "transparent",
                                                                 color: isSelected
-                                                                    ? "#3b82f6"
+                                                                    ? "#7a9e8a"
                                                                     : "var(--text-primary)",
                                                                 fontSize: 13,
                                                                 fontWeight: isSelected ? 600 : 500,
@@ -362,7 +362,7 @@ export default function AppointmentModal({
                                                 fontSize: 13,
                                                 color: "var(--text-muted)",
                                                 borderRadius: 8,
-                                                border: "1px dashed var(--border)",
+                                                border: "0.5px dashed var(--border)",
                                             }}>
                                                 No hay horarios disponibles para esta fecha
                                             </div>
@@ -402,7 +402,7 @@ export default function AppointmentModal({
                                             padding: "10px 14px",
                                             borderRadius: 8,
                                             background: "rgba(239,68,68,0.08)",
-                                            border: "1px solid rgba(239,68,68,0.2)",
+                                            border: "0.5px solid rgba(239,68,68,0.2)",
                                             color: "#ef4444",
                                             fontSize: 13,
                                             marginBottom: 16,

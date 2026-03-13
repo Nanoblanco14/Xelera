@@ -133,7 +133,7 @@ export default function ToastProvider({ orgId }: Props) {
     const getIconColor = (type: ToastMessage["type"]) => {
         switch (type) {
             case "message":
-                return "#3b82f6";
+                return "#7a9e8a";
             case "lead":
                 return "#22c55e";
             case "stage":
@@ -170,7 +170,7 @@ export default function ToastProvider({ orgId }: Props) {
                         padding: "12px 14px",
                         borderRadius: "12px",
                         background: "#1a1a1e",
-                        border: "1px solid rgba(255,255,255,0.08)",
+                        border: "0.5px solid rgba(255,255,255,0.08)",
                         boxShadow: "0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03)",
                         animation: "toast-slide-in 0.3s ease-out",
                         backdropFilter: "blur(16px)",

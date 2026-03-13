@@ -24,6 +24,7 @@ import {
     HelpCircle,
     Kanban,
 } from "lucide-react";
+import { PlanUsageCard } from "@/components/plan";
 
 /* ═══════════════════════════════════════════════════════════
    Types
@@ -119,36 +120,60 @@ function KpiCard({
     sub: string;
     accent?: string;
 }) {
+    const accentColor = accent || "#7a9e8a";
     return (
         <div
+            className="kpi-card"
             style={{
-                background: "var(--bg-card)",
-                border: "1px solid var(--border)",
-                borderRadius: "16px",
-                padding: "22px 24px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "14px",
-                transition: "border-color 0.2s ease, background 0.2s ease",
+                backgroundImage: `
+                    radial-gradient(ellipse at 15% -10%, ${accentColor}0a 0%, transparent 55%),
+                    radial-gradient(ellipse at 85% 110%, ${accentColor}06 0%, transparent 55%),
+                    var(--gradient-card)
+                `,
+                position: "relative",
+                overflow: "hidden",
+                transition: "border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease",
             }}
             onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "var(--border-hover)";
-                e.currentTarget.style.background = "var(--bg-card-hover)";
+                e.currentTarget.style.borderColor = `${accentColor}35`;
+                e.currentTarget.style.transform = "translateY(-3px)";
+                e.currentTarget.style.boxShadow = `var(--shadow-elevated), 0 0 24px ${accentColor}0a`;
+                const glow = e.currentTarget.querySelector("[data-glow]") as HTMLElement;
+                if (glow) glow.style.opacity = "1";
             }}
             onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = "var(--border)";
-                e.currentTarget.style.background = "var(--bg-card)";
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "";
+                const glow = e.currentTarget.querySelector("[data-glow]") as HTMLElement;
+                if (glow) glow.style.opacity = "0.4";
             }}
         >
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            {/* Top glow line */}
+            <div
+                data-glow
+                style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: "1px",
+                    background: `linear-gradient(90deg, transparent 10%, ${accentColor}40 50%, transparent 90%)`,
+                    opacity: 0.4,
+                    transition: "opacity 0.3s ease",
+                }}
+            />
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
                 <div
                     style={{
-                        width: "34px",
-                        height: "34px",
+                        width: "36px",
+                        height: "36px",
                         borderRadius: "10px",
-                        background: accent ? `${accent}18` : "rgba(255,255,255,0.05)",
-                        border: `1px solid ${accent ? `${accent}30` : "rgba(255,255,255,0.07)"}`,
-                        color: accent ?? "#a1a1aa",
+                        background: `linear-gradient(135deg, ${accentColor}18 0%, ${accentColor}08 100%)`,
+                        border: `0.5px solid ${accentColor}28`,
+                        boxShadow: `inset 0 1px 0 rgba(255,255,255,0.04), 0 2px 8px ${accentColor}0a`,
+                        backdropFilter: "blur(4px)",
+                        color: accentColor,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -159,11 +184,11 @@ function KpiCard({
                 </div>
                 <span
                     style={{
-                        fontSize: "0.68rem",
+                        fontSize: "0.65rem",
                         fontWeight: 700,
                         color: "var(--text-muted)",
                         textTransform: "uppercase",
-                        letterSpacing: "0.08em",
+                        letterSpacing: "0.1em",
                     }}
                 >
                     {label}
@@ -171,17 +196,19 @@ function KpiCard({
             </div>
             <div>
                 <div
+                    className="font-display"
                     style={{
-                        fontSize: "2rem",
-                        fontWeight: 800,
-                        color: accent ?? "var(--text-primary)",
+                        fontSize: "2.2rem",
+                        fontWeight: 400,
+                        color: "var(--text-primary)",
+                        letterSpacing: "-0.03em",
                         lineHeight: 1,
-                        letterSpacing: "-0.02em",
+                        fontVariantNumeric: "tabular-nums",
                     }}
                 >
                     {value}
                 </div>
-                <p style={{ fontSize: "0.73rem", color: "var(--text-muted)", marginTop: "6px" }}>
+                <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "8px", lineHeight: 1.4 }}>
                     {sub}
                 </p>
             </div>
@@ -211,34 +238,37 @@ function QuickAction({
         <button
             onClick={() => router.push(href)}
             style={{
-                background: "var(--bg-card)",
-                border: "1px solid var(--border)",
-                borderRadius: "14px",
-                padding: "18px 20px",
+                background: "rgba(255,255,255,0.015)",
+                border: "0.5px solid rgba(255,255,255,0.05)",
+                borderRadius: "12px",
+                padding: "16px 18px",
                 display: "flex",
                 alignItems: "center",
                 gap: "14px",
                 cursor: "pointer",
-                transition: "all 0.2s ease",
+                transition: "all 0.25s cubic-bezier(0.16,1,0.3,1)",
                 textAlign: "left",
                 width: "100%",
             }}
             onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = accent + "50";
-                e.currentTarget.style.background = "var(--bg-card-hover)";
+                e.currentTarget.style.borderColor = accent + "30";
+                e.currentTarget.style.background = `${accent}08`;
+                e.currentTarget.style.transform = "translateX(4px)";
             }}
             onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "var(--border)";
-                e.currentTarget.style.background = "var(--bg-card)";
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
+                e.currentTarget.style.background = "rgba(255,255,255,0.015)";
+                e.currentTarget.style.transform = "translateX(0)";
             }}
         >
             <div
                 style={{
-                    width: "40px",
-                    height: "40px",
-                    borderRadius: "11px",
-                    background: `${accent}15`,
-                    border: `1px solid ${accent}25`,
+                    width: "38px",
+                    height: "38px",
+                    borderRadius: "10px",
+                    background: `linear-gradient(135deg, ${accent}15 0%, ${accent}08 100%)`,
+                    border: `0.5px solid ${accent}22`,
+                    boxShadow: `inset 0 1px 0 rgba(255,255,255,0.03)`,
                     color: accent,
                     display: "flex",
                     alignItems: "center",
@@ -326,9 +356,27 @@ export default function DashboardHome() {
                         <p className="page-subtitle">Centro de comando</p>
                     </div>
                 </div>
-                <div className="empty-state">
-                    <Zap />
-                    <p>No se pudieron cargar los datos del dashboard</p>
+                <div style={{ textAlign: "center", padding: "80px 40px", background: "radial-gradient(ellipse at center, rgba(199,90,90,0.04) 0%, transparent 60%)", borderRadius: "16px" }}>
+                    <Zap size={44} style={{ color: "var(--text-muted)", margin: "0 auto 20px", opacity: 0.2 }} />
+                    <p style={{ fontSize: "0.92rem", color: "var(--text-muted)", marginBottom: "20px" }}>No se pudieron cargar los datos del dashboard</p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        style={{
+                            background: "rgba(199,90,90,0.08)",
+                            border: "0.5px solid rgba(199,90,90,0.18)",
+                            borderRadius: "10px",
+                            padding: "10px 22px",
+                            fontSize: "0.82rem",
+                            fontWeight: 600,
+                            color: "var(--danger)",
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "8px",
+                        }}
+                    >
+                        Reintentar <ArrowRight size={14} />
+                    </button>
                 </div>
             </div>
         );
@@ -338,10 +386,10 @@ export default function DashboardHome() {
     const orgName = organization.name;
 
     return (
-        <div className="animate-in" style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+        <div className="animate-in" style={{ display: "flex", flexDirection: "column", gap: "36px" }}>
 
             {error && (
-                <div style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", borderRadius: 8, padding: "12px 16px", margin: "0 0 8px 0", color: "#DC2626", fontSize: 14 }}>
+                <div style={{ background: "rgba(239,68,68,0.08)", border: "0.5px solid rgba(239,68,68,0.2)", borderRadius: 8, padding: "12px 16px", margin: "0 0 8px 0", color: "#f87171", fontSize: 14 }}>
                     {error}
                 </div>
             )}
@@ -349,63 +397,83 @@ export default function DashboardHome() {
             {/* ══════════════════════════════════════════════════════
                  WELCOME HEADER
                  ══════════════════════════════════════════════════════ */}
-            <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
-            <div style={{ marginBottom: "4px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}>
+            <style>{`
+                @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                @keyframes dashFadeIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+                .dash-stagger-1 { opacity: 0; animation: dashFadeIn 0.6s cubic-bezier(0.16,1,0.3,1) 0.05s forwards; }
+                .dash-stagger-2 { opacity: 0; animation: dashFadeIn 0.6s cubic-bezier(0.16,1,0.3,1) 0.12s forwards; }
+                .dash-stagger-3 { opacity: 0; animation: dashFadeIn 0.6s cubic-bezier(0.16,1,0.3,1) 0.19s forwards; }
+                .dash-stagger-4 { opacity: 0; animation: dashFadeIn 0.6s cubic-bezier(0.16,1,0.3,1) 0.26s forwards; }
+                .dash-stagger-5 { opacity: 0; animation: dashFadeIn 0.6s cubic-bezier(0.16,1,0.3,1) 0.33s forwards; }
+                .dash-stagger-6 { opacity: 0; animation: dashFadeIn 0.6s cubic-bezier(0.16,1,0.3,1) 0.40s forwards; }
+                .dash-lead-row { position: relative; }
+                .dash-lead-row::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; border-radius: 2px; background: var(--accent-sage); opacity: 0; transform: scaleY(0); transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.16,1,0.3,1); }
+                .dash-lead-row:hover::before { opacity: 1; transform: scaleY(1); }
+            `}</style>
+            <div className="dash-stagger-1" style={{ marginBottom: "4px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "8px" }}>
                     <div
                         style={{
-                            width: "44px",
-                            height: "44px",
-                            borderRadius: "13px",
-                            background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
-                            boxShadow: "0 4px 16px rgba(59,130,246,0.25)",
+                            width: "48px",
+                            height: "48px",
+                            borderRadius: "14px",
+                            background: "linear-gradient(135deg, rgba(122,158,138,0.15) 0%, rgba(122,158,138,0.05) 100%)",
+                            border: "0.5px solid rgba(122,158,138,0.2)",
+                            boxShadow: "0 4px 20px rgba(122,158,138,0.12), inset 0 1px 0 rgba(255,255,255,0.05)",
+                            backdropFilter: "blur(8px)",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
                             flexShrink: 0,
                         }}
                     >
-                        <Zap size={20} color="white" />
+                        <Zap size={20} style={{ color: "var(--accent-light)" }} />
                     </div>
                     <div style={{ flex: 1 }}>
                         <h1
+                            className="font-display"
                             style={{
-                                fontSize: "1.6rem",
-                                fontWeight: 700,
+                                fontSize: "1.75rem",
+                                fontWeight: 400,
                                 color: "var(--text-primary)",
                                 letterSpacing: "-0.02em",
                                 lineHeight: 1.2,
                             }}
                         >
-                            {greeting}, <span style={{ color: "var(--accent-light)" }}>{orgName}</span>
+                            {greeting}, <span style={{ color: "var(--accent-sage)" }}>{orgName}</span>
                         </h1>
-                        <p style={{ fontSize: "0.88rem", color: "var(--text-secondary)", marginTop: "4px" }}>
-                            Aqui tienes el resumen de tu plataforma
+                        <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginTop: "6px", display: "flex", alignItems: "center", gap: "8px" }}>
+                            <span>{new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>
+                            <span style={{ width: "3px", height: "3px", borderRadius: "50%", background: "var(--text-muted)", opacity: 0.5 }} />
+                            <span style={{ color: "var(--text-secondary)" }}>Centro de comando</span>
                         </p>
                     </div>
                     <button
                         onClick={() => loadDashboard()}
                         disabled={loading}
                         style={{
-                            background: "none",
-                            border: "1px solid #E2E8F0",
-                            borderRadius: 8,
-                            padding: "6px 12px",
+                            background: "rgba(255,255,255,0.03)",
+                            border: "0.5px solid var(--border)",
+                            borderRadius: 10,
+                            padding: "8px 16px",
                             cursor: loading ? "not-allowed" : "pointer",
                             display: "flex",
                             alignItems: "center",
                             gap: 6,
-                            fontSize: 13,
-                            color: "#64748B",
-                            transition: "all 0.2s",
+                            fontSize: "0.78rem",
+                            fontWeight: 500,
+                            color: "var(--text-muted)",
+                            transition: "all 0.25s cubic-bezier(0.16,1,0.3,1)",
                         }}
-                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#3B82F6"; e.currentTarget.style.color = "#3B82F6"; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#E2E8F0"; e.currentTarget.style.color = "#64748B"; }}
+                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(122,158,138,0.3)"; e.currentTarget.style.color = "var(--accent-sage)"; e.currentTarget.style.background = "rgba(122,158,138,0.06)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
                     >
                         <span style={{ display: "inline-block", animation: loading ? "spin 1s linear infinite" : "none" }}>↻</span>
                         Actualizar
                     </button>
                 </div>
+                {/* Gradient divider line */}
+                <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, rgba(122,158,138,0.2), transparent)", marginTop: "12px" }} />
             </div>
 
             {/* ══════════════════════════════════════════════════════
@@ -413,33 +481,34 @@ export default function DashboardHome() {
                  ══════════════════════════════════════════════════════ */}
             {data.checklistTotal < data.checklistMax && (
                 <div
+                    className="dash-stagger-1 glass-card"
                     style={{
-                        background: "linear-gradient(135deg, rgba(59,130,246,0.06) 0%, rgba(139,92,246,0.04) 100%)",
-                        border: "1px solid rgba(99,102,241,0.15)",
-                        borderRadius: "16px",
-                        padding: "24px",
+                        backgroundImage: "linear-gradient(135deg, rgba(122,158,138,0.06) 0%, rgba(93,130,112,0.02) 100%), var(--gradient-card)",
+                        borderColor: "rgba(122,158,138,0.12)",
+                        padding: "24px 28px",
                     }}
                 >
                     {/* Header */}
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                             <div
                                 style={{
-                                    width: "28px",
-                                    height: "28px",
-                                    borderRadius: "8px",
-                                    background: "rgba(59,130,246,0.12)",
-                                    border: "1px solid rgba(59,130,246,0.18)",
+                                    width: "36px",
+                                    height: "36px",
+                                    borderRadius: "10px",
+                                    background: "linear-gradient(135deg, rgba(122,158,138,0.15) 0%, rgba(122,158,138,0.06) 100%)",
+                                    border: "0.5px solid rgba(122,158,138,0.2)",
+                                    boxShadow: "0 2px 8px rgba(122,158,138,0.08), inset 0 1px 0 rgba(255,255,255,0.04)",
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
-                                    color: "#60a5fa",
+                                    color: "var(--accent-light)",
                                 }}
                             >
-                                <Zap size={14} />
+                                <Sparkles size={16} />
                             </div>
                             <div>
-                                <h3 style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text-primary)" }}>
+                                <h3 style={{ fontSize: "0.92rem", fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
                                     Configuracion inicial
                                 </h3>
                                 <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "2px" }}>
@@ -447,15 +516,26 @@ export default function DashboardHome() {
                                 </p>
                             </div>
                         </div>
+                        <span style={{
+                            fontSize: "0.72rem",
+                            fontWeight: 700,
+                            color: "var(--accent-sage)",
+                            padding: "4px 12px",
+                            borderRadius: "100px",
+                            background: "rgba(122,158,138,0.08)",
+                            border: "0.5px solid rgba(122,158,138,0.15)",
+                        }}>
+                            {Math.round((data.checklistTotal / data.checklistMax) * 100)}%
+                        </span>
                     </div>
 
                     {/* Progress bar */}
                     <div
                         style={{
-                            height: "6px",
+                            height: "4px",
                             borderRadius: "100px",
                             background: "rgba(255,255,255,0.06)",
-                            marginBottom: "20px",
+                            marginBottom: "22px",
                             overflow: "hidden",
                         }}
                     >
@@ -464,8 +544,9 @@ export default function DashboardHome() {
                                 height: "100%",
                                 width: `${(data.checklistTotal / data.checklistMax) * 100}%`,
                                 borderRadius: "100px",
-                                background: "linear-gradient(90deg, #3b82f6, #8b5cf6)",
-                                transition: "width 0.6s ease",
+                                background: "linear-gradient(90deg, var(--accent-sage), var(--accent-dark))",
+                                transition: "width 0.8s cubic-bezier(0.16,1,0.3,1)",
+                                boxShadow: "0 0 8px rgba(122,158,138,0.2)",
                             }}
                         />
                     </div>
@@ -485,7 +566,7 @@ export default function DashboardHome() {
                                 desc: "Crea y personaliza tu agente IA",
                                 href: "/dashboard/agents",
                                 icon: <Bot size={15} />,
-                                accent: "#3b82f6",
+                                accent: "#7a9e8a",
                             },
                             {
                                 key: "products" as const,
@@ -517,7 +598,7 @@ export default function DashboardHome() {
                                 desc: "Respuestas rapidas para tu agente",
                                 href: "/dashboard/agents",
                                 icon: <HelpCircle size={15} />,
-                                accent: "#8b5cf6",
+                                accent: "#5d8270",
                             },
                         ] as const).map((item) => {
                             const done = data.checklist[item.key];
@@ -532,40 +613,43 @@ export default function DashboardHome() {
                                         padding: "14px 16px",
                                         borderRadius: "12px",
                                         background: done
-                                            ? "rgba(34,197,94,0.04)"
-                                            : "rgba(255,255,255,0.03)",
+                                            ? "rgba(122,158,138,0.04)"
+                                            : "rgba(255,255,255,0.02)",
                                         border: done
-                                            ? "1px solid rgba(34,197,94,0.12)"
-                                            : "1px solid rgba(255,255,255,0.06)",
+                                            ? "0.5px solid rgba(122,158,138,0.12)"
+                                            : "0.5px solid rgba(255,255,255,0.05)",
                                         cursor: done ? "default" : "pointer",
                                         textAlign: "left",
-                                        transition: "all 0.2s ease",
-                                        opacity: done ? 0.7 : 1,
+                                        transition: "all 0.25s cubic-bezier(0.16,1,0.3,1)",
+                                        opacity: done ? 0.65 : 1,
                                     }}
                                     onMouseEnter={(e) => {
                                         if (!done) {
-                                            e.currentTarget.style.background = "rgba(255,255,255,0.06)";
-                                            e.currentTarget.style.borderColor = `${item.accent}40`;
+                                            e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                                            e.currentTarget.style.borderColor = `${item.accent}35`;
+                                            e.currentTarget.style.transform = "translateY(-1px)";
                                         }
                                     }}
                                     onMouseLeave={(e) => {
                                         if (!done) {
-                                            e.currentTarget.style.background = "rgba(255,255,255,0.03)";
-                                            e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)";
+                                            e.currentTarget.style.background = "rgba(255,255,255,0.02)";
+                                            e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
+                                            e.currentTarget.style.transform = "translateY(0)";
                                         }
                                     }}
                                 >
                                     {/* Status icon */}
                                     {done ? (
-                                        <CheckCircle size={18} style={{ color: "#22c55e", flexShrink: 0 }} />
+                                        <CheckCircle size={18} style={{ color: "var(--accent-sage)", flexShrink: 0 }} />
                                     ) : (
                                         <div
                                             style={{
                                                 width: "18px",
                                                 height: "18px",
                                                 borderRadius: "50%",
-                                                border: `2px solid ${item.accent}50`,
+                                                border: `1.5px solid var(--text-dim)`,
                                                 flexShrink: 0,
+                                                transition: "border-color 0.2s ease",
                                             }}
                                         />
                                     )}
@@ -576,8 +660,8 @@ export default function DashboardHome() {
                                             width: "30px",
                                             height: "30px",
                                             borderRadius: "8px",
-                                            background: `${item.accent}12`,
-                                            border: `1px solid ${item.accent}25`,
+                                            background: done ? "rgba(122,158,138,0.06)" : `${item.accent}10`,
+                                            border: `0.5px solid ${done ? "rgba(122,158,138,0.12)" : `${item.accent}22`}`,
                                             display: "flex",
                                             alignItems: "center",
                                             justifyContent: "center",
@@ -604,7 +688,7 @@ export default function DashboardHome() {
                                         <div
                                             style={{
                                                 fontSize: "0.7rem",
-                                                color: "var(--text-muted)",
+                                                color: done ? "var(--text-dim)" : "var(--text-muted)",
                                                 marginTop: "2px",
                                             }}
                                         >
@@ -626,10 +710,16 @@ export default function DashboardHome() {
             {/* ══════════════════════════════════════════════════════
                  KPI GRID (4 cards)
                  ══════════════════════════════════════════════════════ */}
+            {/* Section label */}
+            <div className="dash-stagger-2" style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "-20px" }}>
+                <span style={{ fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--text-muted)" }}>Metricas</span>
+                <div style={{ flex: 1, height: "0.5px", background: "var(--border)" }} />
+            </div>
             <div
+                className="dash-stagger-2"
                 style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                    gridTemplateColumns: "repeat(4, 1fr)",
                     gap: "16px",
                 }}
             >
@@ -638,6 +728,7 @@ export default function DashboardHome() {
                     label="Total Leads"
                     value={data.totalLeads}
                     sub="Leads captados por la IA"
+                    accent="#6482aa"
                 />
                 <KpiCard
                     icon={<CalendarCheck size={16} />}
@@ -651,28 +742,26 @@ export default function DashboardHome() {
                     label="Conversion"
                     value={`${data.conversionRate}%`}
                     sub={`${data.citasAgendadas} de ${data.totalLeads} agendaron`}
-                    accent="#3b82f6"
+                    accent="#7a9e8a"
                 />
                 <KpiCard
                     icon={<MessageSquare size={16} />}
                     label="Mensajes IA"
                     value={data.aiMessages}
                     sub="Respuestas automaticas enviadas"
-                    accent="#8b5cf6"
+                    accent="#a89f94"
                 />
             </div>
 
             {/* ══════════════════════════════════════════════════════
                  MIDDLE ROW: Quick Actions + Agent Status
                  ══════════════════════════════════════════════════════ */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+            <div className="dash-stagger-3" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
 
                 {/* ── Quick Actions ─────────────────────────────── */}
                 <div
+                    className="glass-card"
                     style={{
-                        background: "var(--bg-card)",
-                        border: "1px solid var(--border)",
-                        borderRadius: "16px",
                         padding: "24px",
                     }}
                 >
@@ -684,7 +773,19 @@ export default function DashboardHome() {
                             marginBottom: "18px",
                         }}
                     >
-                        <Sparkles size={16} style={{ color: "var(--text-muted)" }} />
+                        <div style={{
+                            width: "28px",
+                            height: "28px",
+                            borderRadius: "8px",
+                            background: "linear-gradient(135deg, rgba(168,159,148,0.12) 0%, rgba(168,159,148,0.04) 100%)",
+                            border: "0.5px solid rgba(168,159,148,0.18)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "var(--accent-warm)",
+                        }}>
+                            <Sparkles size={14} />
+                        </div>
                         <h3
                             style={{
                                 fontSize: "0.88rem",
@@ -708,24 +809,24 @@ export default function DashboardHome() {
                             label="Configurar Asistente"
                             description="Ajusta la personalidad de tu IA"
                             href="/dashboard/agents"
-                            accent="#3b82f6"
+                            accent="#7a9e8a"
                         />
                         <QuickAction
                             icon={<TrendingUp size={18} />}
                             label="Ver Analitica"
                             description="Metricas detalladas y graficos"
                             href="/dashboard/analytics"
-                            accent="#8b5cf6"
+                            accent="#5d8270"
                         />
                     </div>
                 </div>
 
                 {/* ── Agent Status ──────────────────────────────── */}
                 <div
+                    className="glass-card"
                     style={{
-                        background: "linear-gradient(135deg, rgba(59,130,246,0.06) 0%, rgba(139,92,246,0.06) 100%)",
-                        border: "1px solid rgba(99,102,241,0.15)",
-                        borderRadius: "16px",
+                        backgroundImage: "linear-gradient(135deg, rgba(122,158,138,0.06) 0%, rgba(93,130,112,0.03) 100%), var(--gradient-card)",
+                        borderColor: "rgba(122,158,138,0.12)",
                         padding: "24px",
                         display: "flex",
                         flexDirection: "column",
@@ -746,12 +847,12 @@ export default function DashboardHome() {
                                     width: "28px",
                                     height: "28px",
                                     borderRadius: "8px",
-                                    background: "rgba(59,130,246,0.1)",
-                                    border: "1px solid rgba(59,130,246,0.15)",
+                                    background: "rgba(122,158,138,0.1)",
+                                    border: "0.5px solid rgba(122,158,138,0.15)",
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
-                                    color: "#60a5fa",
+                                    color: "var(--accent-light)",
                                 }}
                             >
                                 <Bot size={14} />
@@ -765,7 +866,7 @@ export default function DashboardHome() {
                             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                                 {/* Agent name & status */}
                                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                                    <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text-primary)" }}>
+                                    <span className="font-display" style={{ fontSize: "1.15rem", fontWeight: 400, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
                                         {data.agent.name}
                                     </span>
                                     <span
@@ -776,7 +877,7 @@ export default function DashboardHome() {
                                             fontWeight: 600,
                                             background: data.agent.is_active ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)",
                                             color: data.agent.is_active ? "#22c55e" : "#ef4444",
-                                            border: `1px solid ${data.agent.is_active ? "rgba(34,197,94,0.2)" : "rgba(239,68,68,0.2)"}`,
+                                            border: `0.5px solid ${data.agent.is_active ? "rgba(34,197,94,0.2)" : "rgba(239,68,68,0.2)"}`,
                                         }}
                                     >
                                         {data.agent.is_active ? "Activo" : "Inactivo"}
@@ -789,7 +890,7 @@ export default function DashboardHome() {
                                         padding: "14px 16px",
                                         borderRadius: "12px",
                                         background: "rgba(255,255,255,0.03)",
-                                        border: "1px solid rgba(255,255,255,0.05)",
+                                        border: "0.5px solid rgba(255,255,255,0.05)",
                                     }}
                                 >
                                     {data.agent.welcome_message ? (
@@ -831,25 +932,26 @@ export default function DashboardHome() {
                                 </div>
                             </div>
                         ) : (
-                            <div style={{ textAlign: "center", padding: "20px 0" }}>
-                                <Bot size={32} style={{ color: "var(--text-muted)", margin: "0 auto 10px", opacity: 0.4 }} />
-                                <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "14px" }}>
+                            <div style={{ textAlign: "center", padding: "32px 16px", background: "radial-gradient(ellipse at center, rgba(122,158,138,0.05) 0%, transparent 70%)", borderRadius: "12px" }}>
+                                <Bot size={38} style={{ color: "var(--text-muted)", margin: "0 auto 14px", opacity: 0.25 }} />
+                                <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "16px", lineHeight: 1.5 }}>
                                     No tienes un asistente configurado
                                 </p>
                                 <button
                                     onClick={() => router.push("/dashboard/agents")}
                                     style={{
-                                        background: "linear-gradient(135deg, #3b82f6, #7c3aed)",
-                                        color: "white",
-                                        border: "none",
+                                        background: "linear-gradient(135deg, rgba(122,158,138,0.15), rgba(93,130,112,0.1))",
+                                        color: "var(--accent-light)",
+                                        border: "0.5px solid rgba(122,158,138,0.2)",
                                         padding: "10px 22px",
                                         borderRadius: "10px",
-                                        fontSize: "0.85rem",
+                                        fontSize: "0.82rem",
                                         fontWeight: 600,
                                         cursor: "pointer",
                                         display: "inline-flex",
                                         alignItems: "center",
                                         gap: "8px",
+                                        transition: "all 0.25s ease",
                                     }}
                                 >
                                     <Plus size={16} /> Crear Asistente
@@ -862,7 +964,7 @@ export default function DashboardHome() {
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px", marginTop: "16px" }}>
                         {[
                             { label: "Productos", value: data.productCount, color: "#22c55e" },
-                            { label: "Mensajes IA", value: data.aiMessages, color: "#8b5cf6" },
+                            { label: "Mensajes IA", value: data.aiMessages, color: "#5d8270" },
                             {
                                 label: "Tiempo ahorrado",
                                 value: data.timeSavedHours > 0 ? `${data.timeSavedHours}h` : `${data.timeSavedMinutes}m`,
@@ -875,15 +977,17 @@ export default function DashboardHome() {
                                     padding: "12px 14px",
                                     borderRadius: "10px",
                                     background: "rgba(255,255,255,0.03)",
-                                    border: "1px solid rgba(255,255,255,0.05)",
+                                    border: "0.5px solid rgba(255,255,255,0.05)",
                                 }}
                             >
                                 <div
+                                    className="font-display"
                                     style={{
-                                        fontSize: "1.2rem",
-                                        fontWeight: 800,
+                                        fontSize: "1.4rem",
+                                        fontWeight: 400,
                                         color: stat.color,
                                         letterSpacing: "-0.02em",
+                                        fontVariantNumeric: "tabular-nums",
                                     }}
                                 >
                                     {stat.value}
@@ -907,16 +1011,26 @@ export default function DashboardHome() {
             </div>
 
             {/* ══════════════════════════════════════════════════════
+                 PLAN USAGE
+                 ══════════════════════════════════════════════════════ */}
+            <div className="dash-stagger-4">
+                <PlanUsageCard />
+            </div>
+
+            {/* ══════════════════════════════════════════════════════
                  BOTTOM ROW: Recent Leads + Pipeline Overview
                  ══════════════════════════════════════════════════════ */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+            {/* Section label */}
+            <div className="dash-stagger-4" style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "-20px" }}>
+                <span style={{ fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--text-muted)" }}>Actividad</span>
+                <div style={{ flex: 1, height: "0.5px", background: "var(--border)" }} />
+            </div>
+            <div className="dash-stagger-4" style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "16px" }}>
 
                 {/* ── Recent Leads ─────────────────────────────── */}
                 <div
+                    className="glass-card"
                     style={{
-                        background: "var(--bg-card)",
-                        border: "1px solid var(--border)",
-                        borderRadius: "16px",
                         padding: "24px",
                     }}
                 >
@@ -927,12 +1041,12 @@ export default function DashboardHome() {
                                     width: "28px",
                                     height: "28px",
                                     borderRadius: "8px",
-                                    background: "rgba(255,255,255,0.05)",
-                                    border: "1px solid rgba(255,255,255,0.07)",
+                                    background: "linear-gradient(135deg, rgba(100,130,170,0.12) 0%, rgba(100,130,170,0.04) 100%)",
+                                    border: "0.5px solid rgba(100,130,170,0.18)",
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
-                                    color: "#a1a1aa",
+                                    color: "var(--accent-slate)",
                                 }}
                             >
                                 <Users size={14} />
@@ -946,46 +1060,74 @@ export default function DashboardHome() {
                             style={{
                                 background: "none",
                                 border: "none",
-                                color: "var(--accent-light)",
+                                color: "var(--accent-sage)",
                                 fontSize: "0.75rem",
                                 fontWeight: 600,
                                 cursor: "pointer",
                                 display: "flex",
                                 alignItems: "center",
-                                gap: "4px",
+                                gap: "6px",
+                                transition: "gap 0.25s ease",
                             }}
+                            onMouseEnter={(e) => { e.currentTarget.style.gap = "8px"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.gap = "6px"; }}
                         >
-                            Ver todos <ExternalLink size={12} />
+                            Ver todos <ArrowRight size={13} />
                         </button>
                     </div>
 
                     {data.recentLeads.length === 0 ? (
-                        <div style={{ textAlign: "center", padding: "32px 0" }}>
-                            <Users size={28} style={{ color: "var(--text-muted)", margin: "0 auto 10px", opacity: 0.3 }} />
-                            <p style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                        <div style={{ textAlign: "center", padding: "48px 24px", background: "radial-gradient(ellipse at center, rgba(100,130,170,0.04) 0%, transparent 70%)", borderRadius: "12px" }}>
+                            <Users size={36} style={{ color: "var(--text-muted)", margin: "0 auto 14px", opacity: 0.25 }} />
+                            <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "16px", lineHeight: 1.5 }}>
                                 Aun no tienes leads. Llegaran cuando tus clientes escriban por WhatsApp.
                             </p>
+                            <button
+                                onClick={() => router.push("/dashboard/settings")}
+                                style={{
+                                    background: "rgba(100,130,170,0.08)",
+                                    border: "0.5px solid rgba(100,130,170,0.18)",
+                                    borderRadius: "10px",
+                                    padding: "8px 18px",
+                                    fontSize: "0.78rem",
+                                    fontWeight: 600,
+                                    color: "var(--accent-slate)",
+                                    cursor: "pointer",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "6px",
+                                    transition: "all 0.2s ease",
+                                }}
+                            >
+                                Configurar WhatsApp <ArrowRight size={13} />
+                            </button>
                         </div>
                     ) : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                             {data.recentLeads.map((lead) => (
                                 <div
                                     key={lead.id}
+                                    className="dash-lead-row"
                                     style={{
                                         display: "flex",
                                         alignItems: "center",
                                         gap: "12px",
-                                        padding: "12px 14px",
+                                        padding: "12px 14px 12px 16px",
                                         borderRadius: "10px",
-                                        background: "rgba(255,255,255,0.02)",
-                                        border: "1px solid rgba(255,255,255,0.04)",
-                                        transition: "background 0.2s ease",
+                                        background: "rgba(255,255,255,0.015)",
+                                        border: "0.5px solid rgba(255,255,255,0.04)",
+                                        transition: "all 0.25s cubic-bezier(0.16,1,0.3,1)",
+                                        cursor: "default",
                                     }}
                                     onMouseEnter={(e) => {
-                                        e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+                                        e.currentTarget.style.background = "rgba(122,158,138,0.04)";
+                                        e.currentTarget.style.borderColor = "rgba(122,158,138,0.1)";
+                                        e.currentTarget.style.paddingLeft = "20px";
                                     }}
                                     onMouseLeave={(e) => {
-                                        e.currentTarget.style.background = "rgba(255,255,255,0.02)";
+                                        e.currentTarget.style.background = "rgba(255,255,255,0.015)";
+                                        e.currentTarget.style.borderColor = "rgba(255,255,255,0.04)";
+                                        e.currentTarget.style.paddingLeft = "16px";
                                     }}
                                 >
                                     {/* Avatar */}
@@ -995,7 +1137,7 @@ export default function DashboardHome() {
                                             height: "36px",
                                             borderRadius: "10px",
                                             background: "rgba(255,255,255,0.05)",
-                                            border: "1px solid rgba(255,255,255,0.08)",
+                                            border: "0.5px solid rgba(255,255,255,0.08)",
                                             display: "flex",
                                             alignItems: "center",
                                             justifyContent: "center",
@@ -1013,11 +1155,12 @@ export default function DashboardHome() {
                                         <div
                                             style={{
                                                 fontSize: "0.85rem",
-                                                fontWeight: 600,
+                                                fontWeight: 700,
                                                 color: "var(--text-primary)",
                                                 whiteSpace: "nowrap",
                                                 overflow: "hidden",
                                                 textOverflow: "ellipsis",
+                                                letterSpacing: "-0.01em",
                                             }}
                                         >
                                             {lead.name}
@@ -1046,7 +1189,7 @@ export default function DashboardHome() {
                                                 ? `${lead.stage_color}18`
                                                 : "rgba(255,255,255,0.05)",
                                             color: lead.stage_color || "var(--text-secondary)",
-                                            border: `1px solid ${lead.stage_color ? `${lead.stage_color}30` : "rgba(255,255,255,0.08)"}`,
+                                            border: `0.5px solid ${lead.stage_color ? `${lead.stage_color}30` : "rgba(255,255,255,0.08)"}`,
                                             whiteSpace: "nowrap",
                                             flexShrink: 0,
                                         }}
@@ -1075,10 +1218,8 @@ export default function DashboardHome() {
 
                 {/* ── Pipeline Overview ─────────────────────────── */}
                 <div
+                    className="glass-card"
                     style={{
-                        background: "var(--bg-card)",
-                        border: "1px solid var(--border)",
-                        borderRadius: "16px",
                         padding: "24px",
                     }}
                 >
@@ -1089,12 +1230,12 @@ export default function DashboardHome() {
                                     width: "28px",
                                     height: "28px",
                                     borderRadius: "8px",
-                                    background: "rgba(255,255,255,0.05)",
-                                    border: "1px solid rgba(255,255,255,0.07)",
+                                    background: "linear-gradient(135deg, rgba(122,158,138,0.12) 0%, rgba(122,158,138,0.04) 100%)",
+                                    border: "0.5px solid rgba(122,158,138,0.18)",
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
-                                    color: "#a1a1aa",
+                                    color: "var(--accent-sage)",
                                 }}
                             >
                                 <Zap size={14} />
@@ -1108,76 +1249,115 @@ export default function DashboardHome() {
                             style={{
                                 background: "none",
                                 border: "none",
-                                color: "var(--accent-light)",
+                                color: "var(--accent-sage)",
                                 fontSize: "0.75rem",
                                 fontWeight: 600,
                                 cursor: "pointer",
                                 display: "flex",
                                 alignItems: "center",
-                                gap: "4px",
+                                gap: "6px",
+                                transition: "gap 0.25s ease",
                             }}
+                            onMouseEnter={(e) => { e.currentTarget.style.gap = "8px"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.gap = "6px"; }}
                         >
-                            Ver pipeline <ExternalLink size={12} />
+                            Ver pipeline <ArrowRight size={13} />
                         </button>
                     </div>
 
                     {data.leadsByStage.length === 0 ? (
-                        <div style={{ textAlign: "center", padding: "32px 0" }}>
-                            <Zap size={28} style={{ color: "var(--text-muted)", margin: "0 auto 10px", opacity: 0.3 }} />
-                            <p style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
+                        <div style={{ textAlign: "center", padding: "48px 24px", background: "radial-gradient(ellipse at center, rgba(122,158,138,0.04) 0%, transparent 70%)", borderRadius: "12px" }}>
+                            <Zap size={36} style={{ color: "var(--text-muted)", margin: "0 auto 14px", opacity: 0.25 }} />
+                            <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "16px", lineHeight: 1.5 }}>
                                 Configura tu pipeline para organizar tus leads
                             </p>
+                            <button
+                                onClick={() => router.push("/dashboard/pipeline")}
+                                style={{
+                                    background: "rgba(122,158,138,0.08)",
+                                    border: "0.5px solid rgba(122,158,138,0.18)",
+                                    borderRadius: "10px",
+                                    padding: "8px 18px",
+                                    fontSize: "0.78rem",
+                                    fontWeight: 600,
+                                    color: "var(--accent-sage)",
+                                    cursor: "pointer",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "6px",
+                                    transition: "all 0.2s ease",
+                                }}
+                            >
+                                Crear Pipeline <ArrowRight size={13} />
+                            </button>
                         </div>
                     ) : (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                             {data.leadsByStage.map((stage) => {
+                                const totalLeadsInPipeline = data.leadsByStage.reduce((sum, s) => sum + s.count, 0) || 1;
                                 const maxCount = Math.max(...data.leadsByStage.map((s) => s.count), 1);
                                 const pct = Math.max((stage.count / maxCount) * 100, 4);
-                                const stageColor = stage.color || "#3b82f6";
+                                const pctOfTotal = Math.round((stage.count / totalLeadsInPipeline) * 100);
+                                const stageColor = stage.color || "#7a9e8a";
 
                                 return (
                                     <div
                                         key={stage.stage_id}
                                         style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "14px",
-                                            padding: "10px 14px",
+                                            padding: "12px 14px",
                                             borderRadius: "10px",
-                                            background: "rgba(255,255,255,0.02)",
-                                            border: "1px solid rgba(255,255,255,0.04)",
+                                            background: "rgba(255,255,255,0.015)",
+                                            border: "0.5px solid rgba(255,255,255,0.04)",
+                                            transition: "background 0.2s ease",
                                         }}
+                                        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+                                        onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.015)"; }}
                                     >
-                                        {/* Color dot */}
-                                        <div
-                                            style={{
-                                                width: "10px",
-                                                height: "10px",
-                                                borderRadius: "50%",
-                                                background: stageColor,
-                                                flexShrink: 0,
-                                                boxShadow: `0 0 6px ${stageColor}40`,
-                                            }}
-                                        />
-
-                                        {/* Stage name */}
-                                        <span
-                                            style={{
-                                                fontSize: "0.82rem",
-                                                fontWeight: 600,
-                                                color: "var(--text-primary)",
-                                                minWidth: "100px",
-                                                flexShrink: 0,
-                                            }}
-                                        >
-                                            {stage.stage_name}
-                                        </span>
+                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+                                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                                {/* Color dot */}
+                                                <div
+                                                    style={{
+                                                        width: "8px",
+                                                        height: "8px",
+                                                        borderRadius: "50%",
+                                                        background: stageColor,
+                                                        flexShrink: 0,
+                                                        boxShadow: `0 0 6px ${stageColor}40`,
+                                                    }}
+                                                />
+                                                {/* Stage name */}
+                                                <span
+                                                    style={{
+                                                        fontSize: "0.78rem",
+                                                        fontWeight: 600,
+                                                        color: "var(--text-primary)",
+                                                    }}
+                                                >
+                                                    {stage.stage_name}
+                                                </span>
+                                            </div>
+                                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                                <span style={{ fontSize: "0.68rem", color: "var(--text-muted)", fontWeight: 500 }}>
+                                                    {pctOfTotal}%
+                                                </span>
+                                                <span
+                                                    style={{
+                                                        fontSize: "0.82rem",
+                                                        fontWeight: 700,
+                                                        color: stageColor,
+                                                        fontVariantNumeric: "tabular-nums",
+                                                    }}
+                                                >
+                                                    {stage.count}
+                                                </span>
+                                            </div>
+                                        </div>
 
                                         {/* Bar */}
                                         <div
                                             style={{
-                                                flex: 1,
-                                                height: "8px",
+                                                height: "6px",
                                                 borderRadius: "100px",
                                                 background: "rgba(255,255,255,0.04)",
                                                 overflow: "hidden",
@@ -1188,25 +1368,11 @@ export default function DashboardHome() {
                                                     height: "100%",
                                                     width: `${pct}%`,
                                                     borderRadius: "100px",
-                                                    background: stageColor,
-                                                    transition: "width 0.6s ease",
+                                                    background: `linear-gradient(90deg, ${stageColor}, ${stageColor}99)`,
+                                                    transition: "width 0.8s cubic-bezier(0.16,1,0.3,1)",
                                                 }}
                                             />
                                         </div>
-
-                                        {/* Count */}
-                                        <span
-                                            style={{
-                                                fontSize: "0.82rem",
-                                                fontWeight: 700,
-                                                color: stageColor,
-                                                minWidth: "28px",
-                                                textAlign: "right",
-                                                flexShrink: 0,
-                                            }}
-                                        >
-                                            {stage.count}
-                                        </span>
                                     </div>
                                 );
                             })}
@@ -1219,7 +1385,7 @@ export default function DashboardHome() {
                                         padding: "12px 14px",
                                         borderRadius: "10px",
                                         background: "rgba(255,255,255,0.02)",
-                                        border: "1px solid rgba(255,255,255,0.04)",
+                                        border: "0.5px solid rgba(255,255,255,0.04)",
                                         display: "flex",
                                         alignItems: "center",
                                         gap: "12px",
@@ -1250,7 +1416,7 @@ export default function DashboardHome() {
                                                 color: src.source === "whatsapp"
                                                     ? "#22c55e"
                                                     : "var(--text-secondary)",
-                                                border: `1px solid ${src.source === "whatsapp" ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.06)"}`,
+                                                border: `0.5px solid ${src.source === "whatsapp" ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.06)"}`,
                                                 textTransform: "capitalize",
                                             }}
                                         >
