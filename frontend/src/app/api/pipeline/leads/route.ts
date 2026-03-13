@@ -44,6 +44,25 @@ export async function POST(req: NextRequest) {
         if (orgCheck) return orgCheck;
 
         const db = getSupabaseAdmin();
+
+        // Prevent duplicate leads with the same phone in the same org
+        if (body.phone && body.phone.trim() !== "") {
+            const { data: existing } = await db
+                .from("leads")
+                .select("id, name")
+                .eq("organization_id", body.organization_id)
+                .eq("phone", body.phone.trim())
+                .limit(1);
+
+            if (existing && existing.length > 0) {
+                return apiError(
+                    `Ya existe un lead con el telefono ${body.phone} (${existing[0].name}). Puedes editarlo desde el pipeline.`,
+                    409,
+                    "DUPLICATE_LEAD"
+                );
+            }
+        }
+
         const { data, error } = await db
             .from("leads")
             .insert({
@@ -51,7 +70,7 @@ export async function POST(req: NextRequest) {
                 stage_id: body.stage_id,
                 name: body.name,
                 email: body.email || "",
-                phone: body.phone || "",
+                phone: body.phone?.trim() || "",
                 budget: body.budget || "",
                 appointment_date: body.appointment_date || "",
                 source: body.source || "manual",
@@ -59,7 +78,17 @@ export async function POST(req: NextRequest) {
             .select()
             .single();
 
-        if (error) throw error;
+        if (error) {
+            // Handle unique constraint violation gracefully
+            if (error.code === "23505") {
+                return apiError(
+                    "Ya existe un lead con este telefono en tu organizacion.",
+                    409,
+                    "DUPLICATE_LEAD"
+                );
+            }
+            throw error;
+        }
         return NextResponse.json({ data }, { status: 201 });
     } catch (err) {
         return serverError(err, "leads:POST");
