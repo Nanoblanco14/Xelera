@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { authenticateRequest, verifyOrgAccess, apiError, serverError } from "@/lib/api-auth";
+import { checkResourceLimit } from "@/lib/plan-limits";
 import type { AgentCreate } from "@/lib/types";
 
 // ── GET /api/agents?org_id=xxx ─────────────────────────────
@@ -44,6 +45,12 @@ export async function POST(req: NextRequest) {
 
         const orgCheck = verifyOrgAccess(auth, body.organization_id);
         if (orgCheck) return orgCheck;
+
+        // ── Plan limit check ──
+        const limit = await checkResourceLimit(body.organization_id, "agents");
+        if (!limit.allowed) {
+            return apiError(limit.message!, 403, "PLAN_LIMIT");
+        }
 
         const db = getSupabaseAdmin();
         const { data, error } = await db

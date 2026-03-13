@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { generateEmbedding, buildProductText } from "@/lib/openai";
 import { authenticateRequest, verifyOrgAccess, apiError, serverError } from "@/lib/api-auth";
+import { checkResourceLimit } from "@/lib/plan-limits";
 import type { ProductCreate } from "@/lib/types";
 
 // ── GET /api/products?org_id=xxx ───────────────────────────
@@ -47,6 +48,12 @@ export async function POST(req: NextRequest) {
 
         const orgCheck = verifyOrgAccess(auth, organization_id);
         if (orgCheck) return orgCheck;
+
+        // ── Plan limit check ──
+        const limit = await checkResourceLimit(organization_id, "products");
+        if (!limit.allowed) {
+            return apiError(limit.message!, 403, "PLAN_LIMIT");
+        }
 
         const productText = buildProductText({ name, description: description || "", attributes: attributes || {} });
         let embedding: number[] | null = null;
