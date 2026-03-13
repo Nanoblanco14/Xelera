@@ -7,6 +7,8 @@ import type {
 import { isAppointmentCriticalIndustry } from "@/lib/industry-templates";
 import { getAvailableSlots, bookAppointment, cancelAppointment, rescheduleAppointment, getBusinessHours, getAppointmentConfig, businessHoursToText, formatChileDate } from "@/lib/appointments";
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
+import { sendAutoTemplate, type AutoTemplateEvent } from "@/lib/auto-templates";
+import { checkResourceLimit } from "@/lib/plan-limits";
 import { z } from "zod/v4";
 
 // ═══════════════════════════════════════════════════════════════
@@ -856,6 +858,13 @@ export async function POST(
         }
 
         if (!leadAlreadyExists) {
+            // ── Plan limit check for new leads ──
+            const leadLimit = await checkResourceLimit(tenantId, "leads");
+            if (!leadLimit.allowed) {
+                console.warn(`[Webhook] Lead limit reached for org ${tenantId} (${leadLimit.current}/${leadLimit.limit})`);
+                return new Response("OK", { status: 200 });
+            }
+
             // First contact — create lead with default initial status.
             // chat_status will be recalculated and updated after history is loaded.
             const { data: firstStage } = await supabaseAdmin
@@ -865,14 +874,19 @@ export async function POST(
                 .order("position", { ascending: true })
                 .limit(1);
 
-            await supabaseAdmin.from("leads").insert({
-                organization_id: tenantId,
-                stage_id: firstStage?.[0]?.id || "",
-                name: "Lead WhatsApp",
-                phone: phoneClean,
-                source: "whatsapp",
-                chat_status: "Contacto inicial",
-            });
+            // Upsert to prevent duplicates from race conditions
+            // (two simultaneous messages from same number)
+            await supabaseAdmin.from("leads").upsert(
+                {
+                    organization_id: tenantId,
+                    stage_id: firstStage?.[0]?.id || "",
+                    name: "Lead WhatsApp",
+                    phone: phoneClean,
+                    source: "whatsapp",
+                    chat_status: "Contacto inicial",
+                },
+                { onConflict: "organization_id,phone", ignoreDuplicates: true }
+            );
         }
 
         // ── 4b. Resolve leadId ────────────────────────────────
@@ -1187,10 +1201,13 @@ ${hoursText}
                             .eq("id", existingLeads[0].id);
                         console.log(`✅ [${t.name}] Lead actualizado: ${nombre_cliente} → ${estado_filtro} [${targetStageLabel}]`);
                     } else {
-                        const { data: newLeadData } = await supabaseAdmin.from("leads").insert({
-                            organization_id: tenantId,
-                            ...leadPayload,
-                        }).select("id").single();
+                        const { data: newLeadData } = await supabaseAdmin.from("leads").upsert(
+                            {
+                                organization_id: tenantId,
+                                ...leadPayload,
+                            },
+                            { onConflict: "organization_id,phone" }
+                        ).select("id").single();
 
                         // Record initial stage placement for new leads
                         if (newLeadData?.id && targetStageId) {
@@ -1210,6 +1227,39 @@ ${hoursText}
                             }
                         }
                         console.log(`✅ [${t.name}] Lead creado: ${nombre_cliente} → ${estado_filtro} [${targetStageLabel}]`);
+
+                        // Auto-template: welcome new lead
+                        if (newLeadData?.id) {
+                            sendAutoTemplate({
+                                orgId: tenantId,
+                                leadId: newLeadData.id,
+                                phone: phoneClean,
+                                event: "welcome_new_lead",
+                                parameters: [nombre_cliente || ""],
+                            }).catch(err => console.error("[AutoTemplate] Welcome error:", err));
+                        }
+                    }
+
+                    // ── Auto-template: stage transition ────────────────
+                    {
+                        const stageEventMap: Record<string, AutoTemplateEvent> = {
+                            "Interesado": "stage_interested",
+                            "Calificado": "stage_qualified",
+                            "Derivado a Humano": "stage_handoff",
+                        };
+                        const autoEvent = stageEventMap[estado_filtro];
+                        const effectiveLeadId = (existingLeads && existingLeads.length > 0)
+                            ? existingLeads[0].id
+                            : undefined;
+                        if (autoEvent && effectiveLeadId) {
+                            sendAutoTemplate({
+                                orgId: tenantId,
+                                leadId: effectiveLeadId,
+                                phone: phoneClean,
+                                event: autoEvent,
+                                parameters: [nombre_cliente || ""],
+                            }).catch(err => console.error("[AutoTemplate] Stage error:", err));
+                        }
                     }
 
                     // ── In-app notification for human handoff ─────────
@@ -1351,9 +1401,16 @@ ${hoursText}
                             await supabaseAdmin.from("leads").update({ name: args.nombre_cliente }).eq("id", leadId!);
                         }
 
-                        // Send confirmation WhatsApp
-                        const confirmMsg = `✅ *Cita confirmada*\nServicio: ${args.servicio_nombre}\nFecha: ${formatChileDate(startTime)}\n\n¡Te esperamos!\n\nPara cancelar o cambiar tu cita, escribe "cancelar cita" o "cambiar cita".`;
-                        await sendWhatsAppMessage(tenantId, phoneClean, confirmMsg);
+                        // Send confirmation — try template first, fallback to text
+                        const confirmFallback = `✅ *Cita confirmada*\nServicio: ${args.servicio_nombre}\nFecha: ${formatChileDate(startTime)}\n\n¡Te esperamos!\n\nPara cancelar o cambiar tu cita, escribe "cancelar cita" o "cambiar cita".`;
+                        sendAutoTemplate({
+                            orgId: tenantId,
+                            leadId: leadId!,
+                            phone: phoneClean,
+                            event: "appointment_confirmed",
+                            parameters: [args.nombre_cliente || "", args.servicio_nombre || "", formatChileDate(startTime)],
+                            fallbackText: confirmFallback,
+                        }).catch(err => console.error("[AutoTemplate] Confirm error:", err));
 
                         currentTurnMessages.push({
                             role: "tool",
@@ -1406,8 +1463,15 @@ ${hoursText}
                                 });
                             } else {
                                 await cancelAppointment(appt.id, tenantId, args.motivo || "Cancelada por el cliente via WhatsApp");
-                                const cancelMsg = `❌ Tu cita del ${formatChileDate(appt.start_time)} ha sido cancelada.\n\nSi deseas agendar una nueva cita, ¡estoy aquí para ayudarte!`;
-                                await sendWhatsAppMessage(tenantId, phoneClean, cancelMsg);
+                                const cancelFallback = `❌ Tu cita del ${formatChileDate(appt.start_time)} ha sido cancelada.\n\nSi deseas agendar una nueva cita, ¡estoy aquí para ayudarte!`;
+                                sendAutoTemplate({
+                                    orgId: tenantId,
+                                    leadId: leadId!,
+                                    phone: phoneClean,
+                                    event: "appointment_cancelled",
+                                    parameters: [formatChileDate(appt.start_time)],
+                                    fallbackText: cancelFallback,
+                                }).catch(err => console.error("[AutoTemplate] Cancel error:", err));
                                 toolResultContent = JSON.stringify({
                                     exito: true,
                                     mensaje: "Cita cancelada exitosamente.",
@@ -1439,8 +1503,15 @@ ${hoursText}
                                 });
 
                                 if (result.success) {
-                                    const rescheduleMsg = `🔄 *Cita reprogramada*\nNueva fecha: ${formatChileDate(args.nueva_fecha_hora)}\n\n¡Te esperamos!`;
-                                    await sendWhatsAppMessage(tenantId, phoneClean, rescheduleMsg);
+                                    const rescheduleFallback = `🔄 *Cita reprogramada*\nNueva fecha: ${formatChileDate(args.nueva_fecha_hora)}\n\n¡Te esperamos!`;
+                                    sendAutoTemplate({
+                                        orgId: tenantId,
+                                        leadId: leadId!,
+                                        phone: phoneClean,
+                                        event: "appointment_rescheduled",
+                                        parameters: [formatChileDate(args.nueva_fecha_hora)],
+                                        fallbackText: rescheduleFallback,
+                                    }).catch(err => console.error("[AutoTemplate] Reschedule error:", err));
                                     toolResultContent = JSON.stringify({
                                         exito: true,
                                         mensaje: `Cita reprogramada para ${formatChileDate(args.nueva_fecha_hora)}.`,
