@@ -1108,6 +1108,7 @@ export default function DashboardHome() {
                                 <div
                                     key={lead.id}
                                     className="dash-lead-row"
+                                    onClick={() => router.push(`/dashboard/inbox?lead=${lead.id}`)}
                                     style={{
                                         display: "flex",
                                         alignItems: "center",
@@ -1117,7 +1118,7 @@ export default function DashboardHome() {
                                         background: "rgba(255,255,255,0.015)",
                                         border: "0.5px solid rgba(255,255,255,0.04)",
                                         transition: "all 0.25s cubic-bezier(0.16,1,0.3,1)",
-                                        cursor: "default",
+                                        cursor: "pointer",
                                     }}
                                     onMouseEnter={(e) => {
                                         e.currentTarget.style.background = "rgba(122,158,138,0.04)";

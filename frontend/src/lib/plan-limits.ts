@@ -120,7 +120,7 @@ const RESOURCE_TABLE_MAP: Record<LimitedResource, string> = {
     agents: "agents",
     products: "products",
     leads: "leads",
-    conversations: "conversations",
+    conversations: "lead_messages",
     team_members: "org_members",
 };
 
@@ -174,19 +174,36 @@ export async function checkResourceLimit(
     const max = limits[maxKey] as number;
 
     // 2. Count current resources
-    const table = RESOURCE_TABLE_MAP[resource];
-    const { count, error } = await db
-        .from(table)
-        .select("id", { count: "exact", head: true })
-        .eq("organization_id", orgId);
+    let current = 0;
 
-    if (error) {
-        console.error(`[PlanLimits] Count error for ${resource}:`, error.message);
-        // On error, allow (don't block business operations)
-        return { allowed: true, current: 0, limit: max, resource, plan };
+    if (resource === "conversations") {
+        // Conversaciones = leads unicos que tienen al menos 1 mensaje
+        const { count, error } = await db
+            .rpc("count_org_conversations", { org_id: orgId });
+        if (error) {
+            // Fallback: contar leads con source = 'whatsapp' (tienen conversacion)
+            const { count: fallbackCount } = await db
+                .from("leads")
+                .select("id", { count: "exact", head: true })
+                .eq("organization_id", orgId)
+                .eq("source", "whatsapp");
+            current = fallbackCount || 0;
+        } else {
+            current = count || 0;
+        }
+    } else {
+        const table = RESOURCE_TABLE_MAP[resource];
+        const { count, error } = await db
+            .from(table)
+            .select("id", { count: "exact", head: true })
+            .eq("organization_id", orgId);
+
+        if (error) {
+            console.error(`[PlanLimits] Count error for ${resource}:`, error.message);
+            return { allowed: true, current: 0, limit: max, resource, plan };
+        }
+        current = count || 0;
     }
-
-    const current = count || 0;
     const allowed = current < max;
 
     return {
@@ -256,6 +273,15 @@ export async function getOrgUsage(orgId: string): Promise<{
 
     const counts = await Promise.all(
         resources.map(async (resource) => {
+            if (resource === "conversations") {
+                // Contar leads con source='whatsapp' (tienen conversacion activa)
+                const { count } = await db
+                    .from("leads")
+                    .select("id", { count: "exact", head: true })
+                    .eq("organization_id", orgId)
+                    .eq("source", "whatsapp");
+                return { resource, count: count || 0 };
+            }
             const table = RESOURCE_TABLE_MAP[resource];
             const { count } = await db
                 .from(table)

@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState, useCallback, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { useOrg } from "@/lib/org-context";
 import { supabase } from "@/lib/supabase";
 import { motion, AnimatePresence } from "framer-motion";
@@ -87,6 +88,7 @@ function formatDate(iso: string): string {
 // ── Main Page ─────────────────────────────────────────────
 export default function InboxPage() {
     const { organization, userEmail } = useOrg();
+    const searchParams = useSearchParams();
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
@@ -329,6 +331,15 @@ export default function InboxPage() {
     useEffect(() => {
         loadConversations();
     }, [loadConversations]);
+
+    // Auto-seleccionar lead si viene desde query param (?lead=uuid)
+    useEffect(() => {
+        const leadParam = searchParams.get("lead");
+        if (leadParam && !selectedLeadId && conversations.length > 0) {
+            const found = conversations.find((c) => c.lead_id === leadParam);
+            if (found) setSelectedLeadId(found.lead_id);
+        }
+    }, [searchParams, conversations, selectedLeadId]);
 
     // ── Load messages for selected lead ───────────────────
     const loadMessages = useCallback(async (leadId: string) => {

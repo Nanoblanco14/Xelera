@@ -1023,6 +1023,7 @@ export default function PipelinePage() {
                         overflowY: "hidden",
                         paddingBottom: "16px",
                         paddingTop: "2px",
+                        paddingRight: "20px",
                     }}
                 >
                     {(isFiltering ? filteredStages : stages).map((stage, idx) => {
