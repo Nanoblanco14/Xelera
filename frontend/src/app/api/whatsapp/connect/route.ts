@@ -228,7 +228,7 @@ export async function POST(req: NextRequest) {
         }
 
         // ── Step 4: Save to Supabase ──────────────────────────
-        const verifyToken = `miagente_vt_${crypto.randomUUID().split("-")[0]}`;
+        const verifyToken = `xelera_vt_${crypto.randomUUID().split("-")[0]}`;
         const webhookUrl = buildWebhookUrl(req, org_id);
 
         try {

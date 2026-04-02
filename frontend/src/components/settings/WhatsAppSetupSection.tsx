@@ -83,6 +83,7 @@ export default function WhatsAppSetupSection({
     const wa = useWhatsAppConnection(orgId);
     const [copiedField, setCopiedField] = useState<string | null>(null);
     const [showManual, setShowManual] = useState(false);
+    const [showGuide, setShowGuide] = useState(false);
     const [showFbModal, setShowFbModal] = useState(false);
     const [fbSdkReady, setFbSdkReady] = useState(false);
     const [embeddedMode, setEmbeddedMode] = useState(false);
@@ -495,6 +496,71 @@ export default function WhatsAppSetupSection({
                                         </>
                                     )}
                                 </button>
+                            )}
+
+                            {/* Guía paso a paso para Meta Business */}
+                            {!showManual && (
+                                <div style={{
+                                    marginTop: "24px",
+                                    padding: "16px 20px",
+                                    borderRadius: "12px",
+                                    background: "rgba(122,158,138,0.04)",
+                                    border: "1px solid rgba(122,158,138,0.1)",
+                                    textAlign: "left",
+                                    maxWidth: "420px",
+                                    marginLeft: "auto",
+                                    marginRight: "auto",
+                                }}>
+                                    <button
+                                        onClick={() => setShowGuide((prev: boolean) => !prev)}
+                                        style={{
+                                            display: "flex", alignItems: "center", gap: "8px", width: "100%",
+                                            background: "none", border: "none", cursor: "pointer", padding: 0,
+                                            color: "var(--accent)", fontSize: "0.8rem", fontWeight: 600,
+                                        }}
+                                    >
+                                        <Info size={14} />
+                                        ¿Primera vez? Guia rapida para conectar WhatsApp
+                                        <ChevronDown size={14} style={{
+                                            marginLeft: "auto",
+                                            transform: showGuide ? "rotate(180deg)" : "rotate(0)",
+                                            transition: "transform 0.2s",
+                                        }} />
+                                    </button>
+                                    {showGuide && (
+                                        <div style={{ marginTop: "14px", display: "flex", flexDirection: "column", gap: "12px" }}>
+                                            {[
+                                                { n: "1", title: "Crea una cuenta en Meta Business", desc: "Ve a business.facebook.com y registra tu empresa. Es gratis.", link: "https://business.facebook.com" },
+                                                { n: "2", title: "Crea una app en Meta for Developers", desc: "Entra a developers.facebook.com, crea una app tipo 'Business' y agrega el producto 'WhatsApp'.", link: "https://developers.facebook.com/apps" },
+                                                { n: "3", title: "Configura tu numero de telefono", desc: "En tu app → WhatsApp → API Setup, agrega y verifica tu numero de telefono." },
+                                                { n: "4", title: "Haz clic en 'Conectar' arriba", desc: "El boton verde te guiara por el proceso de vinculacion automaticamente." },
+                                            ].map((step) => (
+                                                <div key={step.n} style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
+                                                    <span style={{
+                                                        flexShrink: 0, width: "22px", height: "22px", borderRadius: "50%",
+                                                        background: "rgba(122,158,138,0.15)", color: "var(--accent)",
+                                                        display: "flex", alignItems: "center", justifyContent: "center",
+                                                        fontSize: "0.7rem", fontWeight: 700,
+                                                    }}>{step.n}</span>
+                                                    <div>
+                                                        <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--text-primary)", marginBottom: "2px" }}>{step.title}</div>
+                                                        <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", lineHeight: 1.4 }}>
+                                                            {step.desc}
+                                                            {step.link && (
+                                                                <a href={step.link} target="_blank" rel="noopener noreferrer" style={{
+                                                                    marginLeft: "4px", color: "var(--accent)", textDecoration: "none",
+                                                                    display: "inline-flex", alignItems: "center", gap: "2px",
+                                                                }}>
+                                                                    Ir <ExternalLink size={10} />
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             )}
 
                             {/* Advanced config link */}
