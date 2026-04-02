@@ -337,11 +337,52 @@ export default function DashboardHome() {
         loadDashboard();
     }, [loadDashboard]);
 
-    /* ── Loading ──────────────────────────────────────────── */
+    /* ── Loading skeleton ────────────────────────────────── */
     if (loading) {
+        const SkeletonBox = ({ w = "100%", h = "20px", r = "8px", mb = "0" }: { w?: string; h?: string; r?: string; mb?: string }) => (
+            <div style={{ width: w, height: h, borderRadius: r, background: "linear-gradient(90deg, rgba(122,158,138,0.06) 25%, rgba(122,158,138,0.12) 50%, rgba(122,158,138,0.06) 75%)", backgroundSize: "200% 100%", animation: "shimmer 1.5s ease-in-out infinite", marginBottom: mb }} />
+        );
         return (
-            <div className="flex items-center justify-center py-32">
-                <Loader2 size={22} className="animate-spin" style={{ color: "var(--text-muted)" }} />
+            <div className="animate-in" style={{ padding: "0 0 40px" }}>
+                <style>{`@keyframes shimmer { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }`}</style>
+                {/* Header skeleton */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "32px" }}>
+                    <div>
+                        <SkeletonBox w="280px" h="32px" mb="8px" />
+                        <SkeletonBox w="200px" h="16px" />
+                    </div>
+                    <SkeletonBox w="100px" h="36px" r="10px" />
+                </div>
+                {/* Checklist skeleton */}
+                <div style={{ background: "rgba(122,158,138,0.03)", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px", marginBottom: "32px" }}>
+                    <SkeletonBox w="220px" h="20px" mb="12px" />
+                    <SkeletonBox w="100%" h="8px" r="4px" mb="16px" />
+                    <div style={{ display: "flex", gap: "12px" }}>
+                        {[1,2,3,4,5].map(i => <SkeletonBox key={i} w="20%" h="70px" r="12px" />)}
+                    </div>
+                </div>
+                {/* Metrics skeleton */}
+                <SkeletonBox w="80px" h="14px" mb="16px" />
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginBottom: "32px" }}>
+                    {[1,2,3,4].map(i => (
+                        <div key={i} style={{ background: "rgba(122,158,138,0.03)", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px" }}>
+                            <SkeletonBox w="120px" h="14px" mb="16px" />
+                            <SkeletonBox w="60px" h="36px" mb="8px" />
+                            <SkeletonBox w="160px" h="12px" />
+                        </div>
+                    ))}
+                </div>
+                {/* Bottom sections skeleton */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                    {[1,2].map(i => (
+                        <div key={i} style={{ background: "rgba(122,158,138,0.03)", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px" }}>
+                            <SkeletonBox w="160px" h="20px" mb="20px" />
+                            <SkeletonBox w="100%" h="48px" r="10px" mb="12px" />
+                            <SkeletonBox w="100%" h="48px" r="10px" mb="12px" />
+                            <SkeletonBox w="80%" h="48px" r="10px" />
+                        </div>
+                    ))}
+                </div>
             </div>
         );
     }
