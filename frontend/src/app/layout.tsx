@@ -16,7 +16,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "MiAgente — Agentes de Ventas IA para WhatsApp",
+  title: "Xelera — Agentes de Ventas IA para WhatsApp",
   description: "Automatiza tu atención al cliente con un agente de inteligencia artificial en WhatsApp. Agenda citas, filtra prospectos y vende 24/7 sin intervención humana.",
 };
 

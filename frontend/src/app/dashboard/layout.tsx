@@ -255,7 +255,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                     lineHeight: 1,
                                     textShadow: "0 0 8px rgba(122,158,138,0.3)",
                                 }}>
-                                    M
+                                    X
                                 </span>
                             </div>
                         </div>

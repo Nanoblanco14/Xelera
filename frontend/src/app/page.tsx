@@ -480,12 +480,12 @@ export default function LandingPage() {
                             background: "linear-gradient(135deg, #7a9e8a 0%, #5d8270 100%)",
                             display: "flex", alignItems: "center", justifyContent: "center",
                             fontSize: "1rem", fontWeight: 700, color: "var(--bg-deep)",
-                        }}>M</div>
+                        }}>X</div>
                         <span style={{
                             fontFamily: "'Playfair Display', Georgia, serif",
                             fontSize: "1.15rem", fontWeight: 400,
                             color: "var(--text-primary)", letterSpacing: "-0.02em",
-                        }}>MiAgente</span>
+                        }}>Xelera</span>
                     </Link>
 
                     <div style={{ display: "flex", gap: "32px", alignItems: "center" }} className="nav-links-desktop">
@@ -569,7 +569,7 @@ export default function LandingPage() {
                     textTransform: "uppercase", letterSpacing: "0.08em",
                     color: "var(--text-muted)", marginBottom: "24px",
                 }}>
-                    +2,400 equipos automatizando con MiAgente
+                    +2,400 equipos automatizando con Xelera
                 </p>
                 <div style={{ overflow: "hidden" }}>
                     <div className="marquee-track">
@@ -720,7 +720,7 @@ export default function LandingPage() {
                                 <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#2e2a18" }} />
                                 <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#1a2820" }} />
                             </div>
-                            <span style={{ fontSize: "11px", color: "var(--text-ghost)", letterSpacing: "0.07em" }}>miagente.app/dashboard</span>
+                            <span style={{ fontSize: "11px", color: "var(--text-ghost)", letterSpacing: "0.07em" }}>xelera.ai/dashboard</span>
                             <div style={{ width: "50px" }} />
                         </div>
 
@@ -1170,11 +1170,11 @@ export default function LandingPage() {
                                 background: "linear-gradient(135deg, #7a9e8a 0%, #5d8270 100%)",
                                 display: "flex", alignItems: "center", justifyContent: "center",
                                 fontSize: "0.85rem", fontWeight: 700, color: "var(--bg-deep)",
-                            }}>M</div>
+                            }}>X</div>
                             <span style={{
                                 fontFamily: "'Playfair Display', serif", fontSize: "1.05rem",
                                 fontWeight: 400, color: "var(--text-primary)",
-                            }}>MiAgente</span>
+                            }}>Xelera</span>
                         </div>
                         <p style={{ color: "var(--text-muted)", fontSize: "13px", lineHeight: 1.75, maxWidth: "240px" }}>
                             Agentes de IA autónomos para tu negocio. Automatiza ventas, soporte y operaciones.
@@ -1227,7 +1227,7 @@ export default function LandingPage() {
                     flexWrap: "wrap", gap: "12px",
                 }}>
                     <span style={{ color: "var(--text-ghost)", fontSize: "13px" }}>
-                        © {new Date().getFullYear()} MiAgente. Todos los derechos reservados.
+                        © {new Date().getFullYear()} Xelera. Todos los derechos reservados.
                     </span>
                     <div style={{ display: "flex", gap: "16px" }}>
                         {["X", "Li", "Ig"].map((s) => (

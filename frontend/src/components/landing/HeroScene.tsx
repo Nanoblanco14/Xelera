@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowRight, Play, Send, Bot, Headphones, GraduationCap } from "lucide-react";
 
 /* ══════════════════════════════════════════════════════════════
-   MiAgente — Ultra-Premium Hero Scene
+   Xelera — Ultra-Premium Hero Scene
    Built entirely in React/CSS. No images needed.
    Techniques: glassmorphism, aurora orbs, beam sweeps, film grain,
    mouse-parallax, staggered entrance, typing animation, sparklines
@@ -388,7 +388,7 @@ export default function HeroScene() {
                                 fontSize: "11px", color: "var(--text-muted)",
                                 fontWeight: 500, letterSpacing: "0.03em",
                             }}>
-                                MiAgente — Pipeline IA
+                                Xelera — Pipeline IA
                             </span>
                             <div style={{ width: "50px" }} />
                         </div>
