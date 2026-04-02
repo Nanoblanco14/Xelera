@@ -46,6 +46,8 @@ export interface IndustryTemplate {
     defaultWelcome: string;
     /** Default appointment config for this industry (null = no appointments) */
     appointmentConfig: IndustryAppointmentConfig | null;
+    /** Default FAQs pre-populated during onboarding */
+    defaultFaqs: { question: string; answer: string }[];
 }
 
 export const INDUSTRY_TEMPLATES: IndustryTemplate[] = [
@@ -115,6 +117,13 @@ TONO: Cálida, empática, como una amiga que trabaja en el mejor salón. Usa emo
                 type: "select",
                 options: ["Disponible", "No Disponible"],
             },
+        ],
+        defaultFaqs: [
+            { question: "¿Cuál es el horario de atención?", answer: "Nuestro horario es de lunes a sábado de 9:00 a 19:00 hrs. Los domingos estamos cerrados." },
+            { question: "¿Necesito agendar cita o puedo llegar sin reserva?", answer: "Recomendamos agendar cita para garantizar tu horario. Puedo ayudarte a reservar ahora mismo." },
+            { question: "¿Qué métodos de pago aceptan?", answer: "Aceptamos efectivo, tarjeta de débito/crédito y transferencia bancaria." },
+            { question: "¿Puedo cancelar o reagendar mi cita?", answer: "Sí, puedes cancelar o reagendar con al menos 2 horas de anticipación sin costo." },
+            { question: "¿Tienen estacionamiento?", answer: "Sí, contamos con estacionamiento gratuito para clientes." },
         ],
     },
 
@@ -208,6 +217,14 @@ TONO: Exclusivo y confiable pero cercano. Como un asesor premium que te hace sen
                 options: ["Disponible", "Reservado", "Vendido", "Arrendado"],
             },
         ],
+        defaultFaqs: [
+            { question: "¿Qué documentos necesito para comprar/arrendar?", answer: "Para compra: cédula de identidad, liquidaciones de sueldo y pre-aprobación bancaria. Para arriendo: cédula, contrato de trabajo y últimas 3 liquidaciones." },
+            { question: "¿Puedo agendar una visita a la propiedad?", answer: "¡Por supuesto! Puedo coordinarte una visita en el horario que más te acomode. ¿Qué día te sirve?" },
+            { question: "¿Aceptan crédito hipotecario?", answer: "Sí, trabajamos con todos los bancos. También te podemos orientar en el proceso de pre-aprobación." },
+            { question: "¿Cuánto es la comisión o gastos adicionales?", answer: "Los gastos dependen del tipo de operación. En la visita te entregamos un desglose completo sin compromiso." },
+            { question: "¿Las propiedades incluyen estacionamiento y bodega?", answer: "Varía según la propiedad. Puedo verificar los detalles específicos de la que te interesa." },
+            { question: "¿Hacen visitas virtuales?", answer: "Sí, podemos coordinar un recorrido virtual por videollamada si no puedes asistir presencialmente." },
+        ],
     },
 
     // ── E-commerce / Venta de Productos ──────────────────────
@@ -281,6 +298,13 @@ TONO: Entusiasta pero honesto. Cercano, como un amigo con buen gusto que te ayud
                 placeholder: "Ej: S, M, L, XL",
             },
         ],
+        defaultFaqs: [
+            { question: "¿Cuánto demora el envío?", answer: "El envío estándar demora 3-5 días hábiles. Envío express disponible en 24-48 hrs con costo adicional." },
+            { question: "¿Cuál es el costo de envío?", answer: "El envío es gratuito en compras sobre $30.000. Para montos menores, el costo varía según tu ubicación." },
+            { question: "¿Aceptan cambios o devoluciones?", answer: "Sí, tienes 15 días desde la recepción para cambios o devoluciones. El producto debe estar sin uso y con etiquetas." },
+            { question: "¿Qué métodos de pago aceptan?", answer: "Aceptamos tarjeta de crédito/débito, transferencia bancaria y pago contra entrega en zonas seleccionadas." },
+            { question: "¿Cómo puedo rastrear mi pedido?", answer: "Te enviaremos un número de seguimiento por WhatsApp apenas despachemos tu pedido." },
+        ],
     },
 
     // ── En Blanco ─────────────────────────────────────────────
@@ -348,6 +372,7 @@ TONO: Amable, profesional y directo. Mensajes cortos — esto es WhatsApp, no un
                 placeholder: "Ej: Electrónica, Ropa, Comida",
             },
         ],
+        defaultFaqs: [],
     },
 ];
 

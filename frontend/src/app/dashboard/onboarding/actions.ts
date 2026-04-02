@@ -61,10 +61,21 @@ export async function applyOnboardingTemplate(
 
     const currentSettings = (org?.settings as Record<string, unknown>) || {};
 
+    // Guardar template + FAQs precargadas por industria
+    const defaultFaqs = (template.defaultFaqs || []).map((f) => ({
+        id: crypto.randomUUID(),
+        question: f.question,
+        answer: f.answer,
+    }));
+
     await admin
         .from("organizations")
         .update({
-            settings: { ...currentSettings, industry_template: templateId },
+            settings: {
+                ...currentSettings,
+                industry_template: templateId,
+                ...(defaultFaqs.length > 0 && !currentSettings.faqs ? { faqs: defaultFaqs } : {}),
+            },
         })
         .eq("id", orgId);
 
