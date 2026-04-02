@@ -410,6 +410,35 @@ export default function InboxPage() {
         };
     }, [selectedLeadId, loadConversations]);
 
+    // ── Polling: mensajes del chat activo cada 3s ─────────
+    useEffect(() => {
+        if (!selectedLeadId) return;
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch(`/api/pipeline/leads/${selectedLeadId}/messages`);
+                const { data } = await res.json();
+                if (data) {
+                    setMessages((prev) => {
+                        // Comparar largo + último ID para detectar cambios reales
+                        const lastNew = data[data.length - 1]?.id;
+                        const lastPrev = prev[prev.length - 1]?.id;
+                        if (data.length === prev.length && lastNew === lastPrev) return prev;
+                        return data;
+                    });
+                }
+            } catch { /* silenciar errores de polling */ }
+        }, 3000);
+        return () => clearInterval(interval);
+    }, [selectedLeadId]);
+
+    // ── Polling: lista de conversaciones cada 8s ──────────
+    useEffect(() => {
+        const interval = setInterval(() => {
+            loadConversations();
+        }, 8000);
+        return () => clearInterval(interval);
+    }, [loadConversations]);
+
     // ── Toggle bot pause ──────────────────────────────────
     const toggleBotPause = async (leadId: string, currentPaused: boolean) => {
         try {
