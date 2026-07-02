@@ -24,6 +24,16 @@ import { notifyOwnerHotLead } from "@/lib/owner-alerts";
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
 import { logOpenAiCompletionUsage } from "@/lib/ai-usage";
 import { captureError } from "@/lib/monitoring";
+import {
+    getLeadFacts,
+    maybeUpdateRollingSummary,
+    maybeExtractMemories,
+    saveCrmDerivedFacts,
+} from "@/lib/lead-memory";
+import {
+    orgHasKnowledgeIndex,
+    retrieveKnowledge,
+} from "@/lib/knowledge-indexer";
 import { z } from "zod/v4";
 
 // ═══════════════════════════════════════════════════════════════
@@ -280,7 +290,11 @@ function buildSystemPrompt(
     catalogText?: string | null,
     scrapedContext?: string | null,
     industry?: string | null,
-    faqEntries?: FaqEntry[] | null
+    faqEntries?: FaqEntry[] | null,
+    // ── Fase 2: memoria + RAG unificado ──
+    conversationSummary?: string | null,
+    memoryFacts?: string[] | null,
+    retrievedKnowledge?: string | null
 ): string {
     const now = new Date();
     const chileDate = now.toLocaleDateString("es-CL", {
@@ -344,8 +358,31 @@ ${faqEntries.map((f, i) => `${i + 1}. P: ${f.question}\n   R: ${f.answer}`).join
 IMPORTANTE: Estas respuestas son la fuente de verdad del negocio. No inventes información distinta a lo indicado aquí.`
         : "";
 
+    // ── RAG unificado: conocimiento recuperado para ESTE turno ──
+    // (cuando existe, reemplaza a scraped/faq completos)
+    const retrievedBlock = retrievedKnowledge
+        ? `\n\n═══ CONOCIMIENTO DEL NEGOCIO RELEVANTE PARA ESTA CONSULTA ═══
+Fragmentos oficiales (FAQs y material de la empresa) seleccionados por relevancia semántica con el mensaje del cliente:
+${retrievedKnowledge}
+Estas son respuestas oficiales del negocio: úsalas como fuente de verdad y adáptalas al tono de la conversación. Si la consulta no se responde con estos fragmentos, NO inventes — ofrece derivar a un asesor.`
+        : "";
+
+    // ── Fase 2: memoria de largo plazo del cliente ─────────────
+    const memoryBlock = memoryFacts && memoryFacts.length > 0
+        ? `\n\n═══ MEMORIA DEL CLIENTE (hechos confirmados en conversaciones previas) ═══
+${memoryFacts.map((f) => `• ${f}`).join("\n")}
+Usa estos datos con naturalidad: saluda por su nombre si lo conoces, no vuelvas a preguntar lo que ya sabes, y demuestra que lo recuerdas ("la última vez me comentaste que..."). NUNCA recites esta lista literalmente.`
+        : "";
+
+    // ── Fase 2: resumen de la conversación previa (capa media) ──
+    const summaryBlock = conversationSummary
+        ? `\n\n═══ RESUMEN DE LA CONVERSACIÓN PREVIA ═══
+${conversationSummary}
+(Los mensajes más recientes vienen a continuación en el historial. Este resumen cubre lo anterior.)`
+        : "";
+
     // The tenant's custom prompt is the core; we inject everything around it
-    return `${tenantSystemPrompt}${toneBlock}${escalationBlock}${stagesBlock}${catalogBlock}${knowledgeBlock}${faqBlock}
+    return `${tenantSystemPrompt}${toneBlock}${escalationBlock}${stagesBlock}${catalogBlock}${knowledgeBlock}${faqBlock}${retrievedBlock}${memoryBlock}${summaryBlock}
 
 ═══ FECHA Y HORA ACTUAL ═══
 📅 Hoy es: ${chileDate}
@@ -756,7 +793,11 @@ export async function processLeadTurn(
         // humano tomó el chat o hubo un handoff en el lote anterior).
         let leadId: string | null = params.leadId ?? null;
         let isBotPaused = false;
+        let conversationSummary: string | null = null;
 
+        // Nota: conversation_summary puede no existir aún (migración
+        // Fase 2 pendiente) — el select con columna faltante falla,
+        // por eso se pide en una consulta separada tolerante.
         if (leadId) {
             const { data: leadRow } = await supabaseAdmin
                 .from("leads")
@@ -774,6 +815,16 @@ export async function processLeadTurn(
                 .maybeSingle();
             leadId = leadRow?.id ?? null;
             isBotPaused = !!leadRow?.is_bot_paused;
+        }
+
+        if (leadId) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data: summaryRow } = await (supabaseAdmin as any)
+                .from("leads")
+                .select("conversation_summary")
+                .eq("id", leadId)
+                .maybeSingle();
+            conversationSummary = summaryRow?.conversation_summary ?? null;
         }
 
         if (isBotPaused) {
@@ -847,23 +898,37 @@ export async function processLeadTurn(
         // similarity (pgvector) to keep the prompt lean.
         const RAG_CATALOG_THRESHOLD = 20;
 
-        let catalogText: string;
-        if (!catalogItems || catalogItems.length === 0) {
-            catalogText =
-                "[CATÁLOGO ACTUAL: Vacío. No tienes productos, propiedades ni servicios para ofrecer en este momento. " +
-                "Si el cliente te solicita algo, debes informarle con amabilidad que no hay disponibilidad actualmente " +
-                "y ofrecerte a avisarle cuando haya novedades. NUNCA inventes ni ofrezcas algo que no exista aquí.]";
-        } else if (catalogItems.length > RAG_CATALOG_THRESHOLD) {
-            // ── Semantic pre-filter (RAG) for large catalogs ──
-            catalogText = formatCatalogItems(catalogItems); // fallback: full catalog
+        // ── Fase 2: UN solo embedding por turno, compartido entre
+        // el RAG de catálogo y el de conocimiento (FAQs/scraping) ──
+        const largeCatalog = !!(catalogItems && catalogItems.length > RAG_CATALOG_THRESHOLD);
+        const hasKnowledgeIndex = await orgHasKnowledgeIndex(tenantId);
+
+        let turnEmbedding: number[] | null = null;
+        if (largeCatalog || hasKnowledgeIndex) {
             try {
                 const embRes = await tenantOpenai.embeddings.create({
                     model: "text-embedding-3-small",
                     input: incomingMsg.slice(0, 2000),
                 });
                 logOpenAiCompletionUsage(tenantId, leadId, "text-embedding-3-small", "embedding", embRes.usage);
+                turnEmbedding = embRes.data[0].embedding;
+            } catch (embErr) {
+                console.warn(`⚠️ [${t.name}] Embedding del turno falló — RAG desactivado para este mensaje:`, embErr);
+            }
+        }
+
+        // ── Catálogo: completo si es chico; top-12 semántico si es grande ──
+        let catalogText: string;
+        if (!catalogItems || catalogItems.length === 0) {
+            catalogText =
+                "[CATÁLOGO ACTUAL: Vacío. No tienes productos, propiedades ni servicios para ofrecer en este momento. " +
+                "Si el cliente te solicita algo, debes informarle con amabilidad que no hay disponibilidad actualmente " +
+                "y ofrecerte a avisarle cuando haya novedades. NUNCA inventes ni ofrezcas algo que no exista aquí.]";
+        } else if (largeCatalog && turnEmbedding) {
+            catalogText = formatCatalogItems(catalogItems); // fallback: full catalog
+            try {
                 const { data: matches } = await supabaseAdmin.rpc("match_products", {
-                    query_embedding: JSON.stringify(embRes.data[0].embedding),
+                    query_embedding: JSON.stringify(turnEmbedding),
                     match_org_id: tenantId,
                     match_threshold: 0.25,
                     match_count: 12,
@@ -876,19 +941,44 @@ export async function processLeadTurn(
                         formatCatalogItems(matches);
                 }
             } catch (ragErr) {
-                console.warn(`⚠️ [${t.name}] RAG falló, usando catálogo completo:`, ragErr);
+                console.warn(`⚠️ [${t.name}] RAG de catálogo falló, usando catálogo completo:`, ragErr);
             }
         } else {
             catalogText = formatCatalogItems(catalogItems);
         }
 
-        const scrapedContext: string | null = agentWithContext?.scraped_context ?? null;
+        // ── Conocimiento (FAQs + scraping): RAG si hay índice;
+        // si no, modo legacy (inyección completa) ──
+        let retrievedKnowledge: string | null = null;
+        if (hasKnowledgeIndex && turnEmbedding) {
+            const chunks = await retrieveKnowledge(tenantId, turnEmbedding, 6);
+            if (chunks && chunks.length > 0) {
+                retrievedKnowledge = chunks
+                    .map((c, i) => `${i + 1}. [${c.source_type === "faq" ? "FAQ oficial" : "Info de la empresa"}] ${c.content}`)
+                    .join("\n\n");
+            } else if (chunks) {
+                // Índice existe pero nada relevante para este turno —
+                // no inyectar nada (el prompt ya instruye no inventar)
+                retrievedKnowledge = "(Ningún fragmento supera el umbral de relevancia para esta consulta. Si el cliente pregunta algo específico del negocio que no sepas, ofrece derivar a un asesor.)";
+            }
+        }
+
+        const scrapedContext: string | null =
+            retrievedKnowledge !== null ? null : (agentWithContext?.scraped_context ?? null);
+
+        // ── Fase 2: memoria de largo plazo del lead ──
+        const memoryFacts: string[] = leadId
+            ? (await getLeadFacts(leadId)).map((f) => f.fact)
+            : [];
 
         // ── 6. Build system prompt and call OpenAI ────────────
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const tenantSettings = (tenant as any)?.settings || {};
         const industryId: string | null = tenantSettings.industry_template ?? null;
-        const faqEntries: FaqEntry[] | null = tenantSettings.faqs ?? null;
+        // Con RAG activo, las FAQs completas NO van al prompt — los
+        // fragmentos relevantes ya vienen en retrievedKnowledge.
+        const faqEntries: FaqEntry[] | null =
+            retrievedKnowledge !== null ? null : (tenantSettings.faqs ?? null);
         let systemPrompt = buildSystemPrompt(
             fullPrompt,
             agent?.conversation_tone,
@@ -897,7 +987,10 @@ export async function processLeadTurn(
             catalogText,
             scrapedContext,
             industryId,
-            faqEntries
+            faqEntries,
+            conversationSummary,
+            memoryFacts,
+            retrievedKnowledge
         );
 
         // ── 6a. Load appointment config & inject appointment prompt ──
@@ -1153,6 +1246,17 @@ ${hoursText}
                                 parameters: [nombre_cliente || ""],
                             }).catch(err => console.error("[AutoTemplate] Welcome error:", err));
                         }
+                    }
+
+                    // 🧩 Fase 2: hechos derivados de la llamada CRM —
+                    // sin costo LLM extra, la IA ya validó estos datos
+                    if (leadId) {
+                        saveCrmDerivedFacts({
+                            orgId: tenantId,
+                            leadId,
+                            nombreCliente: nombre_cliente,
+                            fechaHoraCita: fecha_hora_cita,
+                        }).catch(() => { /* la memoria nunca bloquea */ });
                     }
 
                     // ── Auto-template: stage transition ────────────────
@@ -1501,6 +1605,22 @@ ${hoursText}
                 role: "assistant",
                 content: botResponse,
             });
+        }
+
+        // ── 8b. Fase 2: mantenimiento de memoria (fire-and-forget)
+        // Resumen progresivo cada ~10 msgs + extracción de hechos
+        // cada ~6 msgs del cliente. Nunca bloquean la respuesta.
+        if (leadId) {
+            maybeUpdateRollingSummary({
+                orgId: tenantId,
+                leadId,
+                openaiApiKey: t.openai_api_key,
+            }).catch(() => { /* no bloquear */ });
+            maybeExtractMemories({
+                orgId: tenantId,
+                leadId,
+                openaiApiKey: t.openai_api_key,
+            }).catch(() => { /* no bloquear */ });
         }
 
         // ── 9. Send reply (flujo asíncrono/cola) ─────────────

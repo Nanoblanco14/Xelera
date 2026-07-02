@@ -1,6 +1,7 @@
 "use server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { authorizeAction } from "@/lib/api-auth";
+import { reindexOrgKnowledge } from "@/lib/knowledge-indexer";
 
 // Allow up to 60 s of execution time for this Server Action route
 
@@ -158,6 +159,10 @@ export async function saveScrapedContext(
     if (dbErr) {
         return { ok: false, error: `Error al guardar: ${dbErr.message}` };
     }
+
+    // 📚 Fase 2: reconstruir el índice RAG con el nuevo contenido
+    // (fire-and-forget — el guardado ya está confirmado)
+    reindexOrgKnowledge(authz.auth.orgId).catch(() => { /* no bloquear */ });
 
     return { ok: true };
 }

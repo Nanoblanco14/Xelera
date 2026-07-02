@@ -13,6 +13,8 @@ export type AiUsagePurpose =
     | "chat_followup"
     | "embedding"
     | "test_chat"
+    | "summary"
+    | "memory_extraction"
     | "other";
 
 export interface AiUsageEntry {

@@ -144,6 +144,29 @@ procesamiento inline original sin perder mensajes.
 Telemetría: cada completion/embedding registra sus tokens en `ai_usage_log`
 (costo por tenant). Errores críticos van a Sentry si `SENTRY_DSN` está definido.
 
+## Memoria de 3 capas + RAG unificado (Fase 2)
+
+El agente recuerda a cada cliente en tres niveles:
+
+| Capa | Almacenamiento | Contenido |
+|------|----------------|-----------|
+| Corta | `lead_messages` (últimos 15) | La conversación en curso |
+| Media | `leads.conversation_summary` | Resumen progresivo (se actualiza cada ~10 mensajes) — las conversaciones largas no pierden el inicio |
+| Larga | `lead_memories` | Hechos persistentes ("presupuesto 3.000 UF", "prefiere Ñuñoa") — el lead que vuelve a los 2 meses es recordado |
+
+Los hechos se capturan de dos formas: estructurados desde las llamadas a
+`gestionar_lead_crm` (sin costo LLM extra) y extracción periódica con LLM
+cada ~6 mensajes del cliente (JSON mode, dedup contra hechos conocidos).
+
+**RAG unificado (`knowledge_chunks`)**: las FAQs y el conocimiento scrapeado
+ya no van enteros al prompt (hasta 12k chars fijos) — se trocean y embeben al
+guardarse, y en cada turno solo se inyectan los fragmentos relevantes vía el
+RPC `match_knowledge`. Se reindexa automáticamente al guardar FAQs, al guardar
+contenido scrapeado y al completar el onboarding. Sin índice (migración
+pendiente u org sin contenido), el prompt cae al modo legacy completo.
+
+Migración requerida: `supabase/migrations/20260702_fase2_memoria.sql`.
+
 ## Base de Datos (Supabase)
 
 Tablas principales:

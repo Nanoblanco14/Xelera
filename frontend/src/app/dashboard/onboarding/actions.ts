@@ -3,6 +3,7 @@
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { authorizeAction } from "@/lib/api-auth";
 import { INDUSTRY_TEMPLATES } from "@/lib/industry-templates";
+import { reindexOrgKnowledge } from "@/lib/knowledge-indexer";
 
 /**
  * Marks onboarding as completed in organization settings.
@@ -192,6 +193,11 @@ export async function saveOnboardingApiKey(
         .eq("id", orgId);
 
     if (error) return { success: false, error: error.message };
+
+    // 📚 Fase 2: con la API key recién disponible, indexar las FAQs
+    // precargadas por la plantilla de industria (fire-and-forget)
+    reindexOrgKnowledge(orgId).catch(() => { /* no bloquear */ });
+
     return { success: true };
 }
 

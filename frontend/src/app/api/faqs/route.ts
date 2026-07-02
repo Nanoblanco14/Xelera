@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { after } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import {
     authenticateRequest,
@@ -6,6 +7,7 @@ import {
     apiError,
     serverError,
 } from "@/lib/api-auth";
+import { reindexOrgKnowledge } from "@/lib/knowledge-indexer";
 
 export interface FaqItem {
     id: string;
@@ -81,6 +83,12 @@ export async function PUT(req: NextRequest) {
             .eq("id", orgId);
 
         if (error) throw error;
+
+        // 📚 Fase 2: reconstruir el índice RAG con las FAQs nuevas
+        // (en background, después de responder)
+        after(async () => {
+            await reindexOrgKnowledge(orgId);
+        });
 
         return NextResponse.json({ data: faqs });
     } catch (err) {
