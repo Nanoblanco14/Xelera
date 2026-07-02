@@ -24,6 +24,7 @@ import {
 } from "@/lib/webhook-security";
 import { processLeadTurn, getOrCreateFirstStage } from "@/lib/message-processor";
 import { bufferIncomingMessage, runDebouncedProcessing } from "@/lib/message-queue";
+import { transcribeMetaAudio } from "@/lib/audio-transcription";
 import { captureError } from "@/lib/monitoring";
 import { trackEvent } from "@/lib/analytics";
 
@@ -44,6 +45,8 @@ interface ParsedMessage {
     phoneClean: string;
     /** Meta message id (wamid.*) — used for deduplication on retries */
     messageId?: string;
+    /** Audio de WhatsApp (Meta): se transcribe con Whisper en background */
+    audio?: { mediaId: string; mimeType?: string };
 }
 
 function parseTwilioParams(rawBody: string): Record<string, string> {
@@ -63,9 +66,9 @@ function parseTwilioMessage(params: Record<string, string>): ParsedMessage {
 
 // Non-text message types the bot can't read — mapped to a context
 // placeholder so the AI (and the human inbox) know what arrived.
+// (audio NO está aquí: se transcribe con Whisper — ver parsed.audio)
 const MEDIA_PLACEHOLDERS: Record<string, string> = {
     image: "una imagen",
-    audio: "un mensaje de voz",
     video: "un video",
     document: "un documento",
     location: "una ubicación",
@@ -96,6 +99,18 @@ function parseMetaMessage(rawBody: string): ParsedMessage | null {
         return { body: msg.text?.body || "", sender, phoneClean, messageId };
     }
 
+    // 🎤 Audio / nota de voz → se transcribe con Whisper en
+    // background; el body queda vacío y el flujo lo resuelve after()
+    if (msg.type === "audio" && msg.audio?.id) {
+        return {
+            body: "",
+            sender,
+            phoneClean,
+            messageId,
+            audio: { mediaId: msg.audio.id, mimeType: msg.audio.mime_type },
+        };
+    }
+
     // Media / location: inject a placeholder so the conversation
     // keeps context and the AI can ask the client to describe it.
     const mediaLabel = MEDIA_PLACEHOLDERS[msg.type as string];
@@ -120,6 +135,110 @@ function buildTwilioResponse(text: string): Response {
     <Message>${escapeXml(text)}</Message>` : ""}
 </Response>`;
     return new Response(xml, { headers: { "Content-Type": "text/xml" } });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  🎤 AUDIO HANDLER — corre en after(), post-respuesta HTTP
+//
+//  Descarga + Whisper + inyección al flujo normal. El transcript
+//  entra a la cola con debounce igual que un mensaje de texto (si
+//  el cliente manda 2 audios seguidos, se agrupan en un turno).
+//  Todo fallo degrada a un placeholder que hace que el bot pida
+//  la consulta por texto — la conversación nunca se corta.
+// ═══════════════════════════════════════════════════════════════
+async function handleAudioMessage(params: {
+    tenantId: string;
+    tenantName: string;
+    accessToken: string;
+    openaiApiKey: string;
+    leadId: string | null;
+    phone: string;
+    audio: { mediaId: string; mimeType?: string };
+    providerMessageId?: string;
+    /** false → solo transcribir y persistir (bot pausado) */
+    processReply: boolean;
+}): Promise<void> {
+    const { tenantId, tenantName, leadId, phone, audio } = params;
+
+    try {
+        // ── 1. Transcribir (o degradar a placeholder) ─────────
+        let messageText: string;
+        let transcribed = false;
+
+        if (!params.accessToken || !params.openaiApiKey) {
+            // Sin credenciales no hay forma de descargar/transcribir
+            console.warn(`🎤 [${tenantName}] Audio recibido pero faltan credenciales para transcribir`);
+            messageText =
+                "[El cliente envió un mensaje de voz que no se pudo procesar. Pídele amablemente que escriba su consulta por texto.]";
+        } else {
+            const result = await transcribeMetaAudio({
+                orgId: tenantId,
+                leadId,
+                mediaId: audio.mediaId,
+                mimeType: audio.mimeType,
+                accessToken: params.accessToken,
+                openaiApiKey: params.openaiApiKey,
+            });
+            if (result.ok) {
+                // El prefijo 🎤 marca en el inbox (y para la IA) que
+                // el texto proviene de una nota de voz transcrita
+                messageText = `🎤 ${result.text}`;
+                transcribed = true;
+            } else {
+                console.warn(`🎤 [${tenantName}] Transcripción falló (${result.reason}) — usando fallback`);
+                messageText = result.fallbackText;
+            }
+        }
+
+        // ── 2. Persistir como mensaje del cliente ─────────────
+        if (leadId) {
+            await supabaseAdmin.from("lead_messages").insert({
+                lead_id: leadId,
+                role: "user",
+                content: messageText,
+            });
+        }
+
+        // 📈 Evento: mensaje entrante (audio)
+        trackEvent({
+            orgId: tenantId,
+            leadId,
+            type: "message_received",
+            metadata: { audio: true, transcribed },
+        }).catch(() => { /* no bloquear */ });
+
+        // ── 3. Bot pausado → solo dejar el texto en el inbox ──
+        if (!params.processReply) {
+            console.log(`🎤⏸️ [${tenantName}] Audio transcrito para inbox (bot pausado)`);
+            return;
+        }
+
+        // ── 4. Flujo normal: cola con debounce, o inline ──────
+        const buffered = await bufferIncomingMessage({
+            orgId: tenantId,
+            phone,
+            leadId,
+            content: messageText,
+            providerMessageId: params.providerMessageId,
+        });
+
+        if (buffered.buffered && buffered.bufferId) {
+            // Ya estamos post-HTTP: el debounce corre aquí mismo
+            await runDebouncedProcessing(tenantId, phone, buffered.bufferId);
+        } else {
+            await processLeadTurn({
+                orgId: tenantId,
+                phone,
+                leadId,
+                combinedText: messageText,
+                sendReply: true,
+                lastUserMessageAt: new Date().toISOString(),
+                batchMessageCount: 1,
+            });
+        }
+    } catch (err) {
+        captureError(err, "webhook:audio", { tenantId, phone });
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -210,10 +329,11 @@ export async function POST(
         // computed over the exact bytes, before any parsing).
         const rawBody = await req.text();
 
-        // ── 1. Load tenant config (solo lo necesario aquí) ────
+        // ── 1. Load tenant config (mínimo para ingesta;
+        // openai_api_key solo se usa si llega un audio → Whisper) ──
         const { data: tenant, error: tenantError } = await supabaseAdmin
             .from("organizations")
-            .select("id, name, whatsapp_provider, whatsapp_credentials")
+            .select("id, name, whatsapp_provider, whatsapp_credentials, openai_api_key")
             .eq("id", tenantId)
             .single();
 
@@ -279,7 +399,8 @@ export async function POST(
             }
         }
 
-        if (!parsed || !parsed.body) {
+        // Sin texto Y sin audio → nada que procesar
+        if (!parsed || (!parsed.body && !parsed.audio)) {
             return new Response("OK", { status: 200 });
         }
 
@@ -306,11 +427,31 @@ export async function POST(
         // ── 3a. Human takeover — persistir el mensaje para el
         // inbox pero NO responder con el bot ──────────────────
         if (leadAlreadyExists && existingForStatus[0].is_bot_paused) {
-            await supabaseAdmin.from("lead_messages").insert({
-                lead_id: existingForStatus[0].id,
-                role: "user",
-                content: incomingMsg,
-            });
+            if (parsed.audio && provider === "meta") {
+                // Audio con bot pausado: transcribir igual para que el
+                // humano lo lea en el inbox, sin respuesta automática
+                const pausedAudio = parsed.audio;
+                const pausedLeadId = existingForStatus[0].id;
+                after(async () => {
+                    await handleAudioMessage({
+                        tenantId,
+                        tenantName,
+                        accessToken: credentials?.access_token || "",
+                        openaiApiKey: (tenant.openai_api_key as string) || "",
+                        leadId: pausedLeadId,
+                        phone: phoneClean,
+                        audio: pausedAudio,
+                        providerMessageId: parsed.messageId,
+                        processReply: false,
+                    });
+                });
+            } else {
+                await supabaseAdmin.from("lead_messages").insert({
+                    lead_id: existingForStatus[0].id,
+                    role: "user",
+                    content: incomingMsg,
+                });
+            }
             console.log(`⏸️ [${tenantName}] Bot pausado para ${phoneClean}. Mensaje guardado, sin respuesta.`);
             if (provider === "twilio") return buildTwilioResponse("");
             return new Response("OK", { status: 200 });
@@ -358,6 +499,29 @@ export async function POST(
                 .limit(1)
                 .maybeSingle();
             leadId = newLeadRow?.id ?? null;
+        }
+
+        // ── 3c'. 🎤 Audio → transcripción en background ────────
+        // Respondemos 200 YA; after() descarga el media, lo pasa por
+        // Whisper e inyecta el texto al flujo normal (cola+debounce).
+        if (parsed.audio && provider === "meta") {
+            const audioInfo = parsed.audio;
+            const audioLeadId = leadId;
+            const audioMessageId = parsed.messageId;
+            after(async () => {
+                await handleAudioMessage({
+                    tenantId,
+                    tenantName,
+                    accessToken: credentials?.access_token || "",
+                    openaiApiKey: (tenant.openai_api_key as string) || "",
+                    leadId: audioLeadId,
+                    phone: phoneClean,
+                    audio: audioInfo,
+                    providerMessageId: audioMessageId,
+                    processReply: true,
+                });
+            });
+            return new Response("OK", { status: 200 });
         }
 
         // ── 3c. Persist the incoming user message ─────────────

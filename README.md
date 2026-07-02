@@ -141,6 +141,16 @@ cuyo timer haya muerto (>90 s sin procesar).
 Si la tabla de cola no existe (migración pendiente), el webhook degrada al
 procesamiento inline original sin perder mensajes.
 
+**🎤 Notas de voz (Whisper)**: los audios de WhatsApp (Meta) se transcriben
+automáticamente — descarga vía Graph API (límite 16 MB), Whisper (`whisper-1`,
+español) y el texto entra al flujo normal con prefijo `🎤` (visible en el
+inbox). Los audios consecutivos se agrupan por el mismo debounce. Cualquier
+fallo (audio corrupto, muy largo, token vencido, timeout) degrada a un
+placeholder que hace que el bot pida la consulta por texto — la conversación
+nunca se corta. Con el bot pausado el audio igual se transcribe para que el
+humano lo lea. Telemetría: filas `whisper-1`/`transcription` en `ai_usage_log`
+(convención: `total_tokens` = segundos de audio).
+
 Telemetría: cada completion/embedding registra sus tokens en `ai_usage_log`
 (costo por tenant). Errores críticos van a Sentry si `SENTRY_DSN` está definido.
 

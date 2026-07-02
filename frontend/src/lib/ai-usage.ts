@@ -15,6 +15,7 @@ export type AiUsagePurpose =
     | "test_chat"
     | "summary"
     | "memory_extraction"
+    | "transcription"
     | "other";
 
 export interface AiUsageEntry {
