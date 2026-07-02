@@ -1,15 +1,8 @@
 "use server";
 
-import { createClient } from "@supabase/supabase-js";
+import { getSupabaseAdmin } from "@/lib/supabase";
+import { authorizeAction } from "@/lib/api-auth";
 import { INDUSTRY_TEMPLATES } from "@/lib/industry-templates";
-
-function getAdmin() {
-    return createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        { auth: { autoRefreshToken: false, persistSession: false } }
-    );
-}
 
 /**
  * Marks onboarding as completed in organization settings.
@@ -17,7 +10,10 @@ function getAdmin() {
 export async function completeOnboarding(
     orgId: string
 ): Promise<{ success: boolean; error?: string }> {
-    const admin = getAdmin();
+    const authz = await authorizeAction(orgId);
+    if (!authz.ok) return { success: false, error: authz.error };
+
+    const admin = getSupabaseAdmin();
 
     // Fetch current settings to merge
     const { data: org } = await admin
@@ -47,10 +43,13 @@ export async function applyOnboardingTemplate(
     orgId: string,
     templateId: string
 ): Promise<{ success: boolean; agentId?: string; error?: string }> {
+    const authz = await authorizeAction(orgId);
+    if (!authz.ok) return { success: false, error: authz.error };
+
     const template = INDUSTRY_TEMPLATES.find((t) => t.id === templateId);
     if (!template) return { success: false, error: "Plantilla no encontrada" };
 
-    const admin = getAdmin();
+    const admin = getSupabaseAdmin();
 
     // Save industry_template to org settings
     const { data: org } = await admin
@@ -139,12 +138,27 @@ export async function applyOnboardingTemplate(
 
 /**
  * Updates agent details during onboarding (name, welcome message, tone).
+ * The agent must belong to the caller's organization.
  */
 export async function updateOnboardingAgent(
     agentId: string,
     data: { name?: string; welcome_message?: string; conversation_tone?: string }
 ): Promise<{ success: boolean; error?: string }> {
-    const admin = getAdmin();
+    const authz = await authorizeAction();
+    if (!authz.ok) return { success: false, error: authz.error };
+
+    const admin = getSupabaseAdmin();
+
+    // Verify the agent belongs to the caller's org before writing
+    const { data: agent } = await admin
+        .from("agents")
+        .select("organization_id")
+        .eq("id", agentId)
+        .single();
+
+    if (!agent || agent.organization_id !== authz.auth.orgId) {
+        return { success: false, error: "No tienes acceso a este agente." };
+    }
 
     const update: Record<string, unknown> = {};
     if (data.name) update.name = data.name;
@@ -167,7 +181,10 @@ export async function saveOnboardingApiKey(
     orgId: string,
     apiKey: string
 ): Promise<{ success: boolean; error?: string }> {
-    const admin = getAdmin();
+    const authz = await authorizeAction(orgId);
+    if (!authz.ok) return { success: false, error: authz.error };
+
+    const admin = getSupabaseAdmin();
 
     const { error } = await admin
         .from("organizations")
@@ -185,7 +202,10 @@ export async function saveOnboardingWhatsApp(
     orgId: string,
     credentials: { phone_number_id: string; access_token: string }
 ): Promise<{ success: boolean; error?: string }> {
-    const admin = getAdmin();
+    const authz = await authorizeAction(orgId);
+    if (!authz.ok) return { success: false, error: authz.error };
+
+    const admin = getSupabaseAdmin();
 
     const { error } = await admin
         .from("organizations")

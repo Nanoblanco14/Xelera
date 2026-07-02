@@ -12,6 +12,7 @@
     "@ai-sdk/openai": "^3.0.29",
     "@ai-sdk/react": "^3.0.88",
     "@hello-pangea/dnd": "^18.0.1",
+    "@sentry/nextjs": "^10.63.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.95.3",
     "ai": "^6.0.86",

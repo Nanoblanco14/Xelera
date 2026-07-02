@@ -220,7 +220,7 @@ export default function AnalyticsPage() {
 
             {/* ── Charts Row ───────────────────────────────────── */}
             <div className="section-label">Distribución</div>
-            <div className="glass-panel" style={{ padding: "20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+            <div className="glass-panel r-grid" style={{ padding: "20px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
 
                 {/* Donut — Pipeline distribution */}
                 <ChartCard title="Distribución del Pipeline" icon={<Zap size={14} />}>
@@ -236,7 +236,7 @@ export default function AnalyticsPage() {
 
             {/* ── Trends Row: Leads Trend + Peak Hours ────────── */}
             <div className="section-label">Tendencias</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "16px" }}>
+            <div className="r-grid" style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "16px" }}>
 
                 {/* Tendencia de Leads (30 dias) */}
                 <ChartCard title="Tendencia (ultimos 30 dias)" icon={<Activity size={14} />}>
@@ -323,7 +323,7 @@ export default function AnalyticsPage() {
 
             {/* ── Source Breakdown + Insight Row ───────────────── */}
             <div className="section-label">Fuentes e Insights</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+            <div className="r-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
 
                 {/* Origen de leads */}
                 <ChartCard title="Origen de Leads" icon={<FileText size={14} />}>

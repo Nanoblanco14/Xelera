@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     MessageSquare, Search, Send, Loader2, Bot, User,
     Phone, Clock, PauseCircle, PlayCircle, AlertTriangle,
-    ChevronRight, Inbox as InboxIcon, Zap, Plus, X,
+    ChevronRight, ChevronLeft, Inbox as InboxIcon, Zap, Plus, X,
     StickyNote, Trash2, Hash, Timer, CheckCheck, Filter,
     FileText, Eye,
 } from "lucide-react";
@@ -371,7 +371,14 @@ export default function InboxPage() {
         }
     }, [messages]);
 
-    // ── Supabase Realtime for new messages ─────────────────
+    // ── Supabase Realtime: fuente principal de actualizaciones ──
+    // Requiere que lead_messages/leads estén en la publication
+    // supabase_realtime (migración 20260702_fase0_infra.sql).
+    // Cuando el canal conecta, el polling pasa a modo lento (red de
+    // seguridad); si Realtime no está disponible, el polling clásico
+    // de 3s/8s sigue activo — degradación transparente.
+    const [realtimeConnected, setRealtimeConnected] = useState(false);
+
     useEffect(() => {
         const channel = supabase
             .channel("inbox-messages")
@@ -403,14 +410,30 @@ export default function InboxPage() {
                     loadConversations();
                 }
             )
-            .subscribe();
+            .on(
+                "postgres_changes",
+                {
+                    event: "UPDATE",
+                    schema: "public",
+                    table: "leads",
+                },
+                () => {
+                    // Cambios de etapa/estado/pausa → refrescar lista
+                    loadConversations();
+                }
+            )
+            .subscribe((status) => {
+                setRealtimeConnected(status === "SUBSCRIBED");
+            });
 
         return () => {
+            setRealtimeConnected(false);
             supabase.removeChannel(channel);
         };
     }, [selectedLeadId, loadConversations]);
 
-    // ── Polling: mensajes del chat activo cada 3s ─────────
+    // ── Polling adaptativo: mensajes del chat activo ────────
+    // 3s sin Realtime; 30s como red de seguridad con Realtime.
     useEffect(() => {
         if (!selectedLeadId) return;
         const interval = setInterval(async () => {
@@ -427,17 +450,18 @@ export default function InboxPage() {
                     });
                 }
             } catch { /* silenciar errores de polling */ }
-        }, 3000);
+        }, realtimeConnected ? 30_000 : 3000);
         return () => clearInterval(interval);
-    }, [selectedLeadId]);
+    }, [selectedLeadId, realtimeConnected]);
 
-    // ── Polling: lista de conversaciones cada 8s ──────────
+    // ── Polling adaptativo: lista de conversaciones ────────
+    // 8s sin Realtime; 60s como red de seguridad con Realtime.
     useEffect(() => {
         const interval = setInterval(() => {
             loadConversations();
-        }, 8000);
+        }, realtimeConnected ? 60_000 : 8000);
         return () => clearInterval(interval);
-    }, [loadConversations]);
+    }, [loadConversations, realtimeConnected]);
 
     // ── Toggle bot pause ──────────────────────────────────
     const toggleBotPause = async (leadId: string, currentPaused: boolean) => {
@@ -574,21 +598,26 @@ export default function InboxPage() {
                 </div>
             </div>
 
-            {/* ── Main layout: sidebar + chat ── */}
-            <div style={{
-                display: "grid",
-                gridTemplateColumns: "360px 1fr",
-                gap: "0",
-                height: "calc(100% - 70px)",
-                borderRadius: "14px",
-                overflow: "hidden",
-                border: "0.5px solid rgba(255,255,255,0.055)",
-                background: "var(--bg-card)",
-                boxShadow: "0 4px 24px rgba(0,0,0,0.2), 0 1px 4px rgba(0,0,0,0.15)",
-            }}>
+            {/* ── Main layout: sidebar + chat ──
+                 En móvil (≤768px) se muestra un solo panel a la vez,
+                 controlado por data-view (ver globals.css). */}
+            <div
+                className="inbox-layout"
+                data-view={selectedLeadId ? "chat" : "list"}
+                style={{
+                    display: "grid",
+                    gridTemplateColumns: "360px 1fr",
+                    gap: "0",
+                    height: "calc(100% - 70px)",
+                    borderRadius: "14px",
+                    overflow: "hidden",
+                    border: "0.5px solid rgba(255,255,255,0.055)",
+                    background: "var(--bg-card)",
+                    boxShadow: "0 4px 24px rgba(0,0,0,0.2), 0 1px 4px rgba(0,0,0,0.15)",
+                }}>
 
                 {/* ── Conversation List ── */}
-                <div style={{
+                <div className="inbox-list" style={{
                     borderRight: "0.5px solid var(--border)",
                     display: "flex",
                     flexDirection: "column",
@@ -892,7 +921,7 @@ export default function InboxPage() {
                 </div>
 
                 {/* ── Chat Panel ── */}
-                <div style={{
+                <div className="inbox-chat" style={{
                     display: "flex", flexDirection: "column",
                     background: "var(--bg-deep)",
                     backgroundImage: "radial-gradient(rgba(255,255,255,0.02) 1px, transparent 1px)",
@@ -949,6 +978,21 @@ export default function InboxPage() {
                                 display: "flex", alignItems: "center", justifyContent: "space-between",
                               }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                    {/* Back to list — visible solo en móvil */}
+                                    <button
+                                        className="inbox-back-btn"
+                                        onClick={() => setSelectedLeadId(null)}
+                                        aria-label="Volver a la lista"
+                                        style={{
+                                            display: "none",
+                                            background: "none", border: "none",
+                                            color: "var(--text-secondary)",
+                                            padding: "6px", marginLeft: "-6px",
+                                            cursor: "pointer", borderRadius: "8px",
+                                        }}
+                                    >
+                                        <ChevronLeft size={20} />
+                                    </button>
                                     {/* Avatar with status dot */}
                                     <div style={{ position: "relative" }}>
                                         <div style={{

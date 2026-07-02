@@ -310,44 +310,29 @@ export default function HeroScene() {
                         </a>
                     </div>
 
-                    {/* Trust line */}
+                    {/* Trust line — beneficios reales, sin social proof inventado */}
                     <div style={{
                         ...enter(850),
                         marginTop: "40px",
-                        display: "flex", alignItems: "center", gap: "20px",
+                        display: "flex", alignItems: "center", gap: "18px", flexWrap: "wrap",
                     }}>
-                        {/* Stacked avatars */}
-                        <div style={{ display: "flex" }}>
-                            {["CM", "DF", "VR", "MS"].map((initials, i) => (
-                                <div key={i} style={{
-                                    width: "30px", height: "30px", borderRadius: "50%",
-                                    background: i % 2 === 0
-                                        ? "linear-gradient(135deg, #7a9e8a, #5d8270)"
-                                        : "linear-gradient(135deg, #6482aa, #4a6a90)",
-                                    display: "flex", alignItems: "center", justifyContent: "center",
-                                    fontSize: "9px", fontWeight: 700, color: "#0e0e0d",
-                                    border: "2px solid var(--bg-deep)",
-                                    marginLeft: i > 0 ? "-8px" : 0,
-                                    zIndex: 4 - i,
-                                    position: "relative",
-                                }}>
-                                    {initials}
-                                </div>
-                            ))}
-                        </div>
-                        <div>
-                            <div style={{ fontSize: "12px", color: "var(--text-secondary)", fontWeight: 500 }}>
-                                +2,400 equipos activos
+                        {[
+                            "Listo en minutos",
+                            "Sin tarjeta de crédito",
+                            "Plantillas por industria",
+                        ].map((text) => (
+                            <div key={text} style={{
+                                display: "flex", alignItems: "center", gap: "7px",
+                                fontSize: "12px", color: "var(--text-secondary)", fontWeight: 500,
+                            }}>
+                                <svg viewBox="0 0 12 12" style={{ width: "12px", height: "12px", flexShrink: 0 }}>
+                                    <circle cx="6" cy="6" r="6" fill="rgba(122,158,138,0.15)" />
+                                    <path d="M3.5 6.2l1.7 1.7 3.3-3.6" stroke="#7a9e8a" strokeWidth="1.3"
+                                        fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                                {text}
                             </div>
-                            <div style={{ display: "flex", gap: "2px", marginTop: "3px" }}>
-                                {[1, 2, 3, 4, 5].map((s) => (
-                                    <svg key={s} viewBox="0 0 12 12" style={{ width: "11px", height: "11px" }}>
-                                        <path d="M6 1l1.5 3.1 3.4.5-2.5 2.4.6 3.4L6 8.8 3 10.4l.6-3.4L1.1 4.6l3.4-.5z"
-                                            fill="#c4a35a" />
-                                    </svg>
-                                ))}
-                            </div>
-                        </div>
+                        ))}
                     </div>
                 </div>
 

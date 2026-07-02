@@ -1,5 +1,6 @@
 "use server";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { authorizeAction } from "@/lib/api-auth";
 
 // Allow up to 60 s of execution time for this Server Action route
 
@@ -50,7 +51,8 @@ async function fetchViaJina(url: string): Promise<{ ok: boolean; text?: string; 
         }
 
         return { ok: true, text };
-    } catch (err: any) {
+    } catch (rawErr) {
+        const err = rawErr as { name?: string; message?: string } | null;
         const isTimeout =
             err?.name === "TimeoutError" ||
             err?.name === "AbortError" ||
@@ -78,6 +80,9 @@ async function fetchViaJina(url: string): Promise<{ ok: boolean; text?: string; 
 export async function scrapeUrlsForPreview(
     urls: string[]
 ): Promise<{ ok: boolean; text?: string; errors?: string[] }> {
+    const authz = await authorizeAction();
+    if (!authz.ok) return { ok: false, errors: [authz.error] };
+
     const validUrls = urls.map((u) => u.trim()).filter(Boolean);
 
     if (validUrls.length === 0) {
@@ -129,7 +134,22 @@ export async function saveScrapedContext(
         return { ok: false, error: "Faltan parámetros." };
     }
 
+    const authz = await authorizeAction();
+    if (!authz.ok) return { ok: false, error: authz.error };
+
     const db = getSupabaseAdmin();
+
+    // The agent must belong to the caller's organization
+    const { data: agent } = await db
+        .from("agents")
+        .select("organization_id")
+        .eq("id", agentId)
+        .single();
+
+    if (!agent || agent.organization_id !== authz.auth.orgId) {
+        return { ok: false, error: "No tienes acceso a este agente." };
+    }
+
     const { error: dbErr } = await db
         .from("agents")
         .update({ scraped_context: text.trim() })

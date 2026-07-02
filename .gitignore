@@ -18,8 +18,15 @@ frontend/.env.test.local
 Thumbs.db
 .idea/
 .vscode/
+.claude/
 *.swp
 *.log
+
+# ── Secretos / Notas privadas ───────────────────────────
+CREDENCIALES_PRIVADAS.txt
+*.secrets.txt
+*.private.txt
+*.private.md
 
 # ── Misc ────────────────────────────────────────────────
 *.zip

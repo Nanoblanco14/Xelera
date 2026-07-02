@@ -514,7 +514,7 @@ export default function AgentConfigPage() {
                             <label className="form-label" style={{ marginBottom: "10px", display: "block" }}>
                                 Plantillas por Industria
                             </label>
-                            <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "8px", marginBottom: "14px" }}>
+                            <div className="r-grid-2" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "8px", marginBottom: "14px" }}>
                                 {INDUSTRY_TEMPLATES.map((tpl) => {
                                     const isSelected = selectedTplId === tpl.id;
                                     return (
@@ -1000,7 +1000,7 @@ export default function AgentConfigPage() {
                 >
                     <div className="space-y-5">
                         {/* Model + Temperature grid */}
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                        <div className="r-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
                             <div className="form-group" style={{ marginBottom: 0 }}>
                                 <label className="form-label">
                                     <SlidersHorizontal size={11} className="inline mr-1" />

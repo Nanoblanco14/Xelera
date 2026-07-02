@@ -209,7 +209,7 @@ export async function getAutoTemplateConfig(orgId: string): Promise<AutoTemplate
 const CHILE_TZ = "America/Santiago";
 const HARD_DAILY_LIMIT = 5; // absolute max, non-configurable
 
-function isInQuietHours(quietHours: { start: string; end: string }): boolean {
+export function isInQuietHours(quietHours: { start: string; end: string }): boolean {
     if (!quietHours.start || !quietHours.end) return false;
 
     const now = new Date(new Date().toLocaleString("en-US", { timeZone: CHILE_TZ }));

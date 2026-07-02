@@ -25,6 +25,7 @@ export const DEFAULT_APPOINTMENT_CONFIG: AppointmentConfig = {
     daily_digest_enabled: false,
     daily_digest_time: "08:00",
     owner_phone: "",
+    hot_lead_alerts_enabled: true,
     timezone: SYSTEM_TIMEZONE,
 };
 

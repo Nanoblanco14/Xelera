@@ -1040,7 +1040,7 @@ export default function TemplatesPage() {
             </AnimatePresence>
 
             {/* KPIs */}
-            <div className="stagger-children" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px", marginBottom: "20px" }}>
+            <div className="stagger-children r-grid-2" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px", marginBottom: "20px" }}>
                 {[
                     { label: "Total", value: counts.total, color: "#9ab8a8", icon: <FileText size={14} /> },
                     { label: "Aprobados", value: counts.approved, color: "#22c55e", icon: <CheckCircle size={14} /> },

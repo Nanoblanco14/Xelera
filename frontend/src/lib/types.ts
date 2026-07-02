@@ -294,6 +294,8 @@ export interface AppointmentConfig {
     daily_digest_enabled: boolean;
     daily_digest_time: string; // "HH:mm"
     owner_phone: string;
+    /** Alerta WhatsApp al dueño cuando un lead pide atención humana */
+    hot_lead_alerts_enabled: boolean;
     timezone: string;
 }
 

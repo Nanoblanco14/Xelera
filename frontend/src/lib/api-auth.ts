@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { captureError } from "@/lib/monitoring";
 
 // ── Types ─────────────────────────────────────────────────────
 export interface AuthContext {
@@ -44,7 +45,8 @@ export function forbidden(detail?: string) {
 }
 
 export function serverError(err: unknown, context: string) {
-    console.error(`[API:${context}]`, err);
+    // Reporta a Sentry (si está configurado) + log local
+    captureError(err, `api:${context}`);
     // Never leak internal error details to the client
     return apiError("Error interno del servidor", 500, "INTERNAL_ERROR");
 }
@@ -125,4 +127,30 @@ export function verifyOrgAccess(auth: AuthContext, requestedOrgId: string): Next
         return forbidden("No tienes acceso a esta organización.");
     }
     return null; // OK
+}
+
+// ── Server Action authorization ────────────────────────────────
+// Server actions are publicly invokable POST endpoints, so every
+// action must validate the session cookie and (when it receives an
+// orgId) confirm the caller belongs to that organization before
+// touching data with the admin client.
+
+export type ActionAuthResult =
+    | { ok: true; auth: AuthContext }
+    | { ok: false; error: string };
+
+export async function authorizeAction(
+    requestedOrgId?: string
+): Promise<ActionAuthResult> {
+    const result = await authenticateRequest("server-action");
+    if ("error" in result) {
+        return { ok: false, error: "No autenticado. Inicia sesión para continuar." };
+    }
+    if (requestedOrgId && result.auth.orgId !== requestedOrgId) {
+        console.warn(
+            `[Action] Org mismatch: user org ${result.auth.orgId} vs requested ${requestedOrgId}`
+        );
+        return { ok: false, error: "No tienes acceso a esta organización." };
+    }
+    return { ok: true, auth: result.auth };
 }

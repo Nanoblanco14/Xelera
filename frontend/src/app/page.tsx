@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useRef, useState, useEffect, useCallback } from "react";
 import {
     Bot, MessageSquare, BarChart3, ArrowRight,
-    CheckCircle, Shield, Users, Star,
+    CheckCircle, Shield, Users,
     Calendar, Check, Crown, Play,
     Menu, X, Zap, TrendingUp, Lock, Plug,
     Layout, FileText, Settings2,
@@ -151,16 +151,16 @@ const FEATURES = [
 ];
 
 const LOGOS = [
-    "Inmobiliaria Andina", "BarberPro", "TechStore CL",
-    "Salón Élite", "PropTech360", "BeautyHub",
-    "NexoDigital", "VentaRápida",
+    "Inmobiliarias", "Barberías", "E-commerce",
+    "Salones de belleza", "Clínicas", "Restaurantes",
+    "Agencias", "Servicios profesionales",
 ];
 
 const STATS = [
-    { value: 847, suffix: "K+", label: "Tareas automatizadas" },
-    { value: 99.9, suffix: "%", label: "Uptime", decimals: 1 },
-    { value: 2400, suffix: "+", label: "Equipos activos", formatK: true },
-    { value: 4.2, suffix: "M", label: "Mensajes procesados", decimals: 1 },
+    { value: 5, prefix: "<", suffix: " seg", label: "Tiempo de respuesta del agente" },
+    { value: 24, suffix: "/7", label: "Atiende sin descanso" },
+    { value: 3, suffix: " min", label: "Para crear tu agente" },
+    { value: 100, suffix: "%", label: "Leads registrados en tu CRM" },
 ];
 
 const HOW_IT_WORKS = [
@@ -169,48 +169,44 @@ const HOW_IT_WORKS = [
     { step: "03", title: "Déjalo correr", desc: "Tu agente trabaja 24/7: responde, califica, agenda y cierra.", icon: <Zap size={20} /> },
 ];
 
-const TESTIMONIALS = [
+// Casos de uso por industria — muestran qué hace el agente en cada
+// tipo de negocio (coinciden con las plantillas del onboarding).
+const USE_CASES = [
     {
-        name: "Carolina Méndez",
-        role: "Directora Comercial",
-        company: "Inmobiliaria Andina",
-        quote: "En el primer mes automatizamos el 80% de las consultas iniciales. El agente filtra prospectos mejor que un junior.",
-        initials: "CM",
+        industry: "Inmobiliarias",
+        emoji: "🏠",
+        desc: "Filtra prospectos por presupuesto, zona y tipo de propiedad. Agenda visitas solo con quienes realmente califican.",
+        actions: ["Filtra presupuesto", "Agenda visitas", "Califica leads"],
     },
     {
-        name: "Diego Fuentes",
-        role: "Fundador",
-        company: "BarberPro",
-        quote: "Mis clientes agendan citas por WhatsApp a cualquier hora. Ya no pierdo reservas por no contestar a tiempo.",
-        initials: "DF",
+        industry: "Barberías y salones",
+        emoji: "💈",
+        desc: "Tus clientes reservan, cambian o cancelan su hora por WhatsApp a cualquier hora, sin que pierdas una sola reserva.",
+        actions: ["Reserva turnos", "Reprograma citas", "Recordatorios"],
     },
     {
-        name: "Valentina Rojas",
-        role: "Gerente de Ventas",
-        company: "TechStore CL",
-        quote: "El bot responde sobre stock y precios al instante. Las conversiones subieron un 40% desde que lo implementamos.",
-        initials: "VR",
+        industry: "E-commerce",
+        emoji: "🛍️",
+        desc: "Responde sobre stock, precios y características de tus productos al instante, usando tu catálogo real como única fuente.",
+        actions: ["Consulta stock", "Responde precios", "Toma pedidos"],
     },
     {
-        name: "Martín Soto",
-        role: "CEO",
-        company: "PropTech360",
-        quote: "La integración fue increíblemente simple. En menos de una hora teníamos el agente funcionando con nuestro catálogo.",
-        initials: "MS",
+        industry: "Clínicas y dentistas",
+        emoji: "🦷",
+        desc: "Agenda pacientes según tu disponibilidad real, responde preguntas frecuentes y deriva casos delicados a tu equipo.",
+        actions: ["Agenda pacientes", "FAQs oficiales", "Deriva a humano"],
     },
     {
-        name: "Lucía Herrera",
-        role: "Dueña",
-        company: "Salón Élite",
-        quote: "Mis clientas reservan turnos mientras duermen. El agente nunca se equivoca con los horarios disponibles.",
-        initials: "LH",
+        industry: "Restaurantes",
+        emoji: "🍽️",
+        desc: "Toma reservas, informa horarios y responde sobre tu carta sin que nadie del equipo tenga que mirar el teléfono.",
+        actions: ["Toma reservas", "Informa horarios", "Responde la carta"],
     },
     {
-        name: "Andrés Muñoz",
-        role: "Director",
-        company: "NexoDigital",
-        quote: "La calidad de los leads que llegan al pipeline mejoró enormemente. El bot filtra y califica antes de que yo intervenga.",
-        initials: "AM",
+        industry: "Servicios profesionales",
+        emoji: "💼",
+        desc: "Precalifica clientes potenciales, explica tus servicios y agenda reuniones directo en tu calendario.",
+        actions: ["Precalifica clientes", "Explica servicios", "Agenda reuniones"],
     },
 ];
 
@@ -530,8 +526,12 @@ export default function LandingPage() {
                         background: "rgba(14,14,13,0.95)",
                         backdropFilter: "blur(20px)",
                     }}>
-                        {["Features", "Pipeline", "Pricing"].map((label) => (
-                            <a key={label} href={`#${label.toLowerCase()}`} onClick={() => setMobileMenu(false)} style={{
+                        {[
+                            { label: "Features", href: "#funciones" },
+                            { label: "Pipeline", href: "#demo" },
+                            { label: "Pricing", href: "#precios" },
+                        ].map(({ label, href }) => (
+                            <a key={label} href={href} onClick={() => setMobileMenu(false)} style={{
                                 display: "block", padding: "12px 0",
                                 color: "var(--text-secondary)", fontSize: "0.9rem",
                                 textDecoration: "none", borderBottom: "0.5px solid var(--border)",
@@ -569,7 +569,7 @@ export default function LandingPage() {
                     textTransform: "uppercase", letterSpacing: "0.08em",
                     color: "var(--text-muted)", marginBottom: "24px",
                 }}>
-                    +2,400 equipos automatizando con Xelera
+                    Diseñado para todo tipo de negocios
                 </p>
                 <div style={{ overflow: "hidden" }}>
                     <div className="marquee-track">
@@ -933,13 +933,20 @@ export default function LandingPage() {
             </Section>
 
 
-            {/* ═══════════════════ 08. TESTIMONIALS ═══════════════════ */}
+            {/* ═══════════════════ 08. CASOS DE USO ═══════════════════ */}
             <Section style={{ background: "var(--bg-void)" }}>
                 <FadeUp style={{ textAlign: "center", marginBottom: "56px" }}>
-                    <span className="tag" style={{ marginBottom: "16px", display: "inline-block" }}>Testimonios</span>
+                    <span className="tag" style={{ marginBottom: "16px", display: "inline-block" }}>Casos de uso</span>
                     <h2 className="text-section-title" style={{ marginTop: "16px" }}>
-                        Lo que dicen nuestros clientes
+                        Un agente para cada tipo de negocio
                     </h2>
+                    <p style={{
+                        color: "var(--text-secondary)", fontSize: "15px",
+                        maxWidth: "500px", margin: "16px auto 0", lineHeight: 1.75,
+                    }}>
+                        Xelera incluye plantillas por industria: elige la tuya en el
+                        onboarding y tu agente sale configurado con el flujo correcto.
+                    </p>
                 </FadeUp>
 
                 <div style={{
@@ -947,37 +954,42 @@ export default function LandingPage() {
                     gridTemplateColumns: "repeat(3, 1fr)",
                     gap: "16px",
                 }}>
-                    {TESTIMONIALS.map((t, i) => (
+                    {USE_CASES.map((c, i) => (
                         <FadeUp
                             key={i}
                             delay={i * 100}
                             className="glass-card card-hover-lift"
                             style={{ padding: "28px" }}
                         >
-                            <div style={{ display: "flex", gap: "3px", marginBottom: "16px" }}>
-                                {Array.from({ length: 5 }).map((_, j) => (
-                                    <Star key={j} size={14} fill="var(--accent-warm)" color="var(--accent-warm)" />
-                                ))}
-                            </div>
-                            <p style={{
-                                color: "var(--text-secondary)", fontSize: "15px",
-                                lineHeight: 1.75, marginBottom: "20px",
-                            }}>
-                                &ldquo;{t.quote}&rdquo;
-                            </p>
-                            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
                                 <div style={{
-                                    width: "38px", height: "38px", borderRadius: "50%",
+                                    width: "40px", height: "40px", borderRadius: "12px",
                                     background: "var(--accent-subtle)",
                                     border: "0.5px solid var(--border-accent)",
                                     display: "flex", alignItems: "center", justifyContent: "center",
-                                    fontSize: "11px", fontWeight: 600, color: "var(--accent-sage)",
-                                    letterSpacing: "0.02em",
-                                }}>{t.initials}</div>
-                                <div>
-                                    <div style={{ fontSize: "14px", fontWeight: 500, color: "var(--text-primary)" }}>{t.name}</div>
-                                    <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>{t.role} · {t.company}</div>
+                                    fontSize: "18px",
+                                }}>{c.emoji}</div>
+                                <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
+                                    {c.industry}
                                 </div>
+                            </div>
+                            <p style={{
+                                color: "var(--text-secondary)", fontSize: "14px",
+                                lineHeight: 1.75, marginBottom: "18px",
+                            }}>
+                                {c.desc}
+                            </p>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                                {c.actions.map((a) => (
+                                    <span key={a} style={{
+                                        fontSize: "10.5px", fontWeight: 500,
+                                        color: "var(--accent-sage)",
+                                        background: "var(--accent-subtle)",
+                                        border: "0.5px solid var(--border-accent)",
+                                        borderRadius: "100px", padding: "3px 10px",
+                                        letterSpacing: "0.02em",
+                                    }}>{a}</span>
+                                ))}
                             </div>
                         </FadeUp>
                     ))}
@@ -1043,6 +1055,9 @@ export default function LandingPage() {
                             style={{
                                 padding: "32px",
                                 position: "relative",
+                                // glass-card recorta con overflow:hidden — el badge
+                                // "Popular" sobresale del borde superior
+                                overflow: "visible",
                                 borderColor: plan.popular ? "var(--border-accent)" : undefined,
                             }}
                         >
@@ -1138,7 +1153,7 @@ export default function LandingPage() {
                         lineHeight: 1.75, marginBottom: "36px", maxWidth: "500px",
                         margin: "0 auto 36px",
                     }}>
-                        Únete a +2,400 equipos que ya automatizan sus procesos de negocio con agentes de IA.
+                        Crea tu agente gratis en minutos y deja que responda, califique y agende por ti las 24 horas.
                     </p>
                     <div style={{ display: "flex", gap: "14px", justifyContent: "center", flexWrap: "wrap" }}>
                         <Link href="/login" className="btn-primary" style={{ fontSize: "0.9rem", padding: "14px 32px" }}>
@@ -1300,16 +1315,10 @@ function MetricsSection() {
 }
 
 function MetricItem({ stat, inView }: {
-    stat: { value: number; suffix: string; label: string; decimals?: number; formatK?: boolean };
+    stat: { value: number; suffix: string; label: string; prefix?: string; decimals?: number; formatK?: boolean };
     inView: boolean;
 }) {
     const count = useCounter(stat.formatK ? 2400 : stat.decimals ? Math.round(stat.value * 10) : stat.value, 1800, inView);
-
-    const displayValue = stat.decimals
-        ? (count / 10).toFixed(stat.decimals)
-        : stat.formatK
-        ? (count / 1000).toFixed(1).replace(/\.0$/, "") + "," + String(count % 1000).padStart(3, "0").replace(/0+$/, "").padEnd(1, "0")
-        : count;
 
     // Simpler display for formatted numbers
     const formattedValue = stat.formatK
@@ -1326,7 +1335,7 @@ function MetricItem({ stat, inView }: {
                 fontWeight: 400, color: "var(--text-primary)",
                 letterSpacing: "-0.03em",
             }}>
-                {formattedValue}{stat.suffix}
+                {stat.prefix || ""}{formattedValue}{stat.suffix}
             </div>
             <div style={{
                 fontSize: "11px", color: "var(--text-muted)",

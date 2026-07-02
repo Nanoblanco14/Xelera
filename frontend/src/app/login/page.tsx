@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { Bot, Eye, EyeOff, Sparkles } from "lucide-react";
+import { Eye, EyeOff, Sparkles } from "lucide-react";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -69,7 +69,7 @@ export default function LoginPage() {
             }}>
                 <div className="float" style={{
                     position: "absolute", width: "400px", height: "400px", borderRadius: "50%",
-                    background: "radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 70%)",
+                    background: "radial-gradient(circle, rgba(100,130,170,0.1) 0%, transparent 70%)",
                     top: "-100px", right: "-100px",
                 }} />
                 <div className="float" style={{
@@ -83,23 +83,27 @@ export default function LoginPage() {
                 width: "100%", maxWidth: "420px", padding: "40px",
                 position: "relative", zIndex: 1,
             }}>
-                {/* Header */}
+                {/* Header — marca Xelera */}
                 <div style={{ textAlign: "center", marginBottom: "32px" }}>
                     <div style={{
                         width: "56px", height: "56px", borderRadius: "16px",
-                        background: "var(--gradient-1)", display: "flex",
+                        background: "var(--gradient-accent)", display: "flex",
                         alignItems: "center", justifyContent: "center", margin: "0 auto 16px",
+                        boxShadow: "0 0 24px rgba(122,158,138,0.2)",
                     }}>
-                        <Bot size={28} color="white" />
+                        <span style={{
+                            fontFamily: "'Playfair Display', Georgia, serif",
+                            fontSize: "1.6rem", fontWeight: 700, color: "var(--bg-deep)",
+                            lineHeight: 1,
+                        }}>X</span>
                     </div>
-                    <h1 style={{
-                        fontSize: "1.5rem", fontWeight: 700,
-                        background: "var(--gradient-1)", WebkitBackgroundClip: "text",
-                        WebkitTextFillColor: "transparent",
+                    <h1 className="font-display" style={{
+                        fontSize: "1.6rem", fontWeight: 500,
+                        color: "var(--text-primary)", letterSpacing: "-0.02em",
                     }}>
-                        AI Agent Platform
+                        Xelera
                     </h1>
-                    <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginTop: "4px" }}>
+                    <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginTop: "6px" }}>
                         {isLogin ? "Ingresa a tu cuenta" : "Crea tu organización"}
                     </p>
                 </div>

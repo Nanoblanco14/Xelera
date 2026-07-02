@@ -363,7 +363,7 @@ export default function DashboardHome() {
                 </div>
                 {/* Metrics skeleton */}
                 <SkeletonBox w="80px" h="14px" mb="16px" />
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginBottom: "32px" }}>
+                <div className="r-grid-2" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginBottom: "32px" }}>
                     {[1,2,3,4].map(i => (
                         <div key={i} style={{ background: "rgba(122,158,138,0.03)", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px" }}>
                             <SkeletonBox w="120px" h="14px" mb="16px" />
@@ -373,7 +373,7 @@ export default function DashboardHome() {
                     ))}
                 </div>
                 {/* Bottom sections skeleton */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                <div className="r-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
                     {[1,2].map(i => (
                         <div key={i} style={{ background: "rgba(122,158,138,0.03)", border: "1px solid var(--border)", borderRadius: "16px", padding: "24px" }}>
                             <SkeletonBox w="160px" h="20px" mb="20px" />
@@ -757,7 +757,7 @@ export default function DashboardHome() {
                 <div style={{ flex: 1, height: "0.5px", background: "var(--border)" }} />
             </div>
             <div
-                className="dash-stagger-2"
+                className="dash-stagger-2 r-grid-2"
                 style={{
                     display: "grid",
                     gridTemplateColumns: "repeat(4, 1fr)",
@@ -797,7 +797,7 @@ export default function DashboardHome() {
             {/* ══════════════════════════════════════════════════════
                  MIDDLE ROW: Quick Actions + Agent Status
                  ══════════════════════════════════════════════════════ */}
-            <div className="dash-stagger-3" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+            <div className="dash-stagger-3 r-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
 
                 {/* ── Quick Actions ─────────────────────────────── */}
                 <div
@@ -1066,7 +1066,7 @@ export default function DashboardHome() {
                 <span style={{ fontSize: "0.62rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--text-muted)" }}>Actividad</span>
                 <div style={{ flex: 1, height: "0.5px", background: "var(--border)" }} />
             </div>
-            <div className="dash-stagger-4" style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "16px" }}>
+            <div className="dash-stagger-4 r-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "16px" }}>
 
                 {/* ── Recent Leads ─────────────────────────────── */}
                 <div

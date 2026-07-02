@@ -669,6 +669,14 @@ export default function AppointmentConfigSection({ orgId, orgSettings }: Appoint
                         </div>
                     </div>
 
+                    <Toggle
+                        active={config.hot_lead_alerts_enabled}
+                        onToggle={() => updateField("hot_lead_alerts_enabled", !config.hot_lead_alerts_enabled)}
+                        label="Alerta de lead caliente"
+                        description="Recibe un WhatsApp al instante cuando un cliente pida hablar con una persona"
+                        hasBorder
+                    />
+
                     {/* Owner phone */}
                     <div style={{
                         padding: "14px 0 4px 0",

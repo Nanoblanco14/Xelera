@@ -1183,6 +1183,11 @@ body {
     grid-column: span 2;
     grid-row: span 1;
   }
+  /* Con 5 tarjetas normales en 2 columnas la última quedaba
+     huérfana con un hueco al lado — que ocupe el ancho completo */
+  .bento-grid > :last-child {
+    grid-column: span 2;
+  }
 }
 
 /* ── Pricing toggle ──────────────────────────── */
@@ -1272,4 +1277,221 @@ body {
   height: 100%;
   background: var(--accent-sage);
   opacity: 0.4;
+}
+
+/* ═══════════════════════════════════════════════════
+   DASHBOARD RESPONSIVE — móvil (≤768px)
+   El sidebar de hover no funciona en táctil: se oculta
+   y se reemplaza por una barra de navegación inferior.
+   ═══════════════════════════════════════════════════ */
+
+/* Bottom nav — oculta en desktop */
+.dash-bottomnav {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* Sidebar y su borde decorativo fuera */
+  .dash-sidebar,
+  .dash-sidebar-border {
+    display: none !important;
+  }
+
+  /* Topbar ocupa todo el ancho */
+  .dash-topbar {
+    left: 0 !important;
+    padding: 0 16px !important;
+  }
+
+  /* Contenido: sin margen de sidebar, espacio para bottom nav */
+  .dash-main {
+    margin-left: 0 !important;
+    padding: 76px 16px calc(84px + env(safe-area-inset-bottom)) 16px !important;
+  }
+
+  /* Bottom nav visible */
+  .dash-bottomnav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 45;
+    display: flex;
+    justify-content: space-around;
+    align-items: stretch;
+    height: calc(60px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    background: rgba(14, 14, 13, 0.92);
+    backdrop-filter: blur(24px) saturate(1.2);
+    -webkit-backdrop-filter: blur(24px) saturate(1.2);
+    border-top: 0.5px solid var(--border);
+  }
+
+  .dash-bottomnav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.6rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 150ms ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .dash-bottomnav-item.active {
+    color: var(--accent-light);
+  }
+
+  .dash-bottomnav-label {
+    letter-spacing: 0.02em;
+  }
+
+  .dash-bottomnav-badge {
+    position: absolute;
+    top: -5px;
+    right: -8px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.55rem;
+    font-weight: 700;
+    background: var(--danger);
+    color: #fff;
+    border: 1.5px solid var(--bg-deep);
+  }
+
+  /* Hoja "Más" */
+  .dash-moresheet-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 46;
+    background: rgba(0, 0, 0, 0.55);
+  }
+
+  .dash-moresheet {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 47;
+    background: var(--bg-secondary);
+    border-top: 0.5px solid var(--border-soft);
+    border-radius: 20px 20px 0 0;
+    padding: 8px 16px calc(20px + env(safe-area-inset-bottom));
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.5);
+  }
+
+  .dash-moresheet-handle {
+    width: 36px;
+    height: 4px;
+    border-radius: 100px;
+    background: rgba(255, 255, 255, 0.12);
+    margin: 6px auto 14px;
+  }
+
+  .dash-moresheet-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 10px;
+    border-radius: 10px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  .dash-moresheet-item.active {
+    color: var(--accent-light);
+    background: var(--accent-subtle);
+  }
+
+  .dash-moresheet-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 14px 10px 0;
+    border-top: 0.5px solid var(--border);
+  }
+
+  .dash-moresheet-email {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+
+  .dash-moresheet-logout {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    background: var(--danger-bg);
+    border: 0.5px solid rgba(199, 90, 90, 0.25);
+    color: var(--danger);
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  /* ── Ajustes generales de páginas en móvil ── */
+  .page-header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  /* ── Inbox: un panel a la vez ── */
+  .inbox-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .inbox-layout[data-view="chat"] .inbox-list {
+    display: none !important;
+  }
+
+  .inbox-layout[data-view="list"] .inbox-chat {
+    display: none !important;
+  }
+
+  .inbox-back-btn {
+    display: inline-flex !important;
+    align-items: center;
+  }
+
+  /* ── Pipeline: kanban con scroll horizontal táctil ── */
+  .pipeline-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+  }
+
+  .pipeline-scroll > * {
+    scroll-snap-align: start;
+    min-width: 270px;
+  }
+
+  /* ── Grillas responsivas (usadas por páginas del dashboard) ── */
+  .r-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .r-grid-2 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
 }

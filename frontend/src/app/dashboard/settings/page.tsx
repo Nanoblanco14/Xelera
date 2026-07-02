@@ -66,7 +66,9 @@ export default function SettingsPage() {
             const data = await loadTenantSettings(organization.id);
             if (data) {
                 setApiKey(data.openai_api_key);
-                if (data.whatsapp_credentials?.access_token)
+                // El access_token llega enmascarado del servidor — no
+                // prellenar el campo de conexión manual con la máscara.
+                if (data.whatsapp_credentials?.access_token && !data.whatsapp_credentials.access_token.includes("••"))
                     setMetaToken(data.whatsapp_credentials.access_token);
                 if (data.whatsapp_credentials?.phone_number_id)
                     setMetaPhoneId(data.whatsapp_credentials.phone_number_id);

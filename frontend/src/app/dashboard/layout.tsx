@@ -39,6 +39,16 @@ const NAV_ITEMS = [
     { href: "/dashboard/settings", label: "Configuración", icon: Settings },
 ];
 
+// Móvil: 4 accesos directos en la barra inferior; el resto va en "Más"
+const MOBILE_PRIMARY_HREFS = [
+    "/dashboard",
+    "/dashboard/inbox",
+    "/dashboard/pipeline",
+    "/dashboard/calendar",
+];
+const MOBILE_PRIMARY_ITEMS = NAV_ITEMS.filter(i => MOBILE_PRIMARY_HREFS.includes(i.href));
+const MOBILE_MORE_ITEMS = NAV_ITEMS.filter(i => !MOBILE_PRIMARY_HREFS.includes(i.href));
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
@@ -48,6 +58,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const [error, setError] = useState("");
     const [collapsed, setCollapsed] = useState(true);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [moreOpen, setMoreOpen] = useState(false);
 
     // ── Fetch unread (pending) inbox count ──
     const fetchUnread = useCallback(async (orgId: string) => {
@@ -188,8 +199,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <OrgProvider value={orgCtx!}>
             <div className="flex min-h-screen" style={{ background: "var(--bg-primary)" }}>
 
-                {/* ── Sidebar ────────────────────────── */}
+                {/* ── Sidebar (solo desktop — ver .dash-sidebar en globals.css) ── */}
                 <aside
+                    className="dash-sidebar"
                     onMouseEnter={() => setCollapsed(false)}
                     onMouseLeave={() => setCollapsed(true)}
                     style={{
@@ -524,6 +536,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                 {/* ── Topbar ─────────────────────────────── */}
                 <div
+                    className="dash-topbar"
                     style={{
                         position: "fixed",
                         top: 0,
@@ -592,7 +605,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                    className="page-container flex-1"
+                    className="dash-main page-container flex-1"
                     style={{
                         marginLeft: sidebarW,
                         paddingTop: "84px",
@@ -621,8 +634,85 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     }
                 `}</style>
 
+                {/* ── Bottom Nav (solo móvil) ─────────────── */}
+                <nav className="dash-bottomnav">
+                    {MOBILE_PRIMARY_ITEMS.map(item => {
+                        const isActive = pathname === item.href ||
+                            (item.href !== "/dashboard" && pathname.startsWith(item.href));
+                        return (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className={`dash-bottomnav-item${isActive ? " active" : ""}`}
+                            >
+                                <span style={{ position: "relative", display: "inline-flex" }}>
+                                    <item.icon size={21} strokeWidth={isActive ? 2.2 : 1.8} />
+                                    {item.label === "Inbox" && unreadCount > 0 && (
+                                        <span className="dash-bottomnav-badge">
+                                            {unreadCount > 9 ? "9+" : unreadCount}
+                                        </span>
+                                    )}
+                                </span>
+                                <span className="dash-bottomnav-label">{item.label}</span>
+                            </Link>
+                        );
+                    })}
+                    <button
+                        className={`dash-bottomnav-item${moreOpen ? " active" : ""}`}
+                        onClick={() => setMoreOpen(v => !v)}
+                        aria-label="Más opciones"
+                    >
+                        <Settings size={21} strokeWidth={moreOpen ? 2.2 : 1.8} />
+                        <span className="dash-bottomnav-label">Más</span>
+                    </button>
+                </nav>
+
+                {/* ── Hoja "Más" (solo móvil) ─────────────── */}
+                <AnimatePresence>
+                    {moreOpen && (
+                        <>
+                            <motion.div
+                                className="dash-moresheet-backdrop"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setMoreOpen(false)}
+                            />
+                            <motion.div
+                                className="dash-moresheet"
+                                initial={{ y: "100%" }}
+                                animate={{ y: 0 }}
+                                exit={{ y: "100%" }}
+                                transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                            >
+                                <div className="dash-moresheet-handle" />
+                                {MOBILE_MORE_ITEMS.map(item => {
+                                    const isActive = pathname.startsWith(item.href);
+                                    return (
+                                        <Link
+                                            key={item.href}
+                                            href={item.href}
+                                            onClick={() => setMoreOpen(false)}
+                                            className={`dash-moresheet-item${isActive ? " active" : ""}`}
+                                        >
+                                            <item.icon size={18} />
+                                            {item.label}
+                                        </Link>
+                                    );
+                                })}
+                                <div className="dash-moresheet-footer">
+                                    <span className="dash-moresheet-email">{userEmail}</span>
+                                    <button onClick={handleLogout} className="dash-moresheet-logout">
+                                        <LogOut size={15} /> Cerrar sesión
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </>
+                    )}
+                </AnimatePresence>
+
                 {/* Sidebar right gradient border (pseudo via extra element) */}
-                <div style={{
+                <div className="dash-sidebar-border" style={{
                     position: "fixed",
                     top: 0,
                     left: sidebarW,
