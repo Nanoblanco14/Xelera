@@ -167,6 +167,20 @@ pendiente u org sin contenido), el prompt cae al modo legacy completo.
 
 Migración requerida: `supabase/migrations/20260702_fase2_memoria.sql`.
 
+## Analítica de eventos (Eje 1)
+
+Event sourcing ligero: el webhook y el procesador escriben en `analytics_events`
+(`message_received`, `bot_replied` con latencia percibida, `handoff`,
+`stage_changed`, `appointment_booked`, `lead_created`). El cron consolida cada
+hora en `daily_org_metrics` (upsert idempotente de hoy + ayer por org).
+
+La sección **Rendimiento del agente IA** en `/dashboard/analytics` lee el
+histórico desde el agregado y calcula HOY en vivo: tiempo de respuesta
+percibido (debounce incluido), % de resolución sin humano, tokens consumidos
+con costo estimado en USD, y la tendencia de 14 días.
+
+Migración requerida: `supabase/migrations/20260702_eje1_analytics.sql`.
+
 ## Base de Datos (Supabase)
 
 Tablas principales:

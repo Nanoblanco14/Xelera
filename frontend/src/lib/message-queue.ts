@@ -44,6 +44,8 @@ export interface ClaimedBatch {
     messageCount: number;
     leadId: string | null;
     batchId: string;
+    /** created_at del mensaje más reciente del lote (para latencia percibida) */
+    lastMessageAt: string;
 }
 
 let bufferMissingWarned = false;
@@ -156,6 +158,7 @@ export async function claimBatch(
         messageCount: rows.length,
         leadId: rows.find((r) => r.lead_id)?.lead_id ?? null,
         batchId,
+        lastMessageAt: rows[rows.length - 1].created_at,
     };
 }
 
@@ -196,6 +199,8 @@ export async function runDebouncedProcessing(
             leadId: batch.leadId,
             combinedText: batch.combinedText,
             sendReply: true,
+            lastUserMessageAt: batch.lastMessageAt,
+            batchMessageCount: batch.messageCount,
         });
     } catch (err) {
         captureError(err, "queue:debounce", { orgId, phone });
@@ -227,6 +232,8 @@ export async function sweepStaleMessages(): Promise<number> {
                 leadId: batch.leadId,
                 combinedText: batch.combinedText,
                 sendReply: true,
+                lastUserMessageAt: batch.lastMessageAt,
+                batchMessageCount: batch.messageCount,
             });
             processed++;
         } catch (err) {

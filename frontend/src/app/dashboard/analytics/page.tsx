@@ -4,9 +4,9 @@ import { useOrg } from "@/lib/org-context";
 import {
     Loader2, Users, CalendarCheck, TrendingUp,
     MessageSquare, BarChart3, Zap, FileText, MessageCircle,
-    Activity, Clock, ArrowDownRight,
+    Activity, Clock, ArrowDownRight, Gauge, Bot, Coins, Timer,
 } from "lucide-react";
-import { PipelineDonut, LeadsBarChart, LeadsTrendChart, PeakHoursChart } from "./charts";
+import { PipelineDonut, LeadsBarChart, LeadsTrendChart, PeakHoursChart, AiPerformanceChart } from "./charts";
 
 /* ─── Types ──────────────────────────────────────────────────── */
 interface StageEntry {
@@ -38,6 +38,32 @@ interface FunnelEntry {
     count: number;
     percentage: number;
     position: number;
+}
+
+/* ── Eje 1: rendimiento del agente IA ── */
+interface AiDailyMetric {
+    metric_date: string;
+    messages_received: number;
+    bot_replies: number;
+    avg_latency_ms: number | null;
+    active_conversations: number;
+    handoffs: number;
+    leads_created: number;
+    appointments_booked: number;
+    total_tokens: number;
+    prompt_tokens: number;
+    completion_tokens: number;
+}
+
+interface PerformanceStats {
+    avgResponseSeconds: number | null;
+    resolutionRate: number | null;
+    totalConversations: number;
+    botReplies: number;
+    totalTokens: number;
+    estimatedCostUsd: number;
+    daily: AiDailyMetric[];
+    hasEventData: boolean;
 }
 
 interface AnalyticsData {
@@ -129,15 +155,22 @@ function ChartCard({ title, icon, children }: { title: string; icon: React.React
 export default function AnalyticsPage() {
     const { organization } = useOrg();
     const [data, setData] = useState<AnalyticsData | null>(null);
+    const [perf, setPerf] = useState<PerformanceStats | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     const loadAnalytics = useCallback(async () => {
         setError(null);
         try {
-            const res = await fetch(`/api/analytics?org_id=${organization.id}`);
+            // Métricas clásicas + rendimiento IA en paralelo
+            const [res, perfRes] = await Promise.all([
+                fetch(`/api/analytics?org_id=${organization.id}`),
+                fetch(`/api/analytics/performance?org_id=${organization.id}&days=14`),
+            ]);
             const json = await res.json();
             if (json.data) setData(json.data);
+            const perfJson = await perfRes.json().catch(() => null);
+            if (perfJson?.data) setPerf(perfJson.data);
         } catch (err) {
             console.error("Failed to load analytics:", err);
             setError("No se pudieron cargar las metricas. Intenta de nuevo.");
@@ -217,6 +250,66 @@ export default function AnalyticsPage() {
                     accent="#5d8270"
                 />
             </div>
+
+            {/* ══════════════════════════════════════════════════
+                 EJE 1 — Rendimiento del Agente IA (últimos 14 días)
+                 Fuente: analytics_events + daily_org_metrics + ai_usage_log
+               ══════════════════════════════════════════════════ */}
+            {perf && (
+                <>
+                    <div className="section-label">Rendimiento del agente IA · 14 días</div>
+                    <div className="stagger-children" style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                        gap: "16px",
+                    }}>
+                        <KpiCard
+                            icon={<Timer size={16} />}
+                            label="Tiempo de Respuesta"
+                            value={perf.avgResponseSeconds !== null ? `${perf.avgResponseSeconds}s` : "—"}
+                            sub="Desde el mensaje del cliente hasta la respuesta (incluye agrupado de ráfagas)"
+                            accent="#7a9e8a"
+                        />
+                        <KpiCard
+                            icon={<Bot size={16} />}
+                            label="Resolución sin Humano"
+                            value={perf.resolutionRate !== null ? `${perf.resolutionRate}%` : "—"}
+                            sub={`${perf.totalConversations} conversaciones atendidas en el período`}
+                            accent="#22c55e"
+                        />
+                        <KpiCard
+                            icon={<Coins size={16} />}
+                            label="Tokens Consumidos"
+                            value={perf.totalTokens >= 1000
+                                ? `${(perf.totalTokens / 1000).toFixed(1)}k`
+                                : perf.totalTokens}
+                            sub={`≈ US$${perf.estimatedCostUsd.toFixed(2)} en OpenAI (estimado)`}
+                            accent="#6482aa"
+                        />
+                        <KpiCard
+                            icon={<Gauge size={16} />}
+                            label="Turnos Respondidos"
+                            value={perf.botReplies}
+                            sub="Ráfagas de mensajes procesadas como un solo turno"
+                            accent="#c4a35a"
+                        />
+                    </div>
+
+                    <ChartCard title="Actividad del agente (conversaciones vs. tokens)" icon={<Activity size={14} />}>
+                        <AiPerformanceChart data={perf.daily} />
+                        {!perf.hasEventData && (
+                            <p style={{
+                                fontSize: "0.72rem", color: "var(--text-muted)",
+                                marginTop: "10px", textAlign: "center",
+                            }}>
+                                ⚠️ La tabla de eventos aún no existe — ejecuta la migración{" "}
+                                <code style={{ color: "var(--accent-light)" }}>20260702_eje1_analytics.sql</code>{" "}
+                                para activar latencia y resolución.
+                            </p>
+                        )}
+                    </ChartCard>
+                </>
+            )}
 
             {/* ── Charts Row ───────────────────────────────────── */}
             <div className="section-label">Distribución</div>

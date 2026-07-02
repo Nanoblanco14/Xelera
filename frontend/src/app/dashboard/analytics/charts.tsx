@@ -307,3 +307,110 @@ export function PeakHoursChart({ data }: PeakHoursChartProps) {
         </ResponsiveContainer>
     );
 }
+
+/* ─── Area Chart — Actividad del Agente IA (Eje 1) ──────────── */
+interface AiDailyEntry {
+    metric_date: string;
+    active_conversations: number;
+    bot_replies: number;
+    total_tokens: number;
+}
+
+interface AiPerformanceChartProps {
+    data: AiDailyEntry[];
+}
+
+export function AiPerformanceChart({ data }: AiPerformanceChartProps) {
+    const hasActivity = data.some(
+        (d) => d.active_conversations > 0 || d.bot_replies > 0 || d.total_tokens > 0
+    );
+    if (data.length === 0 || !hasActivity) {
+        return (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "220px", color: "var(--text-muted)", fontSize: "0.8rem" }}>
+                Sin actividad registrada aún — los eventos comienzan a acumularse con cada conversación
+            </div>
+        );
+    }
+
+    const formatted = data.map((d) => ({
+        ...d,
+        label: new Date(d.metric_date + "T12:00:00").toLocaleDateString("es-CL", { day: "numeric", month: "short" }),
+    }));
+
+    return (
+        <ResponsiveContainer width="100%" height={260}>
+            <AreaChart data={formatted} margin={{ top: 4, right: 4, left: -20, bottom: 4 }}>
+                <defs>
+                    <linearGradient id="gradConvos" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#7a9e8a" stopOpacity={0.3} />
+                        <stop offset="100%" stopColor="#7a9e8a" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="gradTokens" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#6482aa" stopOpacity={0.2} />
+                        <stop offset="100%" stopColor="#6482aa" stopOpacity={0} />
+                    </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <XAxis
+                    dataKey="label"
+                    tick={{ fill: "#71717a", fontSize: 9 }}
+                    tickLine={false}
+                    axisLine={false}
+                    interval={1}
+                />
+                <YAxis
+                    yAxisId="left"
+                    tick={{ fill: "#71717a", fontSize: 10 }}
+                    tickLine={false}
+                    axisLine={false}
+                    allowDecimals={false}
+                />
+                <YAxis
+                    yAxisId="right"
+                    orientation="right"
+                    tick={{ fill: "#5a6b82", fontSize: 10 }}
+                    tickLine={false}
+                    axisLine={false}
+                    allowDecimals={false}
+                    tickFormatter={(v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))}
+                />
+                <Tooltip
+                    contentStyle={{
+                        background: "var(--bg-elevated)",
+                        border: "0.5px solid var(--border)",
+                        borderRadius: "10px",
+                        color: "var(--text-primary)",
+                        fontSize: "0.78rem",
+                    }}
+                />
+                <Area
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey="active_conversations"
+                    name="Conversaciones"
+                    stroke="#7a9e8a"
+                    fill="url(#gradConvos)"
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4, fill: "#7a9e8a" }}
+                />
+                <Area
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey="total_tokens"
+                    name="Tokens IA"
+                    stroke="#6482aa"
+                    fill="url(#gradTokens)"
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4, fill: "#6482aa" }}
+                />
+                <Legend
+                    iconType="circle"
+                    iconSize={8}
+                    wrapperStyle={{ fontSize: "0.72rem", color: "var(--text-muted)", paddingTop: "8px" }}
+                />
+            </AreaChart>
+        </ResponsiveContainer>
+    );
+}

@@ -34,6 +34,7 @@ import {
     orgHasKnowledgeIndex,
     retrieveKnowledge,
 } from "@/lib/knowledge-indexer";
+import { trackEvent } from "@/lib/analytics";
 import { z } from "zod/v4";
 
 // ═══════════════════════════════════════════════════════════════
@@ -116,6 +117,14 @@ async function validateAndRecordTransition(
         // Non-blocking — don't fail the transition if history insert fails
         console.error("⚠️ Error guardando historial (no bloqueante):", historyErr);
     }
+
+    // 📈 Evento: transición de etapa
+    trackEvent({
+        orgId,
+        leadId,
+        type: "stage_changed",
+        metadata: { from: fromStageId, to: toStageId, by: changedBy },
+    }).catch(() => { /* no bloquear */ });
 
     return { valid: true, message: "Transición válida" };
 }
@@ -733,6 +742,11 @@ export interface ProcessTurnParams {
     /** true → envía la respuesta por WhatsApp (flujo asíncrono/cola);
      *  false → solo la devuelve (fallback inline: la ruta responde TwiML) */
     sendReply: boolean;
+    /** created_at del último mensaje del cliente — para medir la
+     *  latencia PERCIBIDA (incluye la ventana de debounce) */
+    lastUserMessageAt?: string;
+    /** cuántos mensajes de la ráfaga componen este turno */
+    batchMessageCount?: number;
 }
 
 export interface ProcessTurnResult {
@@ -1259,6 +1273,17 @@ ${hoursText}
                         }).catch(() => { /* la memoria nunca bloquea */ });
                     }
 
+                    // 📈 Evento: cita confirmada vía CRM (flujo sin
+                    // sistema de agenda — orgs que usan solo el pipeline)
+                    if (estado_filtro === "Calificado" && fecha_hora_cita) {
+                        trackEvent({
+                            orgId: tenantId,
+                            leadId,
+                            type: "appointment_booked",
+                            metadata: { source: "crm_tool", fecha: fecha_hora_cita },
+                        }).catch(() => { /* no bloquear */ });
+                    }
+
                     // ── Auto-template: stage transition ────────────────
                     {
                         const stageEventMap: Record<string, AutoTemplateEvent> = {
@@ -1323,6 +1348,13 @@ ${hoursText}
                             leadPhone: phoneClean,
                             reason: resumen_conversacion,
                         }).catch(err => console.error("[OwnerAlert] Hot lead error:", err));
+
+                        // 📈 Evento: derivación a humano
+                        trackEvent({
+                            orgId: tenantId,
+                            leadId: notifLead?.id || leadId,
+                            type: "handoff",
+                        }).catch(() => { /* no bloquear */ });
                     }
 
                     // ── Optional Make/Zapier webhook ──────────────────
@@ -1430,6 +1462,14 @@ ${hoursText}
                     });
 
                     if (result.success) {
+                        // 📈 Evento: cita creada por el sistema de agenda
+                        trackEvent({
+                            orgId: tenantId,
+                            leadId,
+                            type: "appointment_booked",
+                            metadata: { source: "scheduler", appointment_id: result.appointment.id },
+                        }).catch(() => { /* no bloquear */ });
+
                         // Update lead name if still generic
                         const { data: currentLead } = await supabaseAdmin
                             .from("leads")
@@ -1605,6 +1645,21 @@ ${hoursText}
                 role: "assistant",
                 content: botResponse,
             });
+        }
+
+        // 📈 Evento: respuesta del bot con latencia percibida
+        // (desde el último mensaje del cliente, debounce incluido)
+        if (botResponse) {
+            const latencyMs = params.lastUserMessageAt
+                ? Math.max(0, Date.now() - new Date(params.lastUserMessageAt).getTime())
+                : undefined;
+            trackEvent({
+                orgId: tenantId,
+                leadId,
+                type: "bot_replied",
+                latencyMs,
+                metadata: { batch_size: params.batchMessageCount ?? 1 },
+            }).catch(() => { /* analytics nunca bloquea */ });
         }
 
         // ── 8b. Fase 2: mantenimiento de memoria (fire-and-forget)

@@ -27,6 +27,7 @@ import {
 import { checkFeatureAccess } from "@/lib/plan-limits";
 import { formatChileDate } from "@/lib/appointments";
 import { sweepStaleMessages } from "@/lib/message-queue";
+import { aggregateDailyMetrics } from "@/lib/analytics";
 import { captureError } from "@/lib/monitoring";
 
 const CHILE_TZ = "America/Santiago";
@@ -644,12 +645,21 @@ async function runAllJobs() {
         sendStalledConversationNudges(),
     ]);
 
+    // Job final: consolidar métricas diarias (hoy + ayer, idempotente)
+    let orgsAggregated = 0;
+    try {
+        orgsAggregated = await aggregateDailyMetrics();
+    } catch (err) {
+        captureError(err, "cron:aggregate");
+    }
+
     console.log(
         `[Cron] Done — swept: ${sweptBatches}, 24h: ${remindersSent}, 1h: ${oneHourSent}, digests: ${digestsSent}, ` +
-        `post_visit: ${postVisitSent}, inactive: ${inactiveSent}, stalled: ${stalledSent}`
+        `post_visit: ${postVisitSent}, inactive: ${inactiveSent}, stalled: ${stalledSent}, aggregated: ${orgsAggregated}`
     );
 
     return {
+        orgs_metrics_aggregated: orgsAggregated,
         swept_message_batches: sweptBatches,
         reminders_24h_sent: remindersSent,
         reminders_1h_sent: oneHourSent,

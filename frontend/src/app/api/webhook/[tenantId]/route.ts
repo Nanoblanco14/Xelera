@@ -25,6 +25,7 @@ import {
 import { processLeadTurn, getOrCreateFirstStage } from "@/lib/message-processor";
 import { bufferIncomingMessage, runDebouncedProcessing } from "@/lib/message-queue";
 import { captureError } from "@/lib/monitoring";
+import { trackEvent } from "@/lib/analytics";
 
 // ── Supabase Admin (bypasses RLS for webhook) ───────────────
 const supabaseAdmin = createClient(
@@ -338,6 +339,10 @@ export async function POST(
                     { onConflict: "organization_id,phone", ignoreDuplicates: true }
                 );
             }
+
+            // 📈 Evento: lead nuevo captado
+            trackEvent({ orgId: tenantId, type: "lead_created" })
+                .catch(() => { /* no bloquear */ });
         }
 
         // ── 3b. Resolve leadId ────────────────────────────────
@@ -365,6 +370,10 @@ export async function POST(
                 content: incomingMsg,
             });
         }
+
+        // 📈 Evento: mensaje entrante
+        trackEvent({ orgId: tenantId, leadId, type: "message_received" })
+            .catch(() => { /* no bloquear */ });
 
         // ── 4. Encolar con debounce ───────────────────────────
         const buffered = await bufferIncomingMessage({
@@ -397,6 +406,8 @@ export async function POST(
             combinedText: incomingMsg,
             // Meta: el procesador envía por API. Twilio: respondemos TwiML.
             sendReply: provider === "meta",
+            lastUserMessageAt: new Date().toISOString(),
+            batchMessageCount: 1,
         });
 
         if (provider === "twilio") {
