@@ -29,6 +29,7 @@ import { formatChileDate } from "@/lib/appointments";
 import { sweepStaleMessages } from "@/lib/message-queue";
 import { aggregateDailyMetrics } from "@/lib/analytics";
 import { linkOutboundMessage } from "@/lib/delivery-status";
+import { checkMetaTokenHealth } from "@/lib/token-health";
 import { captureError } from "@/lib/monitoring";
 
 const CHILE_TZ = "America/Santiago";
@@ -664,12 +665,25 @@ async function runAllJobs() {
         captureError(err, "cron:aggregate");
     }
 
+    // 🩺 Health-check de tokens Meta: cadencia diaria POR ORG
+    // (el marcador meta_token_checked_at gobierna la frecuencia,
+    // no la hora del cron — funciona con cron horario o diario)
+    let tokenHealth = { orgsChecked: 0, alertsCreated: 0 };
+    try {
+        tokenHealth = await checkMetaTokenHealth();
+    } catch (err) {
+        captureError(err, "cron:token_health");
+    }
+
     console.log(
         `[Cron] Done — swept: ${sweptBatches}, 24h: ${remindersSent}, 1h: ${oneHourSent}, digests: ${digestsSent}, ` +
-        `post_visit: ${postVisitSent}, inactive: ${inactiveSent}, stalled: ${stalledSent}, aggregated: ${orgsAggregated}`
+        `post_visit: ${postVisitSent}, inactive: ${inactiveSent}, stalled: ${stalledSent}, aggregated: ${orgsAggregated}, ` +
+        `tokens: ${tokenHealth.orgsChecked} checked/${tokenHealth.alertsCreated} alerts`
     );
 
     return {
+        tokens_checked: tokenHealth.orgsChecked,
+        token_alerts_created: tokenHealth.alertsCreated,
         orgs_metrics_aggregated: orgsAggregated,
         swept_message_batches: sweptBatches,
         reminders_24h_sent: remindersSent,

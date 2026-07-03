@@ -242,6 +242,12 @@ automaticamente si la variable existe en el proyecto). Jobs que ejecuta:
 5. Reactivacion de leads inactivos (7+ dias sin actividad)
 6. Empujon a conversaciones estancadas (~20 h sin respuesta del cliente, antes de que
    cierre la ventana de sesion de 24 h de WhatsApp)
+7. Consolidacion de metricas diarias (daily_org_metrics, hoy + ayer, idempotente)
+8. Health-check proactivo de tokens Meta: valida el access_token de cada org contra
+   Graph API (debug_token + ping al phone_number_id) con cadencia diaria POR ORG
+   (marcador en settings — independiente de la hora del cron). Token invalido o que
+   vence en <72 h → alerta in-app centralizada (tipo token_health, deduplicada 1/dia)
+   + Sentry. El dueno reconecta ANTES de perder el primer mensaje.
 
 > **Nota plan Hobby de Vercel:** los crons solo corren una vez al dia. Para frecuencia
 > horaria real usa un cron externo gratuito (p. ej. cron-job.org) apuntando por POST a
