@@ -35,6 +35,7 @@ import {
     retrieveKnowledge,
 } from "@/lib/knowledge-indexer";
 import { trackEvent } from "@/lib/analytics";
+import { linkOutboundMessage, markOutboundFailed } from "@/lib/delivery-status";
 import { z } from "zod/v4";
 
 // ═══════════════════════════════════════════════════════════════
@@ -1639,12 +1640,18 @@ ${hoursText}
         // ── 8. Persist bot response to Supabase ───────────────
         // lead_messages is the single source of truth for history.
         // No in-memory state to maintain or truncate.
+        let botMessageRowId: string | null = null;
         if (leadId && botResponse) {
-            await supabaseAdmin.from("lead_messages").insert({
-                lead_id: leadId,
-                role: "assistant",
-                content: botResponse,
-            });
+            const { data: insertedMsg } = await supabaseAdmin
+                .from("lead_messages")
+                .insert({
+                    lead_id: leadId,
+                    role: "assistant",
+                    content: botResponse,
+                })
+                .select("id")
+                .single();
+            botMessageRowId = insertedMsg?.id ?? null;
         }
 
         // 📈 Evento: respuesta del bot con latencia percibida
@@ -1687,6 +1694,16 @@ ${hoursText}
                     "processor:send",
                     { orgId: tenantId, phone: phoneClean }
                 );
+                // ⚠ inmediato en el inbox: el envío mismo falló
+                if (botMessageRowId) {
+                    markOutboundFailed(botMessageRowId, sendResult.error || "send_failed")
+                        .catch(() => { /* no bloquear */ });
+                }
+            } else if (botMessageRowId && sendResult.providerMessageId) {
+                // ✓ vincula el wamid → los statuses de Meta actualizarán
+                // esta fila (delivered/read) vía webhook + Realtime
+                linkOutboundMessage(botMessageRowId, sendResult.providerMessageId)
+                    .catch(() => { /* no bloquear */ });
             }
         }
 

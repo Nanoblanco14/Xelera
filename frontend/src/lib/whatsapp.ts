@@ -8,6 +8,9 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 interface SendResult {
     success: boolean;
     error?: string;
+    /** wamid (Meta) o SID (Twilio) del mensaje enviado — permite
+     *  vincular los webhooks de statuses (✓/✓✓) a la fila del inbox */
+    providerMessageId?: string;
 }
 
 /**
@@ -57,7 +60,11 @@ export async function sendWhatsAppMessage(
                 console.error("[WhatsApp:Meta] Send error:", errData);
                 return { success: false, error: `Meta API error: ${res.status}` };
             }
-            return { success: true };
+            const body = await res.json().catch(() => ({}));
+            return {
+                success: true,
+                providerMessageId: body?.messages?.[0]?.id || undefined,
+            };
         }
 
         if (provider === "twilio" && creds.account_sid && creds.auth_token) {
@@ -79,7 +86,11 @@ export async function sendWhatsAppMessage(
                 console.error("[WhatsApp:Twilio] Send error:", res.status);
                 return { success: false, error: `Twilio error: ${res.status}` };
             }
-            return { success: true };
+            const body = await res.json().catch(() => ({}));
+            return {
+                success: true,
+                providerMessageId: body?.sid || undefined,
+            };
         }
 
         return { success: false, error: "WhatsApp no configurado para esta organización" };

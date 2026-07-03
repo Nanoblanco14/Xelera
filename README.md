@@ -141,6 +141,15 @@ cuyo timer haya muerto (>90 s sin procesar).
 Si la tabla de cola no existe (migración pendiente), el webhook degrada al
 procesamiento inline original sin perder mensajes.
 
+**✓✓ Estados de entrega (Outbox)**: cada envío guarda su wamid en
+`lead_messages.provider_message_id`; los webhooks de `statuses` de Meta
+actualizan `delivery_status` (sent → delivered → read, con monotonicidad ante
+webhooks fuera de orden; `failed` persiste el error). El inbox muestra los
+checks estilo WhatsApp (✓ / ✓✓ gris / ✓✓ azul / ⚠ con tooltip) y avanzan en
+vivo vía Realtime. Los fallos generan alerta centralizada: Sentry + notificación
+in-app deduplicada (máx. 1 cada 6 h), con detección específica de token de Meta
+vencido. Migración requerida: `supabase/migrations/20260702_outbox_status.sql`.
+
 **🎤 Notas de voz (Whisper)**: los audios de WhatsApp (Meta) se transcriben
 automáticamente — descarga vía Graph API (límite 16 MB), Whisper (`whisper-1`,
 español) y el texto entra al flujo normal con prefijo `🎤` (visible en el

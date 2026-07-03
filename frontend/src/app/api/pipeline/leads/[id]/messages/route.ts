@@ -27,11 +27,26 @@ export async function GET(
             return apiError("Lead no encontrado", 404, "NOT_FOUND");
         }
 
-        const { data, error } = await db
+        // Incluye los estados de entrega (✓/✓✓); si la migración
+        // del outbox no corrió aún, cae al select clásico.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let data: any[] | null = null;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let error: any = null;
+
+        ({ data, error } = await db
             .from("lead_messages")
-            .select("id, lead_id, role, content, created_at")
+            .select("id, lead_id, role, content, created_at, delivery_status, delivery_error")
             .eq("lead_id", id)
-            .order("created_at", { ascending: true });
+            .order("created_at", { ascending: true }));
+
+        if (error && (error.code === "42703" || /column|schema cache/i.test(error.message || ""))) {
+            ({ data, error } = await db
+                .from("lead_messages")
+                .select("id, lead_id, role, content, created_at")
+                .eq("lead_id", id)
+                .order("created_at", { ascending: true }));
+        }
 
         if (error) throw error;
         return NextResponse.json({ data: data ?? [] });

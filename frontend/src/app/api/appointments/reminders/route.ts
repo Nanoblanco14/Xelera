@@ -28,6 +28,7 @@ import { checkFeatureAccess } from "@/lib/plan-limits";
 import { formatChileDate } from "@/lib/appointments";
 import { sweepStaleMessages } from "@/lib/message-queue";
 import { aggregateDailyMetrics } from "@/lib/analytics";
+import { linkOutboundMessage } from "@/lib/delivery-status";
 import { captureError } from "@/lib/monitoring";
 
 const CHILE_TZ = "America/Santiago";
@@ -601,11 +602,21 @@ async function sendStalledConversationNudges(): Promise<number> {
             if (result.success) {
                 // Persistir en el historial para que el Inbox (y la IA
                 // en el próximo turno) vean el empujón
-                await db.from("lead_messages").insert({
-                    lead_id: lead.id,
-                    role: "assistant",
-                    content: message,
-                });
+                const { data: nudgeMsg } = await db
+                    .from("lead_messages")
+                    .insert({
+                        lead_id: lead.id,
+                        role: "assistant",
+                        content: message,
+                    })
+                    .select("id")
+                    .single();
+
+                // Outbox: vincular wamid para checks ✓/✓✓
+                if (nudgeMsg?.id && result.providerMessageId) {
+                    linkOutboundMessage(nudgeMsg.id, result.providerMessageId)
+                        .catch(() => { /* no bloquear */ });
+                }
                 sent++;
                 console.log(`[Stalled] Nudge sent to ${lead.phone} (lead ${lead.id})`);
             }

@@ -8,7 +8,7 @@ import {
     MessageSquare, Search, Send, Loader2, Bot, User,
     Phone, Clock, PauseCircle, PlayCircle, AlertTriangle,
     ChevronRight, ChevronLeft, Inbox as InboxIcon, Zap, Plus, X,
-    StickyNote, Trash2, Hash, Timer, CheckCheck, Filter,
+    StickyNote, Trash2, Hash, Timer, Check, CheckCheck, Filter,
     FileText, Eye,
 } from "lucide-react";
 
@@ -44,6 +44,36 @@ interface ChatMessage {
     role: "user" | "assistant";
     content: string;
     created_at: string;
+    /** Outbox: estado de entrega de WhatsApp (✓/✓✓/⚠) */
+    delivery_status?: "sent" | "delivered" | "read" | "failed" | null;
+    delivery_error?: string | null;
+}
+
+/* ── Checks de entrega estilo WhatsApp ─────────────────────────
+   null → reloj tenue (mensaje pre-outbox o confirmación pendiente)
+   sent → ✓ · delivered → ✓✓ gris · read → ✓✓ azul · failed → ⚠ */
+function DeliveryTicks({ status, error }: {
+    status?: ChatMessage["delivery_status"];
+    error?: string | null;
+}) {
+    if (status === "failed") {
+        return (
+            <span title={error || "No se pudo entregar"} style={{ display: "inline-flex", cursor: "help" }}>
+                <AlertTriangle size={11} style={{ color: "var(--danger)" }} />
+            </span>
+        );
+    }
+    if (status === "read") {
+        return <CheckCheck size={12} style={{ color: "#4fc3f7" }} />;
+    }
+    if (status === "delivered") {
+        return <CheckCheck size={12} style={{ color: "var(--text-muted)" }} />;
+    }
+    if (status === "sent") {
+        return <Check size={12} style={{ color: "var(--text-muted)" }} />;
+    }
+    // Sin estado: mensaje previo al outbox o confirmación pendiente
+    return <Clock size={10} style={{ color: "var(--text-dim)", opacity: 0.7 }} />;
 }
 
 interface SearchResult {
@@ -408,6 +438,24 @@ export default function InboxPage() {
                         }
                     }
                     loadConversations();
+                }
+            )
+            .on(
+                "postgres_changes",
+                {
+                    event: "UPDATE",
+                    schema: "public",
+                    table: "lead_messages",
+                },
+                (payload) => {
+                    // Outbox: los checks ✓/✓✓ avanzan en vivo cuando
+                    // Meta confirma delivered/read (o marca failed)
+                    const updated = payload.new as ChatMessage;
+                    if (updated.lead_id === selectedLeadId) {
+                        setMessages((prev) =>
+                            prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m))
+                        );
+                    }
                 }
             )
             .on(
@@ -1453,7 +1501,10 @@ export default function InboxPage() {
                                                                 {formatTime(msg.created_at)}
                                                             </span>
                                                             {msg.role === "assistant" && (
-                                                                <CheckCheck size={12} style={{ color: "#9ab8a8", opacity: 0.5 }} />
+                                                                <DeliveryTicks
+                                                                    status={msg.delivery_status}
+                                                                    error={msg.delivery_error}
+                                                                />
                                                             )}
                                                         </div>
                                                     </div>

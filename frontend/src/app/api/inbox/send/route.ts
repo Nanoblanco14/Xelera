@@ -5,9 +5,13 @@ import {
     apiError,
     serverError,
 } from "@/lib/api-auth";
+import { sendWhatsAppMessage } from "@/lib/whatsapp";
+import { linkOutboundMessage, markOutboundFailed } from "@/lib/delivery-status";
 
 // ── POST /api/inbox/send ──────────────────────────────────
-// Send a message as a human agent (pause bot + send via WhatsApp)
+// Send a message as a human agent (pause bot + send via WhatsApp).
+// El envío usa la lib compartida y vincula el wamid para que los
+// checks ✓/✓✓ del outbox también funcionen en mensajes humanos.
 export async function POST(req: NextRequest) {
     try {
         const result = await authenticateRequest("inbox:send:POST");
@@ -36,90 +40,45 @@ export async function POST(req: NextRequest) {
             return apiError("No tienes acceso a este lead", 403, "FORBIDDEN");
         }
 
-        // Get org WhatsApp config
-        const { data: org, error: orgError } = await db
-            .from("organizations")
-            .select("whatsapp_provider, whatsapp_credentials")
-            .eq("id", auth.orgId)
-            .single();
-
-        if (orgError || !org) {
-            return apiError("Organización no encontrada", 404, "NOT_FOUND");
-        }
-
         // Pause bot for this lead (human takeover)
         await db
             .from("leads")
             .update({ is_bot_paused: true })
             .eq("id", lead_id);
 
-        // Save message in DB
-        const { error: msgError } = await db
+        // Save message in DB (capturamos el id para vincular el wamid)
+        const { data: insertedMsg, error: msgError } = await db
             .from("lead_messages")
             .insert({
                 lead_id,
                 role: "assistant", // From the customer's perspective, it's still the "assistant"
                 content: message.trim(),
-            });
+            })
+            .select("id")
+            .single();
 
         if (msgError) throw msgError;
+        const messageRowId: string | null = insertedMsg?.id ?? null;
 
-        // Send via WhatsApp
-        const creds = org.whatsapp_credentials || {};
+        // Send via WhatsApp (lib compartida: Meta o Twilio según la org)
+        const sendResult = await sendWhatsAppMessage(
+            auth.orgId,
+            lead.phone,
+            message.trim()
+        );
+
         let whatsappError: string | null = null;
-
-        if (org.whatsapp_provider === "meta" && creds.phone_number_id && creds.access_token) {
-            try {
-                const waRes = await fetch(
-                    `https://graph.facebook.com/v22.0/${creds.phone_number_id}/messages`,
-                    {
-                        method: "POST",
-                        headers: {
-                            Authorization: `Bearer ${creds.access_token}`,
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                            messaging_product: "whatsapp",
-                            to: lead.phone,
-                            type: "text",
-                            text: { body: message.trim() },
-                        }),
-                    }
-                );
-                if (!waRes.ok) {
-                    const detail = await waRes.text().catch(() => "");
-                    console.error("WhatsApp API error:", waRes.status, detail);
-                    whatsappError = "No se pudo enviar por WhatsApp";
-                }
-            } catch (whatsappErr) {
-                console.error("WhatsApp send error:", whatsappErr);
-                whatsappError = "No se pudo enviar por WhatsApp";
+        if (!sendResult.success) {
+            whatsappError = sendResult.error || "No se pudo enviar por WhatsApp";
+            if (messageRowId) {
+                // ⚠ inmediato en el inbox
+                markOutboundFailed(messageRowId, whatsappError)
+                    .catch(() => { /* no bloquear */ });
             }
-        } else if (org.whatsapp_provider === "twilio" && creds.account_sid && creds.auth_token) {
-            try {
-                const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${creds.account_sid}/Messages.json`;
-                const formData = new URLSearchParams();
-                formData.append("From", `whatsapp:${creds.from_number || ""}`);
-                formData.append("To", `whatsapp:+${lead.phone}`);
-                formData.append("Body", message.trim());
-
-                const twRes = await fetch(twilioUrl, {
-                    method: "POST",
-                    headers: {
-                        Authorization: `Basic ${Buffer.from(`${creds.account_sid}:${creds.auth_token}`).toString("base64")}`,
-                        "Content-Type": "application/x-www-form-urlencoded",
-                    },
-                    body: formData.toString(),
-                });
-                if (!twRes.ok) {
-                    const detail = await twRes.text().catch(() => "");
-                    console.error("Twilio API error:", twRes.status, detail);
-                    whatsappError = "No se pudo enviar por WhatsApp";
-                }
-            } catch (twilioErr) {
-                console.error("Twilio send error:", twilioErr);
-                whatsappError = "No se pudo enviar por WhatsApp";
-            }
+        } else if (messageRowId && sendResult.providerMessageId) {
+            // ✓ los statuses de Meta actualizarán delivered/read
+            linkOutboundMessage(messageRowId, sendResult.providerMessageId)
+                .catch(() => { /* no bloquear */ });
         }
 
         return NextResponse.json({

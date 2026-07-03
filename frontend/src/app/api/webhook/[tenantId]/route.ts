@@ -25,6 +25,11 @@ import {
 import { processLeadTurn, getOrCreateFirstStage } from "@/lib/message-processor";
 import { bufferIncomingMessage, runDebouncedProcessing } from "@/lib/message-queue";
 import { transcribeMetaAudio } from "@/lib/audio-transcription";
+import {
+    applyDeliveryStatuses,
+    type MetaStatusUpdate,
+    type DeliveryStatus,
+} from "@/lib/delivery-status";
 import { captureError } from "@/lib/monitoring";
 import { trackEvent } from "@/lib/analytics";
 
@@ -125,6 +130,32 @@ function parseMetaMessage(rawBody: string): ParsedMessage | null {
 
     // Reactions, system events, unknown types → ignore silently
     return null;
+}
+
+// ── Statuses de Meta (sent/delivered/read/failed) ───────────
+// Llegan en webhooks separados de los mensajes: value.statuses[]
+const VALID_STATUSES: DeliveryStatus[] = ["sent", "delivered", "read", "failed"];
+
+function parseMetaStatuses(rawBody: string): MetaStatusUpdate[] {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let json: any;
+    try {
+        json = JSON.parse(rawBody);
+    } catch {
+        return [];
+    }
+    const statuses = json?.entry?.[0]?.changes?.[0]?.value?.statuses;
+    if (!Array.isArray(statuses)) return [];
+
+    return statuses
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .filter((s: any) => s?.id && VALID_STATUSES.includes(s.status))
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .map((s: any) => ({
+            wamid: s.id as string,
+            status: s.status as DeliveryStatus,
+            errors: s.errors,
+        }));
 }
 
 // ── TwiML helpers ───────────────────────────────────────────
@@ -392,8 +423,22 @@ export async function POST(
         if (provider === "twilio") {
             parsed = parseTwilioMessage(parseTwilioParams(rawBody));
         } else if (provider === "meta") {
+            // ── 2a'. ✓✓ Statuses de entrega (sent/delivered/read/
+            // failed) — se aplican en background y responden 200 ya
+            const statusUpdates = parseMetaStatuses(rawBody);
+            if (statusUpdates.length > 0) {
+                after(async () => {
+                    try {
+                        await applyDeliveryStatuses(tenantId, statusUpdates);
+                    } catch (err) {
+                        captureError(err, "webhook:statuses", { tenantId });
+                    }
+                });
+                return new Response("OK", { status: 200 });
+            }
+
             parsed = parseMetaMessage(rawBody);
-            // Meta sends status updates that have no messages
+            // Otros eventos sin mensajes (system, errors globales)
             if (!parsed) {
                 return new Response("OK", { status: 200 });
             }
