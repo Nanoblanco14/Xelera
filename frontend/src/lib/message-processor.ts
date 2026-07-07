@@ -35,6 +35,7 @@ import {
     retrieveKnowledge,
 } from "@/lib/knowledge-indexer";
 import { trackEvent } from "@/lib/analytics";
+import { checkAiBudget } from "@/lib/plan-limits";
 import { linkOutboundMessage, markOutboundFailed } from "@/lib/delivery-status";
 import { z } from "zod/v4";
 
@@ -845,6 +846,41 @@ export async function processLeadTurn(
         if (isBotPaused) {
             console.log(`⏸️ [${t.name}] Bot pausado para ${phoneClean}. Turno descartado.`);
             return { botResponse: null };
+        }
+
+        // ── 4b'. 💳 Presupuesto IA del plan (Billing) ─────────
+        // Al 100% del cap mensual de tokens el bot se congela con
+        // un mensaje fijo (sin costo LLM) y alerta in-app 1/día.
+        const budget = await checkAiBudget(tenantId);
+        if (!budget.allowed) {
+            console.warn(`💳 [${t.name}] Presupuesto IA agotado (${budget.used}/${budget.limit} tokens, plan ${budget.plan})`);
+
+            const since = new Date(Date.now() - 20 * 3600 * 1000).toISOString();
+            const { data: recentNotif } = await supabaseAdmin
+                .from("notifications")
+                .select("id")
+                .eq("tenant_id", tenantId)
+                .eq("type", "billing")
+                .gte("created_at", since)
+                .limit(1);
+            if (!recentNotif || recentNotif.length === 0) {
+                await supabaseAdmin.from("notifications").insert({
+                    tenant_id: tenantId,
+                    type: "billing",
+                    message: `⚠️ Tu agente alcanzó el límite mensual de IA del plan ${budget.plan.toUpperCase()} y dejó de responder. Mejora tu plan en Configuración → Plan.`,
+                });
+            }
+
+            const frozenMsg =
+                "Gracias por escribirnos 🙏 En este momento no puedo responder automáticamente, " +
+                "pero una persona de nuestro equipo revisará tu mensaje a la brevedad.";
+            if (sendReply && leadId) {
+                await sendWhatsAppMessage(tenantId, phoneClean, frozenMsg);
+                await supabaseAdmin.from("lead_messages").insert({
+                    lead_id: leadId, role: "assistant", content: frozenMsg,
+                });
+            }
+            return { botResponse: frozenMsg };
         }
 
         // ── 4d. Load full conversation history from Supabase ──

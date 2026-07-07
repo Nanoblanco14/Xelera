@@ -81,6 +81,12 @@ MESSAGE_DEBOUNCE_MS=8000
 # Observabilidad (opcional — sin DSN, Sentry queda desactivado sin overhead)
 SENTRY_DSN=https://...@o0.ingest.sentry.io/0
 NEXT_PUBLIC_SENTRY_DSN=https://...@o0.ingest.sentry.io/0
+
+# Billing (Stripe) — sin estas vars los endpoints responden 503 y el plan queda manual
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...      # firma del webhook /api/billing/webhook
+STRIPE_PRICE_PRO=price_...           # price mensual del plan Pro
+STRIPE_PRICE_BUSINESS=price_...      # price mensual del plan Business
 ```
 
 > **Seguridad del webhook:** en produccion `META_APP_SECRET` es obligatorio — sin el, el

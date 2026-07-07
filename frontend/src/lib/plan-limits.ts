@@ -15,6 +15,8 @@ export interface PlanLimits {
     max_conversations: number;
     max_templates_per_day: number;
     max_team_members: number;
+    /** Presupuesto mensual de tokens IA (ai_usage_log) */
+    max_ai_tokens_month: number;
     appointment_scheduling: boolean;
     auto_templates: boolean;
     analytics_advanced: boolean;
@@ -45,6 +47,7 @@ export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
             max_conversations: 50,
             max_templates_per_day: 5,
             max_team_members: 1,
+            max_ai_tokens_month: 200_000,
             appointment_scheduling: true,
             auto_templates: false,
             analytics_advanced: false,
@@ -64,6 +67,7 @@ export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
             max_conversations: 500,
             max_templates_per_day: 50,
             max_team_members: 5,
+            max_ai_tokens_month: 2_000_000,
             appointment_scheduling: true,
             auto_templates: true,
             analytics_advanced: true,
@@ -83,6 +87,7 @@ export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
             max_conversations: 5000,
             max_templates_per_day: 200,
             max_team_members: 20,
+            max_ai_tokens_month: 10_000_000,
             appointment_scheduling: true,
             auto_templates: true,
             analytics_advanced: true,
@@ -306,5 +311,65 @@ export async function getOrgUsage(orgId: string): Promise<{
         plan,
         planName: PLAN_DEFINITIONS[plan].name,
         usage,
+    };
+}
+
+// ── AI Budget (Billing) ─────────────────────────────────────
+
+export interface AiBudgetResult {
+    allowed: boolean;
+    used: number;
+    limit: number;
+    percentage: number;
+    plan: PlanTier;
+}
+
+/**
+ * ¿La org tiene presupuesto de tokens IA este mes?
+ * Cruza ai_usage_log (telemetría) con max_ai_tokens_month del plan.
+ * El procesador congela el bot al 100%. Falla abierto: un error de
+ * lectura nunca debe silenciar al agente.
+ */
+export async function checkAiBudget(orgId: string): Promise<AiBudgetResult> {
+    const db = getSupabaseAdmin();
+
+    const { data: org } = await db
+        .from("organizations")
+        .select("plan")
+        .eq("id", orgId)
+        .single();
+
+    const plan = (org?.plan as PlanTier) || "free";
+    const limit = getPlanLimits(plan).max_ai_tokens_month;
+
+    // Mes calendario actual (UTC es suficiente para presupuestos)
+    const now = new Date();
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+
+    let used = 0;
+    try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data, error } = await (db as any)
+            .from("ai_usage_log")
+            .select("total_tokens")
+            .eq("organization_id", orgId)
+            .gte("created_at", monthStart)
+            .limit(50000);
+
+        if (error) {
+            return { allowed: true, used: 0, limit, percentage: 0, plan }; // fail open
+        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        for (const row of (data || []) as any[]) used += row.total_tokens || 0;
+    } catch {
+        return { allowed: true, used: 0, limit, percentage: 0, plan };
+    }
+
+    return {
+        allowed: used < limit,
+        used,
+        limit,
+        percentage: limit > 0 ? Math.round((used / limit) * 100) : 0,
+        plan,
     };
 }

@@ -11,6 +11,7 @@ import {
     AppointmentConfigSection,
     BlockedDatesSection,
     AutoTemplateSection,
+    BillingSection,
 } from "@/components/settings";
 import type { ConnectionStatus } from "@/lib/hooks/useWhatsAppConnection";
 
@@ -145,6 +146,10 @@ export default function SettingsPage() {
                 {/* ── General ─────────────────────────────────── */}
                 <GroupHeader label="General" />
                 <OrgInfoSection organization={organization} role={role} />
+                <BillingSection
+                    orgId={organization.id}
+                    plan={(organization.plan as string) || "free"}
+                />
                 <ApiKeySection
                     apiKey={apiKey}
                     onApiKeyChange={setApiKey}
