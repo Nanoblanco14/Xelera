@@ -15,6 +15,7 @@ import WhatsAppStep from "./steps/WhatsAppStep";
 import type { WhatsAppData } from "./steps/WhatsAppStep";
 import TestChatStep from "./steps/TestChatStep";
 import CompleteStep from "./steps/CompleteStep";
+import LiveDemo from "@/components/landing/LiveDemo";
 
 import {
     applyOnboardingTemplate,
@@ -24,6 +25,7 @@ import {
 } from "./actions";
 
 const STEPS = [
+    { label: "Pruébalo", emoji: "✨" },
     { label: "Industria", emoji: "🏭" },
     { label: "Asistente", emoji: "🤖" },
     { label: "Catálogo", emoji: "📦" },
@@ -67,6 +69,8 @@ export default function OnboardingPage() {
         setSaving(true);
         try {
             if (step === 0) {
+                // Paso "Pruébalo" (demo) — solo avanzar, sin persistencia
+            } else if (step === 1) {
                 if (!data.industryId) { setError("Selecciona una industria para continuar."); setSaving(false); return; }
                 const result = await applyOnboardingTemplate(organization.id, data.industryId);
                 if (!result.success) { setError(result.error || "Error aplicando plantilla"); setSaving(false); return; }
@@ -74,24 +78,24 @@ export default function OnboardingPage() {
                 if (tpl && result.agentId) {
                     setData((prev) => ({ ...prev, agentId: result.agentId!, agent: { name: tpl.defaultName, welcomeMessage: tpl.defaultWelcome, tone: prev.agent.tone } }));
                 }
-            } else if (step === 1) {
+            } else if (step === 2) {
                 if (data.agentId) {
                     const result = await updateOnboardingAgent(data.agentId, { name: data.agent.name, welcome_message: data.agent.welcomeMessage, conversation_tone: data.agent.tone });
                     if (!result.success) { setError(result.error || "Error guardando agente"); setSaving(false); return; }
                 }
-            } else if (step === 2) {
+            } else if (step === 3) {
                 if (data.product.name.trim()) {
                     const attrs: Record<string, string> = { ...data.product.attributes };
                     if (data.product.price) attrs.precio = data.product.price;
                     const res = await fetch("/api/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ organization_id: organization.id, name: data.product.name, description: data.product.description, attributes: attrs }) });
                     if (!res.ok) { const err = await res.json().catch(() => ({})); setError(err.error || "Error creando producto"); setSaving(false); return; }
                 }
-            } else if (step === 3) {
+            } else if (step === 4) {
                 if (data.apiKey.trim()) {
                     const result = await saveOnboardingApiKey(organization.id, data.apiKey);
                     if (!result.success) { setError(result.error || "Error guardando API key"); setSaving(false); return; }
                 }
-            } else if (step === 4) {
+            } else if (step === 5) {
                 // WhatsApp step handles its own connection + save via /api/whatsapp/connect
                 // If connected, proceed. If not connected, allow skipping.
             }
@@ -113,8 +117,8 @@ export default function OnboardingPage() {
 
     const canProceed = (() => {
         if (saving) return false;
-        if (step === 0) return !!data.industryId;
-        if (step === 1) return !!data.agent.name.trim();
+        if (step === 1) return !!data.industryId;
+        if (step === 2) return !!data.agent.name.trim();
         return true;
     })();
 
@@ -293,13 +297,28 @@ export default function OnboardingPage() {
                         transition={{ duration: 0.3, ease: "easeOut" }}
                         style={{ width: "100%", maxWidth: "900px", margin: "0 auto" }}
                     >
-                        {step === 0 && <IndustryStep selected={data.industryId} onSelect={(id) => setData((prev) => ({ ...prev, industryId: id }))} />}
-                        {step === 1 && <AgentStep data={data.agent} onChange={(agent) => setData((prev) => ({ ...prev, agent }))} />}
-                        {step === 2 && <ProductStep industryId={data.industryId} data={data.product} onChange={(product) => setData((prev) => ({ ...prev, product }))} />}
-                        {step === 3 && <ApiKeyStep apiKey={data.apiKey} onChange={(apiKey) => setData((prev) => ({ ...prev, apiKey }))} />}
-                        {step === 4 && <WhatsAppStep data={data.whatsApp} onChange={(whatsApp) => setData((prev) => ({ ...prev, whatsApp }))} webhookUrl={webhookUrl} orgId={organization.id} />}
-                        {step === 5 && <TestChatStep agentId={data.agentId} agentName={data.agent.name} welcomeMessage={data.agent.welcomeMessage} />}
-                        {step === 6 && <CompleteStep status={setupStatus} onFinish={handleFinish} loading={saving} />}
+                        {step === 0 && (
+                            /* 🎭 Onboarding invertido: primero el "wow" —
+                               chatea con un agente demo ANTES de configurar */
+                            <div style={{ maxWidth: "600px", margin: "0 auto" }}>
+                                <div style={{ textAlign: "center", marginBottom: "20px" }}>
+                                    <h2 style={{ fontSize: "1.4rem", fontWeight: 600, color: "#f0f0f5", fontFamily: "'Playfair Display', serif" }}>
+                                        Así conversará tu agente
+                                    </h2>
+                                    <p style={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.45)", marginTop: "6px" }}>
+                                        Pruébalo ahora — en los próximos pasos crearás el tuyo con tu catálogo real.
+                                    </p>
+                                </div>
+                                <LiveDemo />
+                            </div>
+                        )}
+                        {step === 1 && <IndustryStep selected={data.industryId} onSelect={(id) => setData((prev) => ({ ...prev, industryId: id }))} />}
+                        {step === 2 && <AgentStep data={data.agent} onChange={(agent) => setData((prev) => ({ ...prev, agent }))} />}
+                        {step === 3 && <ProductStep industryId={data.industryId} data={data.product} onChange={(product) => setData((prev) => ({ ...prev, product }))} />}
+                        {step === 4 && <ApiKeyStep apiKey={data.apiKey} onChange={(apiKey) => setData((prev) => ({ ...prev, apiKey }))} />}
+                        {step === 5 && <WhatsAppStep data={data.whatsApp} onChange={(whatsApp) => setData((prev) => ({ ...prev, whatsApp }))} webhookUrl={webhookUrl} orgId={organization.id} />}
+                        {step === 6 && <TestChatStep agentId={data.agentId} agentName={data.agent.name} welcomeMessage={data.agent.welcomeMessage} />}
+                        {step === 7 && <CompleteStep status={setupStatus} onFinish={handleFinish} loading={saving} />}
                     </motion.div>
                 </AnimatePresence>
             </div>

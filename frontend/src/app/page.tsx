@@ -9,6 +9,7 @@ import {
     Layout, FileText, Settings2,
 } from "lucide-react";
 import HeroScene from "@/components/landing/HeroScene";
+import LiveDemo from "@/components/landing/LiveDemo";
 
 /* ══════════════════════════════════════════════════════════════
    Native IntersectionObserver hook (framer-motion broken w/ React 19)
@@ -693,10 +694,27 @@ export default function LandingPage() {
 
             {/* ═══════════════════ 05. DEMO PREVIEW ═══════════════════ */}
             <Section id="demo" style={{ background: "var(--bg-void)" }}>
-                <FadeUp style={{ textAlign: "center", marginBottom: "48px" }}>
-                    <span className="tag" style={{ marginBottom: "16px", display: "inline-block" }}>Demo</span>
+                <FadeUp style={{ textAlign: "center", marginBottom: "40px" }}>
+                    <span className="tag" style={{ marginBottom: "16px", display: "inline-block" }}>Demo en vivo</span>
                     <h2 className="text-section-title" style={{ marginTop: "16px" }}>
-                        Tu plataforma de agentes completa
+                        No mires screenshots. Chatea con él.
+                    </h2>
+                    <p style={{
+                        color: "var(--text-secondary)", fontSize: "15px",
+                        maxWidth: "480px", margin: "16px auto 0", lineHeight: 1.75,
+                    }}>
+                        Este es un agente Xelera real conectado a un catálogo demo.
+                        Pregúntale lo que le preguntaría un cliente tuyo.
+                    </p>
+                </FadeUp>
+
+                <FadeUp delay={120} style={{ marginBottom: "56px" }}>
+                    <LiveDemo />
+                </FadeUp>
+
+                <FadeUp style={{ textAlign: "center", marginBottom: "48px" }}>
+                    <h2 className="text-section-title" style={{ marginTop: "16px", fontSize: "1.5rem" }}>
+                        Y detrás, tu plataforma completa
                     </h2>
                 </FadeUp>
 
