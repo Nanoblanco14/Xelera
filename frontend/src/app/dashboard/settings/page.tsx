@@ -12,6 +12,7 @@ import {
     BlockedDatesSection,
     AutoTemplateSection,
     BillingSection,
+    AutomationRulesSection,
 } from "@/components/settings";
 import type { ConnectionStatus } from "@/lib/hooks/useWhatsAppConnection";
 
@@ -189,6 +190,7 @@ export default function SettingsPage() {
 
                 {/* ── Automatizacion ────────────────────────── */}
                 <GroupHeader label="Automatizacion" />
+                <AutomationRulesSection orgId={organization.id} />
                 <AutoTemplateSection
                     orgId={organization.id}
                     orgSettings={

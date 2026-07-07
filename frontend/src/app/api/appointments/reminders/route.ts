@@ -30,6 +30,7 @@ import { sweepStaleMessages } from "@/lib/message-queue";
 import { aggregateDailyMetrics } from "@/lib/analytics";
 import { linkOutboundMessage } from "@/lib/delivery-status";
 import { checkMetaTokenHealth } from "@/lib/token-health";
+import { runScheduledRules } from "@/lib/rule-engine";
 import { captureError } from "@/lib/monitoring";
 
 const CHILE_TZ = "America/Santiago";
@@ -675,6 +676,14 @@ async function runAllJobs() {
         captureError(err, "cron:token_health");
     }
 
+    // ⚙️ Job 9: reglas de automatización temporales (schedule)
+    let rulesExecuted = 0;
+    try {
+        rulesExecuted = await runScheduledRules();
+    } catch (err) {
+        captureError(err, "cron:rules");
+    }
+
     console.log(
         `[Cron] Done — swept: ${sweptBatches}, 24h: ${remindersSent}, 1h: ${oneHourSent}, digests: ${digestsSent}, ` +
         `post_visit: ${postVisitSent}, inactive: ${inactiveSent}, stalled: ${stalledSent}, aggregated: ${orgsAggregated}, ` +
@@ -682,6 +691,7 @@ async function runAllJobs() {
     );
 
     return {
+        automation_rules_executed: rulesExecuted,
         tokens_checked: tokenHealth.orgsChecked,
         token_alerts_created: tokenHealth.alertsCreated,
         orgs_metrics_aggregated: orgsAggregated,

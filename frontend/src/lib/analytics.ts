@@ -76,6 +76,20 @@ export async function trackEvent(params: {
                 console.error("[Analytics] Insert error:", error.message);
             }
         }
+
+        // ⚙️ Rule Engine (reactivo): evalúa reglas del tenant para este
+        // evento. Import dinámico (sin ciclos) + fire-and-forget — la
+        // analítica y el turno jamás esperan a las automatizaciones.
+        import("@/lib/rule-engine")
+            .then((m) =>
+                m.evaluateEventRules(
+                    params.orgId,
+                    params.type,
+                    params.leadId || null,
+                    params.metadata || {}
+                )
+            )
+            .catch(() => { /* no bloquear */ });
     } catch (err) {
         console.error("[Analytics] Unexpected error:", err);
     }
