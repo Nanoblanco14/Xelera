@@ -211,55 +211,47 @@ const USE_CASES = [
     },
 ];
 
+// Posicionamiento dual: dos caminos claros, precios en CLP.
 const PLANS = [
     {
-        name: "Free",
-        monthly: 0,
-        annual: 0,
-        desc: "Perfecto para probar la plataforma",
+        name: "Starter",
+        price: "$24.990",
+        period: "CLP/mes",
+        tagline: "El vendedor que nunca duerme, para que tú sí puedas.",
+        desc: "Self-service para pymes y emprendedores",
         features: [
-            "1 agente IA",
-            "100 mensajes/mes",
-            "50 leads",
-            "Pipeline básico",
-            "Soporte por email",
+            "Agente IA 24/7 en tu WhatsApp",
+            "Modo Guardián: desconéctate tranquilo",
+            "Resumen Nocturno a las 21:00",
+            "Agenda de citas automática",
+            "Pipeline + Inbox en tiempo real",
+            "300 conversaciones/mes",
+            "Actívalo tú mismo en minutos",
         ],
-        cta: "Empezar Gratis",
-        popular: false,
+        cta: "Comenzar ahora",
+        badge: "MÁS ELEGIDO",
+        badgeColor: "sage",
+        highlight: true,
     },
     {
-        name: "Pro",
-        monthly: 49,
-        annual: 39,
-        desc: "Para negocios en crecimiento",
+        name: "Executive",
+        price: "$180.000",
+        period: "CLP/mes",
+        tagline: "Recupera 15 horas a la semana de tiempo ejecutivo.",
+        desc: "White-glove para clínicas, inmobiliarias y consultoras",
         features: [
-            "3 agentes IA",
-            "2,000 mensajes/mes",
-            "500 leads",
-            "Pipeline completo + analítica",
-            "Templates WhatsApp",
-            "Notas internas",
-            "Soporte prioritario",
+            "Todo lo de Starter, sin límites prácticos",
+            "Reporte de Impacto semanal con ROI",
+            "Horas ejecutivas ahorradas, medidas",
+            "Webhooks firmados a tu CRM",
+            "Onboarding asistido: lo configuramos contigo",
+            "Automatizaciones proactivas avanzadas",
+            "Soporte dedicado prioritario",
         ],
-        cta: "Comenzar Ahora",
-        popular: true,
-    },
-    {
-        name: "Enterprise",
-        monthly: 99,
-        annual: 79,
-        desc: "Para equipos y franquicias",
-        features: [
-            "Agentes ilimitados",
-            "Mensajes ilimitados",
-            "Leads ilimitados",
-            "API personalizada",
-            "Multi-usuario / roles",
-            "Soporte dedicado 24/7",
-            "Onboarding personalizado",
-        ],
-        cta: "Contactar Ventas",
-        popular: false,
+        cta: "Agendar demo",
+        badge: "WHITE-GLOVE",
+        badgeColor: "gold",
+        highlight: false,
     },
 ];
 
@@ -442,7 +434,6 @@ function MiniLineChart() {
 export default function LandingPage() {
     const [scrolled, setScrolled] = useState(false);
     const [mobileMenu, setMobileMenu] = useState(false);
-    const [billingAnnual, setBillingAnnual] = useState(false);
     const [activeTab, setActiveTab] = useState(0);
     const [mounted, setMounted] = useState(false);
 
@@ -1035,35 +1026,14 @@ export default function LandingPage() {
                         color: "var(--text-secondary)", fontSize: "15px",
                         maxWidth: "460px", margin: "16px auto 0", lineHeight: 1.75,
                     }}>
-                        Empieza gratis y escala cuando quieras.
+                        Dos caminos, un mismo motor. Pruébalo gratis antes de decidir.
                     </p>
-
-                    <div className="pricing-toggle" style={{ marginTop: "28px" }}>
-                        <button
-                            className={!billingAnnual ? "active" : ""}
-                            onClick={() => setBillingAnnual(false)}
-                        >Mensual</button>
-                        <button
-                            className={billingAnnual ? "active" : ""}
-                            onClick={() => setBillingAnnual(true)}
-                        >
-                            Anual{" "}
-                            <span style={{
-                                fontSize: "11px",
-                                color: billingAnnual ? "var(--bg-deep)" : "var(--accent-sage)",
-                                fontWeight: 600, marginLeft: "4px",
-                                background: billingAnnual ? "transparent" : "rgba(122,158,138,0.1)",
-                                padding: billingAnnual ? "0" : "2px 8px",
-                                borderRadius: "10px",
-                            }}>2 meses gratis</span>
-                        </button>
-                    </div>
                 </FadeUp>
 
                 <div style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(3, 1fr)",
-                    gap: "16px", maxWidth: "960px", margin: "0 auto",
+                    gridTemplateColumns: "repeat(2, 1fr)",
+                    gap: "20px", maxWidth: "820px", margin: "0 auto",
                 }}>
                     {PLANS.map((plan, i) => (
                         <FadeUp
@@ -1074,40 +1044,50 @@ export default function LandingPage() {
                                 padding: "32px",
                                 position: "relative",
                                 // glass-card recorta con overflow:hidden — el badge
-                                // "Popular" sobresale del borde superior
+                                // sobresale del borde superior
                                 overflow: "visible",
-                                borderColor: plan.popular ? "var(--border-accent)" : undefined,
+                                borderColor: plan.highlight
+                                    ? "var(--border-accent)"
+                                    : "rgba(196,163,90,0.25)",
                             }}
                         >
-                            {plan.popular && (
-                                <div style={{
-                                    position: "absolute", top: "-12px", left: "50%",
-                                    transform: "translateX(-50%)",
-                                    background: "var(--accent-sage)", color: "var(--bg-deep)",
-                                    padding: "4px 16px", borderRadius: "20px",
-                                    fontSize: "11px", fontWeight: 600,
-                                    textTransform: "uppercase", letterSpacing: "0.05em",
-                                    display: "flex", alignItems: "center", gap: "4px",
-                                }}>
-                                    <Crown size={12} /> Popular
-                                </div>
-                            )}
+                            <div style={{
+                                position: "absolute", top: "-12px", left: "50%",
+                                transform: "translateX(-50%)",
+                                background: plan.badgeColor === "gold" ? "#c4a35a" : "var(--accent-sage)",
+                                color: "var(--bg-deep)",
+                                padding: "4px 16px", borderRadius: "20px",
+                                fontSize: "11px", fontWeight: 600,
+                                textTransform: "uppercase", letterSpacing: "0.05em",
+                                display: "flex", alignItems: "center", gap: "4px",
+                                whiteSpace: "nowrap",
+                            }}>
+                                <Crown size={12} /> {plan.badge}
+                            </div>
                             <h3 style={{
                                 fontSize: "18px", fontWeight: 500,
-                                color: "var(--text-primary)", marginBottom: "8px",
+                                color: "var(--text-primary)", marginBottom: "6px",
                             }}>{plan.name}</h3>
+                            <p className="font-display" style={{
+                                fontSize: "1.05rem", color: "var(--text-primary)",
+                                lineHeight: 1.45, marginBottom: "8px", minHeight: "3em",
+                            }}>
+                                “{plan.tagline}”
+                            </p>
                             <p style={{ fontSize: "13px", color: "var(--text-muted)", marginBottom: "20px" }}>
                                 {plan.desc}
                             </p>
                             <div style={{ marginBottom: "24px" }}>
                                 <span style={{
                                     fontFamily: "'Playfair Display', serif",
-                                    fontSize: "2.5rem", fontWeight: 400,
+                                    fontSize: "2.4rem", fontWeight: 400,
                                     color: "var(--text-primary)", letterSpacing: "-0.03em",
                                 }}>
-                                    ${billingAnnual ? plan.annual : plan.monthly}
+                                    {plan.price}
                                 </span>
-                                <span style={{ color: "var(--text-muted)", fontSize: "15px" }}>/mes</span>
+                                <span style={{ color: "var(--text-muted)", fontSize: "14px", marginLeft: "6px" }}>
+                                    {plan.period}
+                                </span>
                             </div>
                             <ul style={{ listStyle: "none", padding: 0, margin: "0 0 28px", display: "flex", flexDirection: "column", gap: "10px" }}>
                                 {plan.features.map((f, j) => (
@@ -1122,7 +1102,7 @@ export default function LandingPage() {
                             </ul>
                             <Link
                                 href="/login"
-                                className={plan.popular ? "btn-primary" : "btn-secondary"}
+                                className={plan.highlight ? "btn-primary" : "btn-secondary"}
                                 style={{
                                     width: "100%", justifyContent: "center",
                                     padding: "12px 24px", textDecoration: "none",
@@ -1134,9 +1114,16 @@ export default function LandingPage() {
                     ))}
                 </div>
 
+                <p style={{
+                    textAlign: "center", marginTop: "24px",
+                    fontSize: "0.8rem", color: "var(--text-muted)",
+                }}>
+                    ¿Aún explorando? Crea tu agente gratis y decide después — sin tarjeta de crédito.
+                </p>
+
                 <style>{`
                     @media (max-width: 768px) {
-                        #precios .section-container > div[style*="grid-template-columns: repeat(3"] {
+                        #precios .section-container > div[style*="grid-template-columns: repeat(2"] {
                             grid-template-columns: 1fr !important;
                         }
                     }
