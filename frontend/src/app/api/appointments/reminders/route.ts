@@ -311,7 +311,8 @@ async function sendDailyDigests(): Promise<number> {
             if (diff > 30) continue;
 
             // ── Datos del resumen (en paralelo) ──
-            const [apptsRes, newLeadsRes, waitingRes] = await Promise.all([
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const [apptsRes, newLeadsRes, waitingRes, eventsRes]: any[] = await Promise.all([
                 db.from("appointments")
                     .select("start_time, leads!inner(name), products(name)")
                     .eq("organization_id", org.id)
@@ -328,6 +329,15 @@ async function sendDailyDigests(): Promise<number> {
                     .select("id", { count: "exact", head: true })
                     .eq("organization_id", org.id)
                     .eq("is_bot_paused", true),
+                // Actividad del agente hoy (para el resumen nocturno)
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (db as any).from("analytics_events")
+                    .select("event_type, metadata")
+                    .eq("organization_id", org.id)
+                    .in("event_type", ["handoff", "stage_changed", "appointment_booked", "bot_replied"])
+                    .gte("created_at", `${todayStr}T00:00:00`)
+                    .lte("created_at", `${todayStr}T23:59:59`)
+                    .limit(2000),
             ]);
 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -335,19 +345,43 @@ async function sendDailyDigests(): Promise<number> {
             const newLeads = newLeadsRes.count || 0;
             const waitingHuman = waitingRes.count || 0;
 
+            // Actividad del agente hoy (Resumen Nocturno enriquecido)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const todayEvents = (eventsRes?.data || []) as any[];
+            const botTurns = todayEvents.filter((e) => e.event_type === "bot_replied").length;
+            const advancedByAi = todayEvents.filter(
+                (e) => e.event_type === "stage_changed" && e.metadata?.by === "ai"
+            ).length;
+            const bookedToday = todayEvents.filter((e) => e.event_type === "appointment_booked").length;
+            const handoffsToday = todayEvents.filter((e) => e.event_type === "handoff").length;
+
             // Nada que contar → no molestar al dueño
-            if (todayAppts.length === 0 && newLeads === 0 && waitingHuman === 0) continue;
+            if (
+                todayAppts.length === 0 && newLeads === 0 && waitingHuman === 0 &&
+                botTurns === 0 && handoffsToday === 0
+            ) continue;
 
             const sections: string[] = [`☀️ *Tu resumen Xelera de hoy*`];
 
+            // ── Lo que tu agente resolvió solo ──
+            if (botTurns > 0 || advancedByAi > 0 || bookedToday > 0) {
+                const done: string[] = [];
+                if (botTurns > 0) done.push(`${botTurns} conversaci${botTurns === 1 ? "ón atendida" : "ones atendidas"}`);
+                if (bookedToday > 0) done.push(`${bookedToday} cita${bookedToday === 1 ? "" : "s"} agendada${bookedToday === 1 ? "" : "s"}`);
+                if (advancedByAi > 0) done.push(`${advancedByAi} lead${advancedByAi === 1 ? "" : "s"} avanzado${advancedByAi === 1 ? "" : "s"} de etapa`);
+                sections.push(`\n🤖 *Tu agente hoy:* ${done.join(" · ")}`);
+            }
+
             sections.push(
-                `\n📈 Ayer: ${newLeads} lead${newLeads === 1 ? "" : "s"} nuevo${newLeads === 1 ? "" : "s"}`
+                `📈 ${newLeads} lead${newLeads === 1 ? "" : "s"} nuevo${newLeads === 1 ? "" : "s"} captado${newLeads === 1 ? "" : "s"}`
             );
 
-            if (waitingHuman > 0) {
-                sections.push(
-                    `🔴 ${waitingHuman} conversaci${waitingHuman === 1 ? "ón espera" : "ones esperan"} tu atención en el Inbox`
-                );
+            // ── Lo que requiere (o requirió) tu aprobación ──
+            if (waitingHuman > 0 || handoffsToday > 0) {
+                const parts: string[] = [];
+                if (waitingHuman > 0) parts.push(`${waitingHuman} esperando tu respuesta AHORA en el Inbox`);
+                if (handoffsToday > 0) parts.push(`${handoffsToday} pidieron humano hoy`);
+                sections.push(`🙋 *Requieren tu atención:* ${parts.join(" · ")}`);
             }
 
             if (todayAppts.length > 0) {

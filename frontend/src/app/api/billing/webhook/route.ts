@@ -104,6 +104,33 @@ export async function POST(req: NextRequest) {
                     stripe_customer_id: session.customer as string,
                     stripe_subscription_id: session.subscription as string,
                 });
+
+                // 🌙 Starter/Executive: activar Resumen Nocturno 21:00
+                // por defecto SOLO si el dueño nunca lo configuró.
+                // (read-modify-write puntual post-checkout: aceptable)
+                if (tier === "starter" || tier === "executive") {
+                    const db = getSupabaseAdmin();
+                    const { data: orgRow } = await db
+                        .from("organizations")
+                        .select("settings")
+                        .eq("id", orgId)
+                        .single();
+                    const s = (orgRow?.settings || {}) as Record<string, unknown>;
+                    const ac = (s.appointment_config || {}) as Record<string, unknown>;
+                    if (ac.daily_digest_enabled === undefined) {
+                        await db.from("organizations").update({
+                            settings: {
+                                ...s,
+                                appointment_config: {
+                                    ...ac,
+                                    daily_digest_enabled: true,
+                                    daily_digest_time: "21:00",
+                                },
+                            },
+                        }).eq("id", orgId);
+                        console.log(`🌙 [Stripe] Resumen Nocturno 21:00 activado por defecto (org ${orgId})`);
+                    }
+                }
                 break;
             }
 
