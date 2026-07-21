@@ -30,6 +30,7 @@ import {
 import { processLeadTurn, getOrCreateFirstStage } from "@/lib/message-processor";
 import { bufferIncomingMessage, runDebouncedProcessing } from "@/lib/message-queue";
 import { transcribeMetaAudio } from "@/lib/audio-transcription";
+import { analyzeMetaImage } from "@/lib/image-analysis";
 import {
     applyDeliveryStatuses,
     type MetaStatusUpdate,
@@ -57,6 +58,8 @@ interface ParsedMessage {
     messageId?: string;
     /** Audio de WhatsApp (Meta): se transcribe con Whisper en background */
     audio?: { mediaId: string; mimeType?: string };
+    /** Imagen de WhatsApp (Meta): se analiza con visión en background */
+    image?: { mediaId: string; mimeType?: string; caption?: string };
 }
 
 function parseTwilioParams(rawBody: string): Record<string, string> {
@@ -76,9 +79,8 @@ function parseTwilioMessage(params: Record<string, string>): ParsedMessage {
 
 // Non-text message types the bot can't read — mapped to a context
 // placeholder so the AI (and the human inbox) know what arrived.
-// (audio NO está aquí: se transcribe con Whisper — ver parsed.audio)
+// (audio → Whisper; image → visión. Ver parsed.audio / parsed.image)
 const MEDIA_PLACEHOLDERS: Record<string, string> = {
-    image: "una imagen",
     video: "un video",
     document: "un documento",
     location: "una ubicación",
@@ -118,6 +120,22 @@ function parseMetaMessage(rawBody: string): ParsedMessage | null {
             phoneClean,
             messageId,
             audio: { mediaId: msg.audio.id, mimeType: msg.audio.mime_type },
+        };
+    }
+
+    // 👁️ Imagen → visión (gpt-4o-mini) en background; el caption
+    // acompaña como contexto de la descripción
+    if (msg.type === "image" && msg.image?.id) {
+        return {
+            body: "",
+            sender,
+            phoneClean,
+            messageId,
+            image: {
+                mediaId: msg.image.id,
+                mimeType: msg.image.mime_type,
+                caption: msg.image.caption || undefined,
+            },
         };
     }
 
@@ -274,6 +292,102 @@ async function handleAudioMessage(params: {
         }
     } catch (err) {
         captureError(err, "webhook:audio", { tenantId, phone });
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  👁️ IMAGE HANDLER — corre en after(), post-respuesta HTTP
+//  Gemelo de handleAudioMessage: descarga + visión + inyección al
+//  flujo normal. El caption del cliente entra como contexto.
+// ═══════════════════════════════════════════════════════════════
+async function handleImageMessage(params: {
+    tenantId: string;
+    tenantName: string;
+    accessToken: string;
+    openaiApiKey: string;
+    leadId: string | null;
+    phone: string;
+    image: { mediaId: string; mimeType?: string; caption?: string };
+    providerMessageId?: string;
+    processReply: boolean;
+}): Promise<void> {
+    const { tenantId, tenantName, leadId, phone, image } = params;
+
+    try {
+        let messageText: string;
+        let analyzed = false;
+
+        if (!params.accessToken || !params.openaiApiKey) {
+            console.warn(`👁️ [${tenantName}] Imagen recibida pero faltan credenciales para analizar`);
+            messageText =
+                "[El cliente envió una imagen que no se pudo procesar. Pídele amablemente que describa por texto lo que necesita.]";
+        } else {
+            const result = await analyzeMetaImage({
+                orgId: tenantId,
+                leadId,
+                mediaId: image.mediaId,
+                mimeType: image.mimeType,
+                caption: image.caption,
+                businessName: tenantName,
+                accessToken: params.accessToken,
+                openaiApiKey: params.openaiApiKey,
+            });
+            if (result.ok) {
+                // El prefijo 📷 marca en el inbox (y para la IA) que
+                // el texto describe una imagen enviada por el cliente
+                messageText =
+                    `📷 [El cliente envió una imagen. Esto es lo que muestra: ${result.description}]` +
+                    (image.caption?.trim() ? `\nMensaje del cliente: "${image.caption.trim()}"` : "");
+                analyzed = true;
+            } else {
+                console.warn(`👁️ [${tenantName}] Análisis de imagen falló (${result.reason}) — usando fallback`);
+                messageText = result.fallbackText;
+            }
+        }
+
+        if (leadId) {
+            await supabaseAdmin.from("lead_messages").insert({
+                lead_id: leadId,
+                role: "user",
+                content: messageText,
+            });
+        }
+
+        trackEvent({
+            orgId: tenantId,
+            leadId,
+            type: "message_received",
+            metadata: { image: true, analyzed },
+        }).catch(() => { /* no bloquear */ });
+
+        if (!params.processReply) {
+            console.log(`👁️⏸️ [${tenantName}] Imagen analizada para inbox (bot pausado)`);
+            return;
+        }
+
+        const buffered = await bufferIncomingMessage({
+            orgId: tenantId,
+            phone,
+            leadId,
+            content: messageText,
+            providerMessageId: params.providerMessageId,
+        });
+
+        if (buffered.buffered && buffered.bufferId) {
+            await runDebouncedProcessing(tenantId, phone, buffered.bufferId);
+        } else {
+            await processLeadTurn({
+                orgId: tenantId,
+                phone,
+                leadId,
+                combinedText: messageText,
+                sendReply: true,
+                lastUserMessageAt: new Date().toISOString(),
+                batchMessageCount: 1,
+            });
+        }
+    } catch (err) {
+        captureError(err, "webhook:image", { tenantId, phone });
     }
 }
 
@@ -495,6 +609,23 @@ export async function POST(
                         processReply: false,
                     });
                 });
+            } else if (parsed.image && provider === "meta") {
+                // Imagen con bot pausado: analizar igual para el inbox
+                const pausedImage = parsed.image;
+                const pausedLeadId = existingForStatus[0].id;
+                after(async () => {
+                    await handleImageMessage({
+                        tenantId,
+                        tenantName,
+                        accessToken: credentials?.access_token || "",
+                        openaiApiKey: (tenant.openai_api_key as string) || "",
+                        leadId: pausedLeadId,
+                        phone: phoneClean,
+                        image: pausedImage,
+                        providerMessageId: parsed.messageId,
+                        processReply: false,
+                    });
+                });
             } else {
                 await supabaseAdmin.from("lead_messages").insert({
                     lead_id: existingForStatus[0].id,
@@ -568,6 +699,29 @@ export async function POST(
                     phone: phoneClean,
                     audio: audioInfo,
                     providerMessageId: audioMessageId,
+                    processReply: true,
+                });
+            });
+            return new Response("OK", { status: 200 });
+        }
+
+        // ── 3c''. 👁️ Imagen → visión en background ─────────────
+        // Mismo patrón que audio: 200 YA; after() descarga, analiza
+        // con gpt-4o-mini e inyecta la descripción al flujo normal.
+        if (parsed.image && provider === "meta") {
+            const imageInfo = parsed.image;
+            const imageLeadId = leadId;
+            const imageMessageId = parsed.messageId;
+            after(async () => {
+                await handleImageMessage({
+                    tenantId,
+                    tenantName,
+                    accessToken: credentials?.access_token || "",
+                    openaiApiKey: (tenant.openai_api_key as string) || "",
+                    leadId: imageLeadId,
+                    phone: phoneClean,
+                    image: imageInfo,
+                    providerMessageId: imageMessageId,
                     processReply: true,
                 });
             });

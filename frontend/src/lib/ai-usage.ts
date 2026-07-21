@@ -16,6 +16,7 @@ export type AiUsagePurpose =
     | "summary"
     | "memory_extraction"
     | "transcription"
+    | "vision"
     | "other";
 
 export interface AiUsageEntry {
