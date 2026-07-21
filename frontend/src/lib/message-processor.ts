@@ -35,7 +35,7 @@ import {
     retrieveKnowledge,
 } from "@/lib/knowledge-indexer";
 import { trackEvent } from "@/lib/analytics";
-import { checkAiBudget } from "@/lib/plan-limits";
+import { checkAiBudget, getPlanLimits } from "@/lib/plan-limits";
 import { linkOutboundMessage, markOutboundFailed } from "@/lib/delivery-status";
 import { z } from "zod/v4";
 
@@ -765,7 +765,7 @@ export async function processLeadTurn(
         const { data: tenant, error: tenantError } = await supabaseAdmin
             .from("organizations")
             .select(
-                "id, name, openai_api_key, whatsapp_provider, whatsapp_credentials, settings"
+                "id, name, openai_api_key, whatsapp_provider, whatsapp_credentials, settings, plan"
             )
             .eq("id", tenantId)
             .single();
@@ -1043,6 +1043,25 @@ export async function processLeadTurn(
             memoryFacts,
             retrievedKnowledge
         );
+
+        // ── 🛡️ Modo Guardián (Starter): autonomía alta org-level.
+        // Gated por plan + toggle en settings. En guardián el bot
+        // resuelve todo lo posible y deriva SOLO emergencias reales.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const guardianMode: boolean =
+            tenantSettings.autonomy_mode === "guardian" &&
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            !!getPlanLimits((tenant as any)?.plan).guardian_mode;
+
+        if (guardianMode) {
+            systemPrompt += `
+
+═══ 🛡️ MODO GUARDIÁN ACTIVO (autonomía máxima) ═══
+El dueño del negocio está desconectado y confía en ti para operar solo.
+- Resuelve TODO lo que puedas con el catálogo, FAQs y herramientas disponibles. Agenda, cotiza y confirma sin esperar aprobación.
+- Deriva a humano ÚNICAMENTE ante emergencias reales (reclamo grave, urgencia médica/legal, cliente muy molesto). Ante la duda, resuélvelo tú.
+- Si algo no está en tu información, toma nota del pedido, dile al cliente que quedó registrado para mañana, y continúa — NUNCA cortes la conversación.`;
+        }
 
         // ── 6a. Load appointment config & inject appointment prompt ──
         const appointmentConfig = await getAppointmentConfig(tenantId);
@@ -1370,12 +1389,16 @@ ${hoursText}
                         // bot sigue contestando contradice su propia promesa
                         // de "un asesor te contactará". El humano reactiva
                         // desde el Inbox cuando termina.
-                        if (notifLead?.id) {
+                        // 🛡️ Guardián: NO pausar — el dueño está desconectado;
+                        // el bot sigue conteniendo y solo se notifica.
+                        if (notifLead?.id && !guardianMode) {
                             await supabaseAdmin
                                 .from("leads")
                                 .update({ is_bot_paused: true })
                                 .eq("id", notifLead.id);
                             console.log(`⏸️ [${t.name}] Bot pausado por handoff (lead ${notifLead.id})`);
+                        } else if (notifLead?.id && guardianMode) {
+                            console.log(`🛡️ [${t.name}] Handoff en Modo Guardián — bot sigue activo (lead ${notifLead.id})`);
                         }
 
                         // Alerta WhatsApp al dueño (fire-and-forget)

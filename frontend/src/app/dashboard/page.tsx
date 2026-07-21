@@ -25,6 +25,71 @@ import {
     Kanban,
 } from "lucide-react";
 import { PlanUsageCard } from "@/components/plan";
+import { getPlanLimits } from "@/lib/plan-limits";
+
+/* ═══════════════════════════════════════════════════════════
+   🛡️ Modo Guardián — toggle de autonomía org-level (Starter+)
+   ON: el bot resuelve todo solo y NO se pausa en handoffs.
+   Persistido en settings.autonomy_mode; gated por plan.
+   ═══════════════════════════════════════════════════════════ */
+function GuardianToggle() {
+    const { organization } = useOrg();
+    const plan = (organization.plan as string) || "free";
+    const allowed = getPlanLimits(plan).guardian_mode;
+
+    const settings = (organization.settings || {}) as Record<string, unknown>;
+    const [active, setActive] = useState(settings.autonomy_mode === "guardian");
+    const [saving, setSaving] = useState(false);
+
+    const toggle = async () => {
+        if (!allowed || saving) return;
+        const next = !active;
+        setActive(next); // optimista
+        setSaving(true);
+        try {
+            const res = await fetch("/api/org/settings", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    organization_id: organization.id,
+                    settings: { ...settings, autonomy_mode: next ? "guardian" : "supervised" },
+                }),
+            });
+            if (!res.ok) setActive(!next); // revertir
+            else settings.autonomy_mode = next ? "guardian" : "supervised";
+        } catch { setActive(!next); }
+        setSaving(false);
+    };
+
+    return (
+        <button
+            onClick={toggle}
+            disabled={!allowed || saving}
+            title={allowed
+                ? (active
+                    ? "Modo Guardián ACTIVO: tu agente opera con autonomía máxima y no se pausa en derivaciones"
+                    : "Activa el Modo Guardián para desconectarte: el agente resuelve todo solo")
+                : "Disponible en el plan Starter — mejora tu plan para desconectarte con tranquilidad"}
+            style={{
+                display: "inline-flex", alignItems: "center", gap: "8px",
+                padding: "8px 14px", borderRadius: "10px",
+                fontSize: "0.78rem", fontWeight: 600,
+                cursor: allowed ? "pointer" : "not-allowed",
+                opacity: allowed ? 1 : 0.45,
+                transition: "all 200ms var(--ease-smooth)",
+                background: active ? "rgba(122,158,138,0.14)" : "rgba(255,255,255,0.03)",
+                border: active
+                    ? "0.5px solid rgba(122,158,138,0.4)"
+                    : "0.5px solid var(--border)",
+                color: active ? "var(--accent-light)" : "var(--text-muted)",
+                boxShadow: active ? "0 0 14px rgba(122,158,138,0.12)" : "none",
+            }}
+        >
+            🛡️ {active ? "Guardián ON" : "Modo Guardián"}
+            {!allowed && <span style={{ fontSize: "0.6rem" }}>🔒</span>}
+        </button>
+    );
+}
 
 /* ═══════════════════════════════════════════════════════════
    Types
@@ -489,6 +554,8 @@ export default function DashboardHome() {
                             <span style={{ color: "var(--text-secondary)" }}>Centro de comando</span>
                         </p>
                     </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                    <GuardianToggle />
                     <button
                         onClick={() => loadDashboard()}
                         disabled={loading}
@@ -512,6 +579,7 @@ export default function DashboardHome() {
                         <span style={{ display: "inline-block", animation: loading ? "spin 1s linear infinite" : "none" }}>↻</span>
                         Actualizar
                     </button>
+                    </div>
                 </div>
                 {/* Gradient divider line */}
                 <div style={{ height: "1px", background: "linear-gradient(90deg, transparent, rgba(122,158,138,0.2), transparent)", marginTop: "12px" }} />
