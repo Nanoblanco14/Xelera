@@ -53,9 +53,37 @@ const INITIAL_DATA: WizardData = {
     whatsApp: { phoneNumberId: "", accessToken: "", businessAccountId: "", connectionStatus: "idle" },
 };
 
+/* 🤝 White-glove: reemplaza los pasos técnicos pesados cuando
+   settings.onboarding_mode === 'assisted' (Executive) */
+function AssistedStepCard({ stepName }: { stepName: string }) {
+    return (
+        <div style={{
+            maxWidth: "520px", margin: "0 auto", textAlign: "center",
+            padding: "48px 32px", borderRadius: "16px",
+            background: "rgba(196,163,90,0.05)",
+            border: "0.5px solid rgba(196,163,90,0.2)",
+        }}>
+            <div style={{ fontSize: "2rem", marginBottom: "16px" }}>🤝</div>
+            <h2 style={{
+                fontSize: "1.25rem", fontWeight: 600, color: "#f0f0f5",
+                fontFamily: "'Playfair Display', serif", marginBottom: "10px",
+            }}>
+                Tu ejecutivo Xelera configurará esto contigo
+            </h2>
+            <p style={{ fontSize: "0.84rem", color: "rgba(255,255,255,0.5)", lineHeight: 1.7 }}>
+                Como cliente <strong style={{ color: "#c4a35a" }}>Executive</strong>, la
+                configuración de {stepName} la hacemos nosotros en tu sesión de
+                onboarding asistido. Continúa al siguiente paso — nos encargamos del resto.
+            </p>
+        </div>
+    );
+}
+
 export default function OnboardingPage() {
     const { organization } = useOrg();
     const router = useRouter();
+    const assisted =
+        ((organization.settings || {}) as Record<string, unknown>).onboarding_mode === "assisted";
 
     const [step, setStep] = useState(0);
     const [data, setData] = useState<WizardData>(INITIAL_DATA);
@@ -315,8 +343,12 @@ export default function OnboardingPage() {
                         {step === 1 && <IndustryStep selected={data.industryId} onSelect={(id) => setData((prev) => ({ ...prev, industryId: id }))} />}
                         {step === 2 && <AgentStep data={data.agent} onChange={(agent) => setData((prev) => ({ ...prev, agent }))} />}
                         {step === 3 && <ProductStep industryId={data.industryId} data={data.product} onChange={(product) => setData((prev) => ({ ...prev, product }))} />}
-                        {step === 4 && <ApiKeyStep apiKey={data.apiKey} onChange={(apiKey) => setData((prev) => ({ ...prev, apiKey }))} />}
-                        {step === 5 && <WhatsAppStep data={data.whatsApp} onChange={(whatsApp) => setData((prev) => ({ ...prev, whatsApp }))} webhookUrl={webhookUrl} orgId={organization.id} />}
+                        {step === 4 && (assisted
+                            ? <AssistedStepCard stepName="tu API key de OpenAI" />
+                            : <ApiKeyStep apiKey={data.apiKey} onChange={(apiKey) => setData((prev) => ({ ...prev, apiKey }))} />)}
+                        {step === 5 && (assisted
+                            ? <AssistedStepCard stepName="tu conexión de WhatsApp Business" />
+                            : <WhatsAppStep data={data.whatsApp} onChange={(whatsApp) => setData((prev) => ({ ...prev, whatsApp }))} webhookUrl={webhookUrl} orgId={organization.id} />)}
                         {step === 6 && <TestChatStep agentId={data.agentId} agentName={data.agent.name} welcomeMessage={data.agent.welcomeMessage} />}
                         {step === 7 && <CompleteStep status={setupStatus} onFinish={handleFinish} loading={saving} />}
                     </motion.div>

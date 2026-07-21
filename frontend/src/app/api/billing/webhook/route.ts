@@ -117,18 +117,23 @@ export async function POST(req: NextRequest) {
                         .single();
                     const s = (orgRow?.settings || {}) as Record<string, unknown>;
                     const ac = (s.appointment_config || {}) as Record<string, unknown>;
+                    const patch: Record<string, unknown> = {};
                     if (ac.daily_digest_enabled === undefined) {
+                        patch.appointment_config = {
+                            ...ac,
+                            daily_digest_enabled: true,
+                            daily_digest_time: "21:00",
+                        };
+                    }
+                    // 🤝 Executive: onboarding asistido (white-glove)
+                    if (tier === "executive" && s.onboarding_mode === undefined) {
+                        patch.onboarding_mode = "assisted";
+                    }
+                    if (Object.keys(patch).length > 0) {
                         await db.from("organizations").update({
-                            settings: {
-                                ...s,
-                                appointment_config: {
-                                    ...ac,
-                                    daily_digest_enabled: true,
-                                    daily_digest_time: "21:00",
-                                },
-                            },
+                            settings: { ...s, ...patch },
                         }).eq("id", orgId);
-                        console.log(`🌙 [Stripe] Resumen Nocturno 21:00 activado por defecto (org ${orgId})`);
+                        console.log(`🌙 [Stripe] Defaults de segmento aplicados (org ${orgId}):`, Object.keys(patch));
                     }
                 }
                 break;
