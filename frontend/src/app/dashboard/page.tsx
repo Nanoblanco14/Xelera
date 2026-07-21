@@ -378,6 +378,8 @@ export default function DashboardHome() {
     const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    // 💎 Gate del widget ROI (flag roi_widgets del plan)
+    const roiAllowed = getPlanLimits((organization.plan as string) || "free").roi_widgets;
 
     const loadDashboard = useCallback(async () => {
         setError(null);
@@ -1079,14 +1081,28 @@ export default function DashboardHome() {
                                 value: data.timeSavedHours > 0 ? `${data.timeSavedHours}h` : `${data.timeSavedMinutes}m`,
                                 color: "#f59e0b",
                             },
-                        ].map((stat) => (
+                        ].map((stat) => {
+                            // 💎 ROI gate (Executive): "Tiempo ahorrado" se
+                            // difumina con upsell si el plan no lo incluye
+                            const isRoi = stat.label === "Tiempo ahorrado";
+                            const roiLocked = isRoi && !roiAllowed;
+                            return (
                             <div
                                 key={stat.label}
+                                onClick={roiLocked ? () => router.push("/dashboard/settings") : undefined}
+                                title={roiLocked
+                                    ? "Desbloquea el cálculo de ROI en tiempo real con Xelera Executive"
+                                    : undefined}
                                 style={{
                                     padding: "12px 14px",
                                     borderRadius: "10px",
                                     background: "rgba(255,255,255,0.03)",
-                                    border: "0.5px solid rgba(255,255,255,0.05)",
+                                    border: roiLocked
+                                        ? "0.5px solid rgba(196,163,90,0.25)"
+                                        : "0.5px solid rgba(255,255,255,0.05)",
+                                    position: "relative",
+                                    overflow: "hidden",
+                                    cursor: roiLocked ? "pointer" : "default",
                                 }}
                             >
                                 <div
@@ -1097,6 +1113,8 @@ export default function DashboardHome() {
                                         color: stat.color,
                                         letterSpacing: "-0.02em",
                                         fontVariantNumeric: "tabular-nums",
+                                        filter: roiLocked ? "blur(7px)" : "none",
+                                        userSelect: roiLocked ? "none" : undefined,
                                     }}
                                 >
                                     {stat.value}
@@ -1113,8 +1131,19 @@ export default function DashboardHome() {
                                 >
                                     {stat.label}
                                 </div>
+                                {roiLocked && (
+                                    <div style={{
+                                        position: "absolute", top: "10px", right: "10px",
+                                        display: "flex", alignItems: "center", gap: "4px",
+                                        fontSize: "0.55rem", fontWeight: 700,
+                                        color: "#c4a35a", letterSpacing: "0.05em",
+                                    }}>
+                                        🔒 EXECUTIVE
+                                    </div>
+                                )}
                             </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             </div>
