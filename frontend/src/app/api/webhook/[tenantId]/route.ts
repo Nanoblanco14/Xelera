@@ -15,6 +15,11 @@
 
 import { after } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+
+// after() vive más que la respuesta HTTP: debounce 8s + Whisper +
+// LLM + envío ≈ 20-40s. Sin esto, Vercel mata los timers a los 10s
+// y TODO caería al sweeper del cron (latencia de hasta 1h).
+export const maxDuration = 60;
 import { checkResourceLimit } from "@/lib/plan-limits";
 import {
     verifyMetaSignature,

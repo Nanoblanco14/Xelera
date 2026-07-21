@@ -18,6 +18,10 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
+
+// 9 jobs secuenciales (recordatorios, digest, sweeper, agregación,
+// token health, reglas) superan los 10s default de Vercel.
+export const maxDuration = 300;
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
 import {
     sendAutoTemplate,

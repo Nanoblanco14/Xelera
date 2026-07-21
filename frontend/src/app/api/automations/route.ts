@@ -58,8 +58,10 @@ export async function PUT(req: NextRequest) {
             return apiError("rules debe ser un array (máx. 30)", 400, "INVALID_BODY");
         }
 
-        // Validación defensiva por regla
+        // Validación defensiva por regla (id explícito → permite
+        // insertar ANTES de borrar sin colisión)
         const clean = rules.map((r) => ({
+            id: crypto.randomUUID(),
             organization_id: orgId,
             name: String(r.name || "Regla sin nombre").slice(0, 120),
             enabled: r.enabled !== false,
@@ -72,24 +74,37 @@ export async function PUT(req: NextRequest) {
         }));
 
         const db = getSupabaseAdmin();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error: delError } = await (db as any)
-            .from("automation_rules")
-            .delete()
-            .eq("organization_id", orgId);
 
-        if (delError?.code === "42P01") {
-            return apiError("Ejecuta la migración 20260707_rule_engine.sql primero", 503, "MIGRATION_PENDING");
-        }
-        if (delError) throw delError;
-
+        // ── Orden seguro: INSERT primero, DELETE después ──────
+        // Si el INSERT falla → las reglas viejas quedan intactas.
+        // Si el DELETE falla → duplicados temporales (benigno: el
+        // próximo guardado los limpia), pero NUNCA pérdida de reglas.
         if (clean.length > 0) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const { error: insError } = await (db as any)
                 .from("automation_rules")
                 .insert(clean);
+            if (insError?.code === "42P01") {
+                return apiError("Ejecuta la migración 20260707_rule_engine.sql primero", 503, "MIGRATION_PENDING");
+            }
             if (insError) throw insError;
         }
+
+        const keepIds = clean.map((r) => r.id);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let delQuery = (db as any)
+            .from("automation_rules")
+            .delete()
+            .eq("organization_id", orgId);
+        if (keepIds.length > 0) {
+            delQuery = delQuery.not("id", "in", `(${keepIds.join(",")})`);
+        }
+        const { error: delError } = await delQuery;
+
+        if (delError?.code === "42P01") {
+            return apiError("Ejecuta la migración 20260707_rule_engine.sql primero", 503, "MIGRATION_PENDING");
+        }
+        if (delError) throw delError;
 
         return NextResponse.json({ data: { saved: clean.length } });
     } catch (err) {

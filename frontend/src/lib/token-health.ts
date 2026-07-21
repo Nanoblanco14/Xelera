@@ -181,9 +181,10 @@ export async function checkMetaTokenHealth(): Promise<TokenHealthResult> {
     const result: TokenHealthResult = { orgsChecked: 0, alertsCreated: 0 };
 
     try {
-        const { data: orgs, error } = await db
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: orgs, error } = await (db as any)
             .from("organizations")
-            .select("id, name, whatsapp_credentials, settings")
+            .select("id, name, whatsapp_credentials, meta_token_checked_at")
             .eq("whatsapp_provider", "meta");
 
         if (error || !orgs) return result;
@@ -195,10 +196,10 @@ export async function checkMetaTokenHealth(): Promise<TokenHealthResult> {
                 const creds = (org.whatsapp_credentials || {}) as Record<string, string>;
                 if (!creds.access_token) continue;
 
-                // ── Cadencia diaria por org ──
-                const settings = (org.settings || {}) as Record<string, unknown>;
-                const lastChecked = settings.meta_token_checked_at
-                    ? new Date(settings.meta_token_checked_at as string).getTime()
+                // ── Cadencia diaria por org (columna propia, sin
+                // read-modify-write del JSONB settings → cero races) ──
+                const lastChecked = org.meta_token_checked_at
+                    ? new Date(org.meta_token_checked_at as string).getTime()
                     : 0;
                 if (now - lastChecked < CHECK_EVERY_MS) continue;
 
@@ -206,12 +207,11 @@ export async function checkMetaTokenHealth(): Promise<TokenHealthResult> {
                 const verdict = await inspectToken(creds.access_token, creds.phone_number_id);
                 result.orgsChecked++;
 
-                // Marcar chequeo (merge para no pisar otras settings)
-                await db
+                // Marcador atómico (UPDATE de columna plana)
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                await (db as any)
                     .from("organizations")
-                    .update({
-                        settings: { ...settings, meta_token_checked_at: new Date().toISOString() },
-                    })
+                    .update({ meta_token_checked_at: new Date().toISOString() })
                     .eq("id", org.id);
 
                 if (verdict.state === "invalid" || verdict.state === "expiring") {
