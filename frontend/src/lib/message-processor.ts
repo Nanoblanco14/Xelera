@@ -51,6 +51,9 @@ const CRMToolArgsSchema = z.object({
     estado_filtro: z.enum(["Interesado", "Calificado", "Descartado", "Derivado a Humano"]),
     fecha_hora_cita: z.string().optional(),
     resumen_conversacion: z.string().min(5, "Resumen demasiado corto"),
+    // 🌡️ Lead Scoring — el LLM infiere la intención de compra en la
+    // misma llamada. Opcional para no romper llamadas legacy.
+    temperatura: z.enum(["caliente", "tibio", "frio"]).optional(),
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -192,11 +195,22 @@ const gestionarLeadCrmTool: ChatCompletionTool = {
                     description:
                         "Resumen breve con los datos clave: nombre, presupuesto, zona de interés, tipo de propiedad/servicio, fecha y hora de la cita si aplica, motivo de descarte o derivación si aplica.",
                 },
+                temperatura: {
+                    type: "string",
+                    enum: ["caliente", "tibio", "frio"],
+                    description:
+                        "Clasifica la INTENCIÓN DE COMPRA del cliente según toda la conversación: " +
+                        "'caliente' = alta intención (confirmó cita, pidió cerrar/pagar, dio presupuesto concreto y urgencia, o dijo 'lo quiero'). " +
+                        "'tibio' = interés real pero sin decisión (pregunta precios, compara opciones, evalúa, 'lo pensaré'). " +
+                        "'frio' = curioseando o baja intención (solo mira, sin presupuesto, 'después veo', respuestas vagas). " +
+                        "Infiere esto SIEMPRE que llames a la herramienta, basándote en las señales reales del cliente.",
+                },
             },
             required: [
                 "nombre_cliente",
                 "estado_filtro",
                 "resumen_conversacion",
+                "temperatura",
             ],
         },
     },
@@ -1153,9 +1167,10 @@ ${hoursText}
                         estado_filtro,
                         fecha_hora_cita,
                         resumen_conversacion,
+                        temperatura,
                     } = validation.data;
 
-                    console.log(`🔧 [${t.name}] Tool call: ${estado_filtro} — ${nombre_cliente}`);
+                    console.log(`🔧 [${t.name}] Tool call: ${estado_filtro} — ${nombre_cliente}${temperatura ? ` [${temperatura}]` : ""}`);
 
                     // ── Find target stage (State Machine Logic) ────
                     // Load ALL stages for intelligent matching
@@ -1269,7 +1284,12 @@ ${hoursText}
                         leadPayload.appointment_date = fecha_hora_cita;
                     }
 
+                    // Id del lead resuelto (para el update best-effort de
+                    // temperatura, fuera del payload crítico).
+                    let scoredLeadId: string | null = null;
+
                     if (existingLeads && existingLeads.length > 0) {
+                        scoredLeadId = existingLeads[0].id;
                         await supabaseAdmin
                             .from("leads")
                             .update(leadPayload)
@@ -1287,6 +1307,7 @@ ${hoursText}
                             },
                             { onConflict: "organization_id,phone" }
                         ).select("id").single();
+                        scoredLeadId = newLeadData?.id ?? null;
 
                         // Record initial stage placement for new leads
                         if (newLeadData?.id && targetStageId) {
@@ -1328,6 +1349,23 @@ ${hoursText}
                             nombreCliente: nombre_cliente,
                             fechaHoraCita: fecha_hora_cita,
                         }).catch(() => { /* la memoria nunca bloquea */ });
+                    }
+
+                    // 🌡️ Lead Scoring: update best-effort de temperatura,
+                    // FUERA del payload crítico — si la columna no existe
+                    // (migración pendiente) el lead se crea igual, solo se
+                    // omite el scoring. Degrada sin romper.
+                    if (scoredLeadId && temperatura) {
+                        void supabaseAdmin
+                            .from("leads")
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            .update({ temperature: temperatura } as any)
+                            .eq("id", scoredLeadId)
+                            .then(({ error }) => {
+                                if (error && error.code !== "42703" && error.code !== "PGRST204") {
+                                    console.warn(`[LeadScore] update error (no bloqueante):`, error.message);
+                                }
+                            });
                     }
 
                     // 📈 Evento: cita confirmada vía CRM (flujo sin

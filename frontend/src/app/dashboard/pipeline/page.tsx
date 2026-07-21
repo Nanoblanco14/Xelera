@@ -9,6 +9,7 @@ import {
 import { useOrg } from "@/lib/org-context";
 import { createClient } from "@supabase/supabase-js";
 import type { PipelineStage, Lead, LeadMessage } from "@/lib/types";
+import { TemperatureBadge } from "@/components/ui";
 import {
     Loader2, Plus, X, User, Phone, Search,
     GripVertical, Users, Edit3, CalendarDays, Save,
@@ -1189,6 +1190,7 @@ export default function PipelinePage() {
                                                                         <span style={{ fontWeight: 600, fontSize: "0.82rem", color: "var(--text-primary)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                                                             {lead.name}
                                                                         </span>
+                                                                        <TemperatureBadge temperature={lead.temperature} size="xs" />
                                                                         {getSourceBadge(lead)}
                                                                     </div>
 

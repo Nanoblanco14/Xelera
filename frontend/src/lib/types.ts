@@ -209,8 +209,20 @@ export interface Lead {
     source?: string;
     chat_status?: string;
     is_bot_paused?: boolean;
+    /** 🌡️ Lead Scoring — intención de compra inferida por la IA */
+    temperature?: "caliente" | "tibio" | "frio" | null;
     created_at: string;
 }
+
+/** Metadata visual del scoring de leads (badges, colores, orden). */
+export const LEAD_TEMPERATURE_META: Record<
+    "caliente" | "tibio" | "frio",
+    { emoji: string; label: string; color: string; rank: number }
+> = {
+    caliente: { emoji: "🔥", label: "Caliente", color: "#e0653a", rank: 0 },
+    tibio:    { emoji: "🟡", label: "Tibio",    color: "#c4a35a", rank: 1 },
+    frio:     { emoji: "❄️", label: "Frío",     color: "#6482aa", rank: 2 },
+};
 
 export type LeadMessageRole = 'user' | 'assistant';
 

@@ -23,17 +23,39 @@ export async function GET(req: NextRequest) {
 
         const db = getSupabaseAdmin();
 
-        // Get all leads with their message count and latest message
-        const { data: leads, error: leadsError } = await db
+        // Get all leads with their message count and latest message.
+        // temperature puede no existir aún (migración lead_scoring
+        // pendiente) → fallback sin la columna. Degrada sin romper.
+        const leadCols = `
+            id, name, phone, source, stage_id, chat_status,
+            is_bot_paused, temperature, created_at,
+            pipeline_stages!inner(name, color)
+        `;
+        const leadColsFallback = `
+            id, name, phone, source, stage_id, chat_status,
+            is_bot_paused, created_at,
+            pipeline_stages!inner(name, color)
+        `;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let leads: any[] | null = null;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let leadsError: any = null;
+
+        ({ data: leads, error: leadsError } = await db
             .from("leads")
-            .select(`
-                id, name, phone, source, stage_id, chat_status,
-                is_bot_paused, created_at,
-                pipeline_stages!inner(name, color)
-            `)
+            .select(leadCols)
             .eq("organization_id", orgId)
             .eq("source", "whatsapp")
-            .order("created_at", { ascending: false });
+            .order("created_at", { ascending: false }));
+
+        if (leadsError && (leadsError.code === "42703" || /temperature|column/i.test(leadsError.message || ""))) {
+            ({ data: leads, error: leadsError } = await db
+                .from("leads")
+                .select(leadColsFallback)
+                .eq("organization_id", orgId)
+                .eq("source", "whatsapp")
+                .order("created_at", { ascending: false }));
+        }
 
         if (leadsError) throw leadsError;
 
@@ -79,6 +101,8 @@ export async function GET(req: NextRequest) {
                     phone: lead.phone,
                     chat_status: lead.chat_status,
                     is_bot_paused: lead.is_bot_paused || false,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    temperature: (lead as any).temperature ?? null,
                     stage_name: stage?.name || "Sin etapa",
                     stage_color: stage?.color || null,
                     message_count: msgs.length,

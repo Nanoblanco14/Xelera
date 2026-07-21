@@ -11,6 +11,7 @@ import {
     StickyNote, Trash2, Hash, Timer, Check, CheckCheck, Filter,
     FileText, Eye,
 } from "lucide-react";
+import { TemperatureBadge } from "@/components/ui";
 
 interface LeadNote {
     id: string;
@@ -26,6 +27,7 @@ interface Conversation {
     phone: string;
     chat_status: string | null;
     is_bot_paused: boolean;
+    temperature?: "caliente" | "tibio" | "frio" | null;
     stage_name: string;
     stage_color: string | null;
     message_count: number;
@@ -877,14 +879,16 @@ export default function InboxPage() {
                                                     overflow: "hidden",
                                                     textOverflow: "ellipsis",
                                                     whiteSpace: "nowrap",
-                                                    maxWidth: "160px",
+                                                    maxWidth: "130px",
                                                 }}>
                                                     {convo.name}
                                                 </span>
+                                                <TemperatureBadge temperature={convo.temperature} size="xs" />
                                                 <span style={{
                                                     fontSize: "0.65rem",
                                                     color: "var(--text-muted)",
                                                     flexShrink: 0,
+                                                    marginLeft: "auto",
                                                 }}>
                                                     {convo.last_message
                                                         ? timeAgo(convo.last_message.created_at)
@@ -1071,6 +1075,7 @@ export default function InboxPage() {
                                             <span style={{ fontSize: "0.92rem", fontWeight: 700, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
                                                 {selectedConvo?.name || "Contacto"}
                                             </span>
+                                            <TemperatureBadge temperature={selectedConvo?.temperature} size="xs" />
                                             <span style={{
                                                 padding: "1px 7px", borderRadius: "100px",
                                                 fontSize: "0.58rem", fontWeight: 600,
