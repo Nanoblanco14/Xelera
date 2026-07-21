@@ -6,7 +6,9 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 
 // ── Plan types ──────────────────────────────────────────────
 
-export type PlanTier = "free" | "pro" | "business";
+// Posicionamiento dual: starter (pymes self-service) y executive
+// (high-ticket). pro/business quedan como tiers legacy compatibles.
+export type PlanTier = "free" | "starter" | "pro" | "business" | "executive";
 
 export interface PlanLimits {
     max_agents: number;
@@ -22,6 +24,17 @@ export interface PlanLimits {
     analytics_advanced: boolean;
     custom_branding: boolean;
     priority_support: boolean;
+    // ── Flags de segmento (Starter/Executive) ──
+    /** Modo Guardián: autonomía alta org-level */
+    guardian_mode: boolean;
+    /** Resumen nocturno condensado al dueño */
+    nightly_digest: boolean;
+    /** Reporte de Impacto semanal (ROI) */
+    impact_report_weekly: boolean;
+    /** Webhooks salientes por-tenant (CRM/Zapier) */
+    outbound_webhooks: boolean;
+    /** Widgets de ROI (horas ahorradas) en dashboard */
+    roi_widgets: boolean;
 }
 
 export interface PlanDefinition {
@@ -29,6 +42,8 @@ export interface PlanDefinition {
     name: string;
     description: string;
     price_monthly: number;    // USD — display only (Stripe handles billing)
+    /** Precio display en CLP (segmentos chilenos) */
+    price_clp?: number;
     limits: PlanLimits;
 }
 
@@ -53,6 +68,37 @@ export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
             analytics_advanced: false,
             custom_branding: false,
             priority_support: false,
+            guardian_mode: false,
+            nightly_digest: true,
+            impact_report_weekly: false,
+            outbound_webhooks: false,
+            roi_widgets: false,
+        },
+    },
+    starter: {
+        tier: "starter",
+        name: "Starter",
+        description: "Tranquilidad 24/7 para tu pyme",
+        price_monthly: 25,
+        price_clp: 24_990,
+        limits: {
+            max_agents: 1,
+            max_products: 50,
+            max_leads: 300,
+            max_conversations: 300,
+            max_templates_per_day: 20,
+            max_team_members: 1,
+            max_ai_tokens_month: 1_000_000,
+            appointment_scheduling: true,
+            auto_templates: true,
+            analytics_advanced: false,
+            custom_branding: false,
+            priority_support: false,
+            guardian_mode: true,
+            nightly_digest: true,
+            impact_report_weekly: false,
+            outbound_webhooks: false,
+            roi_widgets: false,
         },
     },
     pro: {
@@ -73,6 +119,11 @@ export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
             analytics_advanced: true,
             custom_branding: false,
             priority_support: false,
+            guardian_mode: true,
+            nightly_digest: true,
+            impact_report_weekly: false,
+            outbound_webhooks: false,
+            roi_widgets: false,
         },
     },
     business: {
@@ -93,6 +144,37 @@ export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
             analytics_advanced: true,
             custom_branding: true,
             priority_support: true,
+            guardian_mode: true,
+            nightly_digest: true,
+            impact_report_weekly: true,
+            outbound_webhooks: true,
+            roi_widgets: true,
+        },
+    },
+    executive: {
+        tier: "executive",
+        name: "Executive",
+        description: "Ahorro de tiempo ejecutivo con ROI medible",
+        price_monthly: 200,
+        price_clp: 180_000,
+        limits: {
+            max_agents: 10,
+            max_products: 2000,
+            max_leads: 10_000,
+            max_conversations: 10_000,
+            max_templates_per_day: 500,
+            max_team_members: 10,
+            max_ai_tokens_month: 20_000_000,
+            appointment_scheduling: true,
+            auto_templates: true,
+            analytics_advanced: true,
+            custom_branding: true,
+            priority_support: true,
+            guardian_mode: true,
+            nightly_digest: true,
+            impact_report_weekly: true,
+            outbound_webhooks: true,
+            roi_widgets: true,
         },
     },
 };

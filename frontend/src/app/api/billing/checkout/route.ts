@@ -19,8 +19,9 @@ export async function POST(req: NextRequest) {
         }
 
         const { tier } = (await req.json().catch(() => ({}))) as { tier?: string };
-        if (tier !== "pro" && tier !== "business") {
-            return apiError("tier debe ser 'pro' o 'business'", 400, "INVALID_TIER");
+        const VALID_TIERS = ["starter", "pro", "business", "executive"];
+        if (!tier || !VALID_TIERS.includes(tier)) {
+            return apiError("tier inválido", 400, "INVALID_TIER");
         }
         const priceId = PRICE_MAP[tier as Exclude<PlanTier, "free">];
         if (!priceId) {

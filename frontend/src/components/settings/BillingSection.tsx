@@ -17,10 +17,12 @@ interface BudgetInfo {
     estimatedCostUsd: number;
 }
 
-const PLAN_META: Record<string, { label: string; color: string; next?: "pro" | "business"; nextPrice?: number }> = {
-    free: { label: "Free", color: "#a89f94", next: "pro", nextPrice: 29 },
-    pro: { label: "Pro", color: "#7a9e8a", next: "business", nextPrice: 79 },
-    business: { label: "Business", color: "#6482aa" },
+const PLAN_META: Record<string, { label: string; color: string; next?: string; nextLabel?: string; nextPrice?: string }> = {
+    free: { label: "Free", color: "#a89f94", next: "starter", nextLabel: "Starter", nextPrice: "$24.990 CLP" },
+    starter: { label: "Starter", color: "#7a9e8a", next: "executive", nextLabel: "Executive", nextPrice: "$180.000 CLP" },
+    pro: { label: "Pro", color: "#7a9e8a", next: "executive", nextLabel: "Executive", nextPrice: "$180.000 CLP" },
+    business: { label: "Business", color: "#6482aa", next: "executive", nextLabel: "Executive", nextPrice: "$180.000 CLP" },
+    executive: { label: "Executive", color: "#c4a35a" },
 };
 
 const fmt = (n: number) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${Math.round(n / 1000)}k` : String(n));
@@ -120,7 +122,7 @@ export default function BillingSection({ orgId, plan }: { orgId: string; plan: s
                         loading={redirecting === `checkout${meta.next}`}
                         onClick={() => goTo("checkout", meta.next)}
                     >
-                        Mejorar a {PLAN_META[meta.next].label} — US${meta.nextPrice}/mes
+                        Mejorar a {meta.nextLabel} — {meta.nextPrice}/mes
                     </Button>
                 )}
                 {plan !== "free" && (

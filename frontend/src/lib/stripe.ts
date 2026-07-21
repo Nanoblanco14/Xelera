@@ -18,16 +18,21 @@ export function getStripe(): Stripe {
 
 export const stripeConfigured = () => !!process.env.STRIPE_SECRET_KEY;
 
-// tier → price id (crear los prices en el dashboard de Stripe)
+// tier → price id (crear los prices en el dashboard de Stripe;
+// starter/executive en CLP — moneda zero-decimal en Stripe)
 export const PRICE_MAP: Record<Exclude<PlanTier, "free">, string | undefined> = {
+    starter: process.env.STRIPE_PRICE_STARTER,
     pro: process.env.STRIPE_PRICE_PRO,
     business: process.env.STRIPE_PRICE_BUSINESS,
+    executive: process.env.STRIPE_PRICE_EXECUTIVE,
 };
 
 /** price id → tier (para el webhook) */
 export function tierFromPriceId(priceId: string | undefined): PlanTier | null {
     if (!priceId) return null;
+    if (priceId === process.env.STRIPE_PRICE_STARTER) return "starter";
     if (priceId === process.env.STRIPE_PRICE_PRO) return "pro";
     if (priceId === process.env.STRIPE_PRICE_BUSINESS) return "business";
+    if (priceId === process.env.STRIPE_PRICE_EXECUTIVE) return "executive";
     return null;
 }
