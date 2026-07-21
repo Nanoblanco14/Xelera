@@ -35,6 +35,7 @@ import { aggregateDailyMetrics } from "@/lib/analytics";
 import { linkOutboundMessage } from "@/lib/delivery-status";
 import { checkMetaTokenHealth } from "@/lib/token-health";
 import { runScheduledRules } from "@/lib/rule-engine";
+import { sendWeeklyImpactReports } from "@/lib/impact-report";
 import { captureError } from "@/lib/monitoring";
 
 const CHILE_TZ = "America/Santiago";
@@ -722,6 +723,14 @@ async function runAllJobs() {
         captureError(err, "cron:rules");
     }
 
+    // 📊 Job 10: Reporte de Impacto semanal (Executive)
+    let impactReports = { reportsSent: 0 };
+    try {
+        impactReports = await sendWeeklyImpactReports();
+    } catch (err) {
+        captureError(err, "cron:impact_report");
+    }
+
     console.log(
         `[Cron] Done — swept: ${sweptBatches}, 24h: ${remindersSent}, 1h: ${oneHourSent}, digests: ${digestsSent}, ` +
         `post_visit: ${postVisitSent}, inactive: ${inactiveSent}, stalled: ${stalledSent}, aggregated: ${orgsAggregated}, ` +
@@ -729,6 +738,7 @@ async function runAllJobs() {
     );
 
     return {
+        impact_reports_sent: impactReports.reportsSent,
         automation_rules_executed: rulesExecuted,
         tokens_checked: tokenHealth.orgsChecked,
         token_alerts_created: tokenHealth.alertsCreated,
