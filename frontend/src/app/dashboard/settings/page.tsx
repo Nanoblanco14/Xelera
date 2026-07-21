@@ -13,6 +13,7 @@ import {
     AutoTemplateSection,
     BillingSection,
     AutomationRulesSection,
+    OutboundWebhookSection,
 } from "@/components/settings";
 import type { ConnectionStatus } from "@/lib/hooks/useWhatsAppConnection";
 
@@ -191,6 +192,7 @@ export default function SettingsPage() {
                 {/* ── Automatizacion ────────────────────────── */}
                 <GroupHeader label="Automatizacion" />
                 <AutomationRulesSection orgId={organization.id} />
+                <OutboundWebhookSection />
                 <AutoTemplateSection
                     orgId={organization.id}
                     orgSettings={

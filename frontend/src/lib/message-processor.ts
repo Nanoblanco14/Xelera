@@ -36,6 +36,7 @@ import {
 } from "@/lib/knowledge-indexer";
 import { trackEvent } from "@/lib/analytics";
 import { checkAiBudget, getPlanLimits } from "@/lib/plan-limits";
+import { emitOutboundEvent } from "@/lib/outbound-webhooks";
 import { linkOutboundMessage, markOutboundFailed } from "@/lib/delivery-status";
 import { z } from "zod/v4";
 
@@ -1415,6 +1416,14 @@ ${hoursText}
                             leadId: notifLead?.id || leadId,
                             type: "handoff",
                         }).catch(() => { /* no bloquear */ });
+
+                        // 🔗 Webhook saliente por-tenant (Executive)
+                        emitOutboundEvent(tenantId, "handoff", {
+                            lead_id: notifLead?.id || leadId,
+                            nombre: nombre_cliente || null,
+                            telefono: phoneClean,
+                            motivo: resumen_conversacion,
+                        }).catch(() => { /* no bloquear */ });
                     }
 
                     // ── Optional Make/Zapier webhook ──────────────────
@@ -1443,6 +1452,17 @@ ${hoursText}
                             console.error("⚠️ Error enviando webhook (no bloqueante):", webhookErr);
                         }
                     }
+
+                    // 🔗 Webhook saliente POR-TENANT (Executive, firmado)
+                    emitOutboundEvent(tenantId, "lead_updated", {
+                        lead_id: leadId,
+                        nombre: nombre_cliente,
+                        telefono: phoneClean,
+                        estado: estado_filtro,
+                        etapa: targetStageLabel || null,
+                        fecha_cita: fecha_hora_cita || null,
+                        resumen: resumen_conversacion,
+                    }).catch(() => { /* no bloquear */ });
 
                     // Append tool response to the ephemeral turn array
                     currentTurnMessages.push({
@@ -1528,6 +1548,16 @@ ${hoursText}
                             leadId,
                             type: "appointment_booked",
                             metadata: { source: "scheduler", appointment_id: result.appointment.id },
+                        }).catch(() => { /* no bloquear */ });
+
+                        // 🔗 Webhook saliente por-tenant (Executive)
+                        emitOutboundEvent(tenantId, "appointment_booked", {
+                            lead_id: leadId,
+                            appointment_id: result.appointment.id,
+                            cliente: args.nombre_cliente || null,
+                            telefono: phoneClean,
+                            servicio: args.servicio_nombre || null,
+                            fecha_hora: startTime,
                         }).catch(() => { /* no bloquear */ });
 
                         // Update lead name if still generic

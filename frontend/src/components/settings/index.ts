@@ -7,3 +7,4 @@ export { default as BlockedDatesSection } from "./BlockedDatesSection";
 export { default as AutoTemplateSection } from "./AutoTemplateSection";
 export { default as BillingSection } from "./BillingSection";
 export { default as AutomationRulesSection } from "./AutomationRulesSection";
+export { default as OutboundWebhookSection } from "./OutboundWebhookSection";
